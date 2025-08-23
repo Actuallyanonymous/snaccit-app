@@ -1,13 +1,30 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, Search, Star, Award, User, Info } from 'lucide-react';
-import { auth, db } from './firebase.js';
+import { initializeApp } from "firebase/app";
 import { 
+  getAuth,
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   onAuthStateChanged,
   signOut
 } from "firebase/auth";
-import { collection, getDocs, addDoc, serverTimestamp, onSnapshot, query, where, orderBy, doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc, serverTimestamp, onSnapshot, query, where, orderBy, doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+
+// --- Firebase Configuration ---
+const firebaseConfig = {
+  apiKey: "AIzaSyDDFCPcfBKcvrkjqidsXstHqe8Og_3u36k",
+  authDomain: "snaccit-7d853.firebaseapp.com",
+  projectId: "snaccit-7d853",
+  storageBucket: "snaccit-7d853.appspot.com",
+  messagingSenderId: "523142849231",
+  appId: "1:523142849231:web:f10e23785d6451f510cdba"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
 
 // --- Notification Component ---
 const Notification = ({ message, type, onDismiss }) => {
