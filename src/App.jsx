@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, Search, Star, Award, User, Info } from 'lucide-react';
+import { ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, Search, Star, Award, User, Info, Bell } from 'lucide-react';
 import { initializeApp } from "firebase/app";
 import { 
   getAuth,
@@ -711,7 +711,9 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
     const statusColors = {
         pending: 'bg-yellow-100 text-yellow-800',
         accepted: 'bg-blue-100 text-blue-800',
-        completed: 'bg-green-100 text-green-800',
+        preparing: 'bg-indigo-100 text-indigo-800',
+        ready: 'bg-green-100 text-green-800',
+        completed: 'bg-gray-100 text-gray-800',
         declined: 'bg-red-100 text-red-800',
     };
 
