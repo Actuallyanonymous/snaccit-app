@@ -923,6 +923,17 @@ const App = () => {
       }
   }, [view, scrollToSection]);
 
+  useEffect(() => {
+    if (isCartOpen || isCheckoutOpen || itemToCustomize || isAuthModalOpen) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = 'auto';
+    }
+    return () => {
+        document.body.style.overflow = 'auto';
+    };
+  }, [isCartOpen, isCheckoutOpen, itemToCustomize, isAuthModalOpen]);
+
   const handleSelectItemForCustomization = (item) => {
     setItemToCustomize(item);
   };
