@@ -585,11 +585,85 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout }) =>
   );
 };
 
-// --- Checkout Modal Component ---
+// --- [NEW] Time Slot Picker Component ---
+// Helper function to generate time slots
+const generateTimeSlots = () => {
+  const slots = [];
+  const now = new Date();
+  
+  // Find the next 15-minute interval
+  const minutes = now.getMinutes();
+  const remainder = minutes % 15;
+  let startMinutes = minutes + (15 - remainder);
+  
+  // Set the starting time for the first slot
+  const startTime = new Date();
+  startTime.setMinutes(startMinutes);
+  startTime.setSeconds(0);
+  startTime.setMilliseconds(0);
+
+  // Generate slots for the next 5 hours
+  for (let i = 0; i < 20; i++) { // 20 slots of 15 mins = 5 hours
+    const slotTime = new Date(startTime.getTime() + i * 15 * 60 * 1000);
+    
+    // Format for display (e.g., "7:30 PM")
+    const displayFormat = slotTime.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    
+    // Format for value (e.g., "19:30")
+    const valueFormat = slotTime.toTimeString().substring(0, 5);
+
+    slots.push({ display: displayFormat, value: valueFormat });
+  }
+
+  return slots;
+};
+
+
+const TimeSlotPicker = ({ selectedTime, onTimeSelect }) => {
+  const timeSlots = useMemo(() => generateTimeSlots(), []);
+  
+  return (
+    <div>
+        <label className="block text-gray-700 text-sm font-bold mb-3">
+          <Clock className="inline mr-2" size={16}/>Estimated Arrival Time
+        </label>
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+            {timeSlots.map(slot => (
+                <button
+                    key={slot.value}
+                    onClick={() => onTimeSelect(slot.value)}
+                    className={`p-3 rounded-lg font-semibold text-center transition-all duration-200 border-2 ${
+                        selectedTime === slot.value
+                            ? 'bg-green-600 text-white border-green-600 shadow-lg'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-green-500 hover:text-green-600'
+                    }`}
+                >
+                    {slot.display}
+                </button>
+            ))}
+        </div>
+    </div>
+  );
+};
+
+
+// --- [UPDATED] Checkout Modal Component ---
 const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
+  // The 'arrivalTime' state now holds the selected slot value (e.g., "19:30")
   const [arrivalTime, setArrivalTime] = useState('');
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
+
+  // Reset arrival time when modal opens
+  useEffect(() => {
+    if (isOpen) {
+        setArrivalTime('');
+    }
+  }, [isOpen]);
 
   const handleConfirm = async () => {
     if (!arrivalTime) {
@@ -598,6 +672,8 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
     }
     setIsPlacingOrder(true);
     await onPlaceOrder(arrivalTime, subtotal);
+    // You might want to keep the modal open to show a success state,
+    // but for now, we assume onPlaceOrder closes it or changes the view.
     setIsPlacingOrder(false);
   };
 
@@ -618,12 +694,13 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
           <p className="font-bold mt-2 text-right">Total: ₹{subtotal.toFixed(2)}</p>
         </div>
 
+        {/* --- THIS IS THE CHANGED PART --- */}
         <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="arrival-time"><Clock className="inline mr-2" size={16}/>Estimated Arrival Time</label>
-          <input type="time" id="arrival-time" value={arrivalTime} onChange={(e) => setArrivalTime(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" required />
+          <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} />
         </div>
+        {/* --- END OF CHANGED PART --- */}
         
-        <button onClick={handleConfirm} disabled={isPlacingOrder} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
           {isPlacingOrder ? 'Placing Order...' : 'Confirm Pre-order'}
         </button>
       </div>
