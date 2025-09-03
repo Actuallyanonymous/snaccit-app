@@ -585,47 +585,75 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout }) =>
   );
 };
 
-// --- [NEW] Time Slot Picker Component ---
+// --- Time Slot Picker Component ---
 // Helper function to generate time slots
-const generateTimeSlots = () => {
+const generateTimeSlots = (openingTimeStr, closingTimeStr) => {
   const slots = [];
   const now = new Date();
+
+  // Return empty array if restaurant hours are not set
+  if (!openingTimeStr || !closingTimeStr) {
+    return [];
+  }
   
-  // Find the next 15-minute interval
+  // Create Date objects for opening and closing times for today
+  const [openHours, openMinutes] = openingTimeStr.split(':').map(Number);
+  const openingTime = new Date();
+  openingTime.setHours(openHours, openMinutes, 0, 0);
+
+  const [closeHours, closeMinutes] = closingTimeStr.split(':').map(Number);
+  const closingTime = new Date();
+  closingTime.setHours(closeHours, closeMinutes, 0, 0);
+  
+  // Determine the start time for generating slots
+  // It should be the later of now (rounded up) or the opening time
   const minutes = now.getMinutes();
   const remainder = minutes % 15;
-  let startMinutes = minutes + (15 - remainder);
-  
-  // Set the starting time for the first slot
-  const startTime = new Date();
-  startTime.setMinutes(startMinutes);
-  startTime.setSeconds(0);
-  startTime.setMilliseconds(0);
+  const roundedUpNow = new Date(now);
+  roundedUpNow.setMinutes(minutes + (15 - remainder), 0, 0);
 
-  // Generate slots for the next 5 hours
-  for (let i = 0; i < 20; i++) { // 20 slots of 15 mins = 5 hours
-    const slotTime = new Date(startTime.getTime() + i * 15 * 60 * 1000);
+  let startTime = roundedUpNow > openingTime ? roundedUpNow : openingTime;
+  
+  // If the current time is already past closing time, no slots are available
+  if (startTime > closingTime) {
+    return [];
+  }
+
+  // Generate slots in 15-minute intervals until closing time
+  while (startTime < closingTime) {
+    const slotTime = new Date(startTime);
     
-    // Format for display (e.g., "7:30 PM")
     const displayFormat = slotTime.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
     });
     
-    // Format for value (e.g., "19:30")
     const valueFormat = slotTime.toTimeString().substring(0, 5);
-
     slots.push({ display: displayFormat, value: valueFormat });
+
+    // Move to the next 15-minute slot
+    startTime.setMinutes(startTime.getMinutes() + 15);
   }
 
   return slots;
 };
 
 
-const TimeSlotPicker = ({ selectedTime, onTimeSelect }) => {
-  const timeSlots = useMemo(() => generateTimeSlots(), []);
+const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
+  const timeSlots = useMemo(() => {
+      return generateTimeSlots(restaurant?.openingTime, restaurant?.closingTime);
+  }, [restaurant]);
   
+  if (timeSlots.length === 0) {
+    return (
+        <div className="text-center p-4 bg-red-50 text-red-700 rounded-lg">
+            <p className="font-semibold">Sorry, this restaurant is currently closed for pre-orders.</p>
+            <p className="text-sm">Please check back during their operating hours: {restaurant?.openingTime} - {restaurant?.closingTime}</p>
+        </div>
+    );
+  }
+
   return (
     <div>
         <label className="block text-gray-700 text-sm font-bold mb-3">
@@ -651,13 +679,12 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect }) => {
 };
 
 
-// --- [UPDATED] Checkout Modal Component ---
+// --- Checkout Modal Component ---
 const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
-  // The 'arrivalTime' state now holds the selected slot value (e.g., "19:30")
   const [arrivalTime, setArrivalTime] = useState('');
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
-
+  
   // Reset arrival time when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -672,8 +699,6 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
     }
     setIsPlacingOrder(true);
     await onPlaceOrder(arrivalTime, subtotal);
-    // You might want to keep the modal open to show a success state,
-    // but for now, we assume onPlaceOrder closes it or changes the view.
     setIsPlacingOrder(false);
   };
 
@@ -694,11 +719,9 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
           <p className="font-bold mt-2 text-right">Total: ₹{subtotal.toFixed(2)}</p>
         </div>
 
-        {/* --- THIS IS THE CHANGED PART --- */}
         <div className="mb-6">
-          <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} />
+          <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} restaurant={restaurant} />
         </div>
-        {/* --- END OF CHANGED PART --- */}
         
         <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
           {isPlacingOrder ? 'Placing Order...' : 'Confirm Pre-order'}
@@ -707,6 +730,7 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
     </div>
   );
 };
+
 
 // --- Order Confirmation Component ---
 const OrderConfirmation = ({ onGoHome }) => {
