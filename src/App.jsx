@@ -680,25 +680,52 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
 
 
 // --- Checkout Modal Component ---
-const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
+const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant, currentUser }) => {
   const [arrivalTime, setArrivalTime] = useState('');
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
   
-  // Reset arrival time when modal opens
   useEffect(() => {
     if (isOpen) {
         setArrivalTime('');
     }
   }, [isOpen]);
 
-  const handleConfirm = async () => {
+  const handlePayment = async () => {
     if (!arrivalTime) {
       alert("Please select an arrival time.");
       return;
     }
     setIsPlacingOrder(true);
-    await onPlaceOrder(arrivalTime, subtotal);
+
+    const options = {
+        // IMPORTANT: Replace this with your own key from the Razorpay dashboard
+        // This is a public test key
+        key: "rzp_test_ILgsfZC32i1p5A", 
+        amount: subtotal * 100, // Amount in the smallest currency unit (paise for INR)
+        currency: "INR",
+        name: "Snaccit",
+        description: `Pre-order from ${restaurant.name}`,
+        image: "https://placehold.co/100x100/059669/FFFFFF?text=S",
+        handler: function (response) {
+            // This function is called on a successful payment
+            onPlaceOrder(arrivalTime, subtotal, response);
+        },
+        prefill: {
+            name: currentUser?.displayName || '',
+            email: currentUser?.email,
+            contact: '' // You can add a mobile number from the user's profile if available
+        },
+        notes: {
+            address: "Snaccit Pre-order Transaction"
+        },
+        theme: {
+            color: "#16a34a"
+        }
+    };
+
+    const paymentObject = new window.Razorpay(options);
+    paymentObject.open();
     setIsPlacingOrder(false);
   };
 
@@ -723,8 +750,8 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
           <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} restaurant={restaurant} />
         </div>
         
-        <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-          {isPlacingOrder ? 'Placing Order...' : 'Confirm Pre-order'}
+        <button onClick={handlePayment} disabled={isPlacingOrder || !arrivalTime} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+          {isPlacingOrder ? 'Processing...' : `Pay ₹${subtotal.toFixed(2)}`}
         </button>
       </div>
     </div>
@@ -990,6 +1017,14 @@ const App = () => {
   };
 
   useEffect(() => {
+    // Load Razorpay script
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+
+  useEffect(() => {
     const fetchRestaurantsAndMenus = async () => {
         try {
             const restaurantsCollection = collection(db, "restaurants");
@@ -1058,7 +1093,7 @@ const App = () => {
     }
   };
 
-  const handlePlaceOrder = async (arrivalTime, subtotal) => {
+  const handlePlaceOrder = async (arrivalTime, subtotal, paymentResponse) => {
     if (!currentUser) {
       alert("Please log in to place an order.");
       return;
@@ -1081,6 +1116,7 @@ const App = () => {
       arrivalTime: arrivalTime,
       createdAt: serverTimestamp(),
       hasReview: false,
+      paymentId: paymentResponse.razorpay_payment_id,
     };
 
     try {
@@ -1234,7 +1270,14 @@ const App = () => {
         onConfirmAddToCart={handleConfirmAddToCart}
       />
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} onUpdateQuantity={handleUpdateQuantity} onCheckout={() => setIsCheckoutOpen(true)} />
-      <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} onPlaceOrder={handlePlaceOrder} cart={cart} restaurant={selectedRestaurant} />
+      <CheckoutModal 
+        isOpen={isCheckoutOpen} 
+        onClose={() => setIsCheckoutOpen(false)} 
+        onPlaceOrder={handlePlaceOrder} 
+        cart={cart} 
+        restaurant={selectedRestaurant} 
+        currentUser={currentUser} 
+      />
       <ReviewModal isOpen={!!orderToReview} onClose={() => setOrderToReview(null)} order={orderToReview} onSubmitReview={handleSubmitReview} />
       
       <div className="bg-cream-50 font-sans text-slate-800">
