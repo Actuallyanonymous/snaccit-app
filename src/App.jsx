@@ -586,17 +586,14 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout }) =>
 };
 
 // --- Time Slot Picker Component ---
-// Helper function to generate time slots
 const generateTimeSlots = (openingTimeStr, closingTimeStr) => {
   const slots = [];
   const now = new Date();
 
-  // Return empty array if restaurant hours are not set
   if (!openingTimeStr || !closingTimeStr) {
     return [];
   }
   
-  // Create Date objects for opening and closing times for today
   const [openHours, openMinutes] = openingTimeStr.split(':').map(Number);
   const openingTime = new Date();
   openingTime.setHours(openHours, openMinutes, 0, 0);
@@ -605,8 +602,6 @@ const generateTimeSlots = (openingTimeStr, closingTimeStr) => {
   const closingTime = new Date();
   closingTime.setHours(closeHours, closeMinutes, 0, 0);
   
-  // Determine the start time for generating slots
-  // It should be the later of now (rounded up) or the opening time
   const minutes = now.getMinutes();
   const remainder = minutes % 15;
   const roundedUpNow = new Date(now);
@@ -614,12 +609,10 @@ const generateTimeSlots = (openingTimeStr, closingTimeStr) => {
 
   let startTime = roundedUpNow > openingTime ? roundedUpNow : openingTime;
   
-  // If the current time is already past closing time, no slots are available
-  if (startTime > closingTime) {
+  if (startTime >= closingTime) {
     return [];
   }
 
-  // Generate slots in 15-minute intervals until closing time
   while (startTime < closingTime) {
     const slotTime = new Date(startTime);
     
@@ -632,24 +625,31 @@ const generateTimeSlots = (openingTimeStr, closingTimeStr) => {
     const valueFormat = slotTime.toTimeString().substring(0, 5);
     slots.push({ display: displayFormat, value: valueFormat });
 
-    // Move to the next 15-minute slot
     startTime.setMinutes(startTime.getMinutes() + 15);
   }
 
   return slots;
 };
 
-
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
   const timeSlots = useMemo(() => {
       return generateTimeSlots(restaurant?.openingTime, restaurant?.closingTime);
   }, [restaurant]);
   
+  if (!restaurant?.openingTime || !restaurant?.closingTime) {
+    return (
+        <div className="text-center p-4 bg-yellow-50 text-yellow-700 rounded-lg">
+            <p className="font-semibold">This restaurant has not set its operating hours.</p>
+            <p className="text-sm">Pre-orders are currently unavailable.</p>
+        </div>
+    );
+  }
+
   if (timeSlots.length === 0) {
     return (
         <div className="text-center p-4 bg-red-50 text-red-700 rounded-lg">
             <p className="font-semibold">Sorry, this restaurant is currently closed for pre-orders.</p>
-            <p className="text-sm">Please check back during their operating hours: {restaurant?.openingTime} - {restaurant?.closingTime}</p>
+            <p className="text-sm">Operating hours: {restaurant.openingTime} - {restaurant.closingTime}</p>
         </div>
     );
   }
@@ -680,52 +680,24 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
 
 
 // --- Checkout Modal Component ---
-const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant, currentUser }) => {
+const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
   const [arrivalTime, setArrivalTime] = useState('');
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
-  
+
   useEffect(() => {
     if (isOpen) {
         setArrivalTime('');
     }
   }, [isOpen]);
 
-  const handlePayment = async () => {
+  const handleConfirm = async () => {
     if (!arrivalTime) {
       alert("Please select an arrival time.");
       return;
     }
     setIsPlacingOrder(true);
-
-    const options = {
-        // IMPORTANT: Replace this with your own key from the Razorpay dashboard
-        // This is a public test key
-        key: "rzp_test_ILgsfZC32i1p5A", 
-        amount: subtotal * 100, // Amount in the smallest currency unit (paise for INR)
-        currency: "INR",
-        name: "Snaccit",
-        description: `Pre-order from ${restaurant.name}`,
-        image: "https://placehold.co/100x100/059669/FFFFFF?text=S",
-        handler: function (response) {
-            // This function is called on a successful payment
-            onPlaceOrder(arrivalTime, subtotal, response);
-        },
-        prefill: {
-            name: currentUser?.displayName || '',
-            email: currentUser?.email,
-            contact: '' // You can add a mobile number from the user's profile if available
-        },
-        notes: {
-            address: "Snaccit Pre-order Transaction"
-        },
-        theme: {
-            color: "#16a34a"
-        }
-    };
-
-    const paymentObject = new window.Razorpay(options);
-    paymentObject.open();
+    await onPlaceOrder(arrivalTime, subtotal);
     setIsPlacingOrder(false);
   };
 
@@ -750,14 +722,13 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant, curren
           <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} restaurant={restaurant} />
         </div>
         
-        <button onClick={handlePayment} disabled={isPlacingOrder || !arrivalTime} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-          {isPlacingOrder ? 'Processing...' : `Pay ₹${subtotal.toFixed(2)}`}
+        <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+          {isPlacingOrder ? 'Placing Order...' : 'Confirm Pre-order'}
         </button>
       </div>
     </div>
   );
 };
-
 
 // --- Order Confirmation Component ---
 const OrderConfirmation = ({ onGoHome }) => {
@@ -1017,14 +988,6 @@ const App = () => {
   };
 
   useEffect(() => {
-    // Load Razorpay script
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
-  }, []);
-
-  useEffect(() => {
     const fetchRestaurantsAndMenus = async () => {
         try {
             const restaurantsCollection = collection(db, "restaurants");
@@ -1093,7 +1056,7 @@ const App = () => {
     }
   };
 
-  const handlePlaceOrder = async (arrivalTime, subtotal, paymentResponse) => {
+  const handlePlaceOrder = async (arrivalTime, subtotal) => {
     if (!currentUser) {
       alert("Please log in to place an order.");
       return;
@@ -1116,7 +1079,6 @@ const App = () => {
       arrivalTime: arrivalTime,
       createdAt: serverTimestamp(),
       hasReview: false,
-      paymentId: paymentResponse.razorpay_payment_id,
     };
 
     try {
@@ -1276,7 +1238,6 @@ const App = () => {
         onPlaceOrder={handlePlaceOrder} 
         cart={cart} 
         restaurant={selectedRestaurant} 
-        currentUser={currentUser} 
       />
       <ReviewModal isOpen={!!orderToReview} onClose={() => setOrderToReview(null)} order={orderToReview} onSubmitReview={handleSubmitReview} />
       
