@@ -38,7 +38,7 @@ const Notification = ({ message, type, onDismiss }) => {
     };
 
     useEffect(() => {
-        const timer = setTimeout(() => onDismiss(), 8000); // Increased time to read detailed errors
+        const timer = setTimeout(() => onDismiss(), 8000); 
         return () => clearTimeout(timer);
     }, [message, onDismiss]);
 
@@ -1062,6 +1062,9 @@ const App = () => {
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [scrollToSection, setScrollToSection] = useState(null);
   const [orderToReview, setOrderToReview] = useState(null);
+  
+  // --- THIS IS THE NEW FIX ---
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   const showNotification = (message, type) => {
     setNotification({ message, type });
@@ -1092,7 +1095,11 @@ const App = () => {
     };
     fetchRestaurantsAndMenus();
 
-    const unsubAuth = onAuthStateChanged(auth, (user) => setCurrentUser(user));
+    // --- THIS LISTENER IS NOW UPDATED ---
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+        setCurrentUser(user);
+        setIsAuthReady(true); // Signal that the initial auth check is complete
+    });
     return () => unsubAuth();
   }, []);
 
@@ -1143,7 +1150,8 @@ const App = () => {
   };
 
   const handlePlaceOrder = async (arrivalTime, subtotal) => {
-    if (!currentUser) {
+    // --- THIS CHECK IS NOW UPDATED AND RELIABLE ---
+    if (!isAuthReady || !currentUser) {
         showNotification("Please log in to place an order.", "error");
         return;
     }
@@ -1186,9 +1194,7 @@ const App = () => {
         }
 
     } catch (error) {
-        // THIS IS THE NEW, UPDATED PART
         console.error("Error placing order or initiating payment: ", error);
-        // We now display the specific error message from the backend
         showNotification(error.message || "Failed to initiate payment. Please try again.", "error");
     }
   };
