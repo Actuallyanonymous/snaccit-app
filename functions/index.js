@@ -2,14 +2,11 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const crypto = require("crypto");
-// New import for modern secrets
 const { defineString } = require('firebase-functions/params');
 
 admin.initializeApp();
 const db = admin.firestore();
 
-// --- MODERN PhonePe Configuration ---
-// This tells Firebase to load the secrets before the function starts.
 const PHONEPE_MERCHANT_ID = defineString("PHONEPE_MERCHANT_ID");
 const PHONEPE_SALT_KEY = defineString("PHONEPE_SALT_KEY");
 const PHONEPE_SALT_INDEX = defineString("PHONEPE_SALT_INDEX");
@@ -18,11 +15,9 @@ const PHONEPE_PAY_API_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox/pg/
 const APP_BASE_URL = "https://snaccit-7d853.web.app"; 
 
 exports.phonePePay = functions.https.onCall(async (data, context) => {
+  // ... (keep the top part of the function the same)
   if (!context.auth) {
-    throw new functions.https.HttpsError(
-        "unauthenticated",
-        "The function must be called while authenticated.",
-    );
+    throw new functions.https.HttpsError("unauthenticated", "The function must be called while authenticated.");
   }
 
   const { orderId, amount } = data;
@@ -30,7 +25,6 @@ exports.phonePePay = functions.https.onCall(async (data, context) => {
   const merchantTransactionId = `SNCT_${orderId}`;
 
   const payload = {
-    // Use .value() to get the secret's value inside the function
     merchantId: PHONEPE_MERCHANT_ID.value(),
     merchantTransactionId: merchantTransactionId,
     merchantUserId: userId,
@@ -70,14 +64,27 @@ exports.phonePePay = functions.https.onCall(async (data, context) => {
       await db.collection("orders").doc(orderId).update({ merchantTransactionId });
       return { redirectUrl };
     } else {
-      throw new functions.https.HttpsError("internal", "PhonePe payment initiation failed.");
+      // This case handles non-crashing errors from PhonePe
+      const phonePeMessage = response.data.message || "PhonePe returned an unspecified error.";
+      throw new functions.https.HttpsError("internal", `PhonePe Error: ${phonePeMessage}`);
     }
   } catch (error) {
+    // --- THIS IS THE MODIFIED PART ---
+    // This will now catch crashes and provide a detailed reason
     console.error("Error calling PhonePe API:", error);
-    throw new functions.https.HttpsError("internal", "Failed to initiate payment.");
+    
+    // Check if this is an error from the PhonePe server
+    if (error.response && error.response.data) {
+        const detailedMessage = error.response.data.message || JSON.stringify(error.response.data);
+        throw new functions.https.HttpsError("internal", `Payment API failed: ${detailedMessage}`);
+    }
+
+    // Otherwise, throw a generic error
+    throw new functions.https.HttpsError("internal", "Failed to initiate payment due to an unexpected server error.");
   }
 });
 
+// ... (keep the phonePeCallback function exactly as it is)
 exports.phonePeCallback = functions.https.onRequest(async (req, res) => {
     if (req.method !== "POST") {
         res.status(405).send("Method Not Allowed");
@@ -126,3 +133,4 @@ exports.phonePeCallback = functions.https.onRequest(async (req, res) => {
         res.status(500).send("Internal Server Error");
     }
 });
+
