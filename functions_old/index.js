@@ -2,21 +2,24 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const crypto = require("crypto");
-// New import for modern secrets
-const { defineString } = require('firebase-functions/params');
 
 admin.initializeApp();
 const db = admin.firestore();
 
-// --- MODERN PhonePe Configuration ---
-// This tells Firebase to load the secrets before the function starts.
-const PHONEPE_MERCHANT_ID = defineString("PHONEPE_MERCHANT_ID");
-const PHONEPE_SALT_KEY = defineString("PHONEPE_SALT_KEY");
-const PHONEPE_SALT_INDEX = defineString("PHONEPE_SALT_INDEX");
+// --- PhonePe Configuration ---
+const PHONEPE_MERCHANT_ID = functions.config().phonepe.merchant_id;
+const PHONEPE_SALT_KEY = functions.config().phonepe.salt_key;
+const PHONEPE_SALT_INDEX = parseInt(functions.config().phonepe.salt_index, 10);
 
+// PhonePe API endpoint (use UAT/preprod for testing, PROD for live)
 const PHONEPE_PAY_API_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay";
+// Your deployed app's URL
 const APP_BASE_URL = "https://snaccit-7d853.web.app"; 
 
+/**
+ * @name phonePePay
+ * @description Initiates a payment with PhonePe
+ */
 exports.phonePePay = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
@@ -30,13 +33,13 @@ exports.phonePePay = functions.https.onCall(async (data, context) => {
   const merchantTransactionId = `SNCT_${orderId}`;
 
   const payload = {
-    // Use .value() to get the secret's value inside the function
-    merchantId: PHONEPE_MERCHANT_ID.value(),
+    merchantId: PHONEPE_MERCHANT_ID,
     merchantTransactionId: merchantTransactionId,
     merchantUserId: userId,
-    amount: amount * 100,
+    amount: amount * 100, // Amount in paise
     redirectUrl: `${APP_BASE_URL}/payment-status?orderId=${orderId}`,
     redirectMode: "REDIRECT",
+    // This is the CRUCIAL server-to-server callback URL
     callbackUrl: `https://us-central1-snaccit-7d853.cloudfunctions.net/phonePeCallback`,
     mobileNumber: "9999999999", 
     paymentInstrument: {
@@ -45,9 +48,9 @@ exports.phonePePay = functions.https.onCall(async (data, context) => {
   };
 
   const base64Payload = Buffer.from(JSON.stringify(payload)).toString("base64");
-  const stringToHash = base64Payload + "/pg/v1/pay" + PHONEPE_SALT_KEY.value();
+  const stringToHash = base64Payload + "/pg/v1/pay" + PHONEPE_SALT_KEY;
   const sha256Hash = crypto.createHash("sha256").update(stringToHash).digest("hex");
-  const xVerify = sha256Hash + "###" + PHONEPE_SALT_INDEX.value();
+  const xVerify = sha256Hash + "###" + PHONEPE_SALT_INDEX;
 
   const options = {
     method: "POST",
@@ -78,6 +81,11 @@ exports.phonePePay = functions.https.onCall(async (data, context) => {
   }
 });
 
+
+/**
+ * @name phonePeCallback
+ * @description Handles the server-to-server callback from PhonePe after payment.
+ */
 exports.phonePeCallback = functions.https.onRequest(async (req, res) => {
     if (req.method !== "POST") {
         res.status(405).send("Method Not Allowed");
@@ -88,8 +96,8 @@ exports.phonePeCallback = functions.https.onRequest(async (req, res) => {
         const xVerifyHeader = req.headers["x-verify"];
         const responsePayload = req.body.response; 
 
-        const calculatedHash = crypto.createHash("sha256").update(responsePayload + PHONEPE_SALT_KEY.value()).digest("hex");
-        const calculatedXVerify = calculatedHash + "###" + PHONEPE_SALT_INDEX.value();
+        const calculatedHash = crypto.createHash("sha256").update(responsePayload + PHONEPE_SALT_KEY).digest("hex");
+        const calculatedXVerify = calculatedHash + "###" + PHONEPE_SALT_INDEX;
 
         if (xVerifyHeader !== calculatedXVerify) {
             console.error("Callback verification failed.");
