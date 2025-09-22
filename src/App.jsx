@@ -38,7 +38,7 @@ const Notification = ({ message, type, onDismiss }) => {
     };
 
     useEffect(() => {
-        const timer = setTimeout(() => onDismiss(), 3000);
+        const timer = setTimeout(() => onDismiss(), 8000); // Increased time to read detailed errors
         return () => clearTimeout(timer);
     }, [message, onDismiss]);
 
@@ -1186,8 +1186,10 @@ const App = () => {
         }
 
     } catch (error) {
+        // THIS IS THE NEW, UPDATED PART
         console.error("Error placing order or initiating payment: ", error);
-        showNotification("Failed to initiate payment. Please try again.", "error");
+        // We now display the specific error message from the backend
+        showNotification(error.message || "Failed to initiate payment. Please try again.", "error");
     }
   };
   
