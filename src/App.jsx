@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, Search, Star, Award, User, Info, Bell } from 'lucide-react';
+import { ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, Search, Star, Award, User, Info, Bell, Loader2, Frown } from 'lucide-react';
 import { initializeApp } from "firebase/app";
 import { 
   getAuth,
@@ -9,6 +9,7 @@ import {
   signOut
 } from "firebase/auth";
 import { getFirestore, collection, getDocs, addDoc, serverTimestamp, onSnapshot, query, where, orderBy, doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 // --- Firebase Configuration ---
 const firebaseConfig = {
@@ -24,6 +25,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const functions = getFunctions(app);
 
 
 // --- Notification Component ---
@@ -723,7 +725,7 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
         </div>
         
         <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-          {isPlacingOrder ? 'Placing Order...' : 'Confirm Pre-order'}
+          {isPlacingOrder ? 'Placing Order...' : 'Proceed to Payment'}
         </button>
       </div>
     </div>
@@ -741,6 +743,84 @@ const OrderConfirmation = ({ onGoHome }) => {
     </div>
   );
 };
+
+// --- Payment Status Page Component ---
+const PaymentStatusPage = ({ onGoHome }) => {
+    const [orderStatus, setOrderStatus] = useState('processing');
+    const [orderId, setOrderId] = useState(null);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const currentOrderId = params.get('orderId');
+        setOrderId(currentOrderId);
+
+        if (!currentOrderId) {
+            setOrderStatus('error');
+            return;
+        }
+
+        const orderRef = doc(db, 'orders', currentOrderId);
+        const unsubscribe = onSnapshot(orderRef, (docSnapshot) => {
+            if (docSnapshot.exists()) {
+                const status = docSnapshot.data().status;
+                if (status === 'pending') {
+                    setOrderStatus('success');
+                } else if (status === 'payment_failed') {
+                    setOrderStatus('failed');
+                }
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    const renderContent = () => {
+        switch (orderStatus) {
+            case 'processing':
+                return (
+                    <>
+                        <Loader2 size={64} className="text-blue-500 mb-6 animate-spin" />
+                        <h1 className="text-4xl font-bold text-gray-800">Processing Payment...</h1>
+                        <p className="text-lg text-gray-600 mt-4">Please wait, we are confirming your payment with the bank.</p>
+                    </>
+                );
+            case 'success':
+                return (
+                    <>
+                        <PartyPopper size={64} className="text-green-500 mb-6" />
+                        <h1 className="text-4xl font-bold text-gray-800">Order Placed Successfully!</h1>
+                        <p className="text-lg text-gray-600 mt-4">The restaurant has been notified. Your food will be ready when you arrive.</p>
+                    </>
+                );
+            case 'failed':
+                return (
+                    <>
+                        <Frown size={64} className="text-red-500 mb-6" />
+                        <h1 className="text-4xl font-bold text-gray-800">Payment Failed</h1>
+                        <p className="text-lg text-gray-600 mt-4">There was an issue with your payment. Please try again.</p>
+                    </>
+                );
+            default:
+                return (
+                    <>
+                        <Info size={64} className="text-yellow-500 mb-6" />
+                        <h1 className="text-4xl font-bold text-gray-800">Something Went Wrong</h1>
+                        <p className="text-lg text-gray-600 mt-4">We couldn't find your order details.</p>
+                    </>
+                );
+        }
+    };
+
+    return (
+        <div className="container mx-auto px-6 py-20 text-center flex flex-col items-center justify-center min-h-[60vh]">
+            {renderContent()}
+            <button onClick={onGoHome} className="mt-8 bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition-colors">
+                {orderStatus === 'success' ? 'Browse More Restaurants' : 'Go Back Home'}
+            </button>
+        </div>
+    );
+};
+
 
 // --- Profile Page Component ---
 const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) => {
@@ -988,6 +1068,12 @@ const App = () => {
   };
 
   useEffect(() => {
+    // Check if we are on the payment status page
+    const path = window.location.pathname;
+    if (path === '/payment-status') {
+        setView('paymentStatus');
+    }
+
     const fetchRestaurantsAndMenus = async () => {
         try {
             const restaurantsCollection = collection(db, "restaurants");
@@ -1058,38 +1144,50 @@ const App = () => {
 
   const handlePlaceOrder = async (arrivalTime, subtotal) => {
     if (!currentUser) {
-      alert("Please log in to place an order.");
-      return;
+        showNotification("Please log in to place an order.", "error");
+        return;
     }
+    
+    setIsCheckoutOpen(false);
+
     const orderData = {
-      userId: currentUser.uid,
-      userEmail: currentUser.email,
-      restaurantId: selectedRestaurant.id,
-      restaurantName: selectedRestaurant.name,
-      items: cart.map(item => ({ 
-          id: item.id, 
-          name: item.name, 
-          quantity: item.quantity, 
-          price: item.finalPrice, 
-          size: item.selectedSize.name,
-          addons: item.selectedAddons.map(a => a.name)
-      })),
-      total: subtotal,
-      status: "pending",
-      arrivalTime: arrivalTime,
-      createdAt: serverTimestamp(),
-      hasReview: false,
+        userId: currentUser.uid,
+        userEmail: currentUser.email,
+        restaurantId: selectedRestaurant.id,
+        restaurantName: selectedRestaurant.name,
+        items: cart.map(item => ({
+            id: item.id,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.finalPrice,
+            size: item.selectedSize.name,
+            addons: item.selectedAddons.map(a => a.name)
+        })),
+        total: subtotal,
+        status: "awaiting_payment",
+        arrivalTime: arrivalTime,
+        createdAt: serverTimestamp(),
+        hasReview: false,
     };
 
     try {
-      await addDoc(collection(db, "orders"), orderData);
-      setIsCheckoutOpen(false);
-      setIsCartOpen(false);
-      setCart([]);
-      setView('confirmation');
+        const orderRef = await addDoc(collection(db, "orders"), orderData);
+        const orderId = orderRef.id;
+
+        const phonePePay = httpsCallable(functions, 'phonePePay');
+        const response = await phonePePay({ orderId: orderId, amount: subtotal });
+        
+        const { redirectUrl } = response.data;
+
+        if (redirectUrl) {
+            window.location.href = redirectUrl;
+        } else {
+            throw new Error("Could not get payment redirect URL.");
+        }
+
     } catch (error) {
-      console.error("Error placing order: ", error);
-      alert("There was an error placing your order. Please try again.");
+        console.error("Error placing order or initiating payment: ", error);
+        showNotification("Failed to initiate payment. Please try again.", "error");
     }
   };
   
@@ -1210,6 +1308,8 @@ const App = () => {
         return <MenuPage restaurant={selectedRestaurant} onBackClick={handleBackClick} onSelectItem={handleSelectItemForCustomization} />;
       case 'confirmation':
         return <OrderConfirmation onGoHome={() => handleGoHome()} />;
+      case 'paymentStatus':
+        return <PaymentStatusPage onGoHome={() => handleGoHome()} />;
       case 'profile':
         return <ProfilePage currentUser={currentUser} showNotification={showNotification} onReorder={handleReorder} onRateOrder={setOrderToReview} />;
       default:
