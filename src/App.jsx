@@ -1,9 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, Search, Star, Award, User, Info, Bell, Loader2, Frown } from 'lucide-react';
-import { initializeApp } from "firebase/app";
 // App.jsx
 
-// --- Import specific functions you need ---
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+    ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, 
+    Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, 
+    Search, Star, Award, User, Info, Bell, Loader2, Frown 
+} from 'lucide-react';
+
+// --- Import the initialized Firebase services from your central file ---
+import { auth, db, functions } from './firebase'; 
+
+// --- Import the specific functions you need from the Firebase SDKs ---
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -15,9 +22,6 @@ import {
   query, where, orderBy, doc, setDoc, getDoc, updateDoc 
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
-
-// ... (The rest of your App.jsx component code remains the same)
-
 
 // --- Notification Component ---
 const Notification = ({ message, type, onDismiss }) => {
