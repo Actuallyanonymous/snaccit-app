@@ -1143,56 +1143,66 @@ const App = () => {
       setCart(prevCart => prevCart.map(item => item.cartItemId === cartItemId ? { ...item, quantity: newQuantity } : item));
     }
   };
+// In App.jsx
 
-  const handlePlaceOrder = async (arrivalTime, subtotal) => {
-    // --- THIS CHECK IS NOW UPDATED AND RELIABLE ---
-    if (!isAuthReady || !currentUser) {
-        showNotification("Please log in to place an order.", "error");
-        return;
-    }
-    
-    setIsCheckoutOpen(false);
+    const handlePlaceOrder = async (arrivalTime, subtotal) => {
+      // --- START: New Diagnostic Code ---
+      console.log("Attempting to place order...");
+      console.log("Current user object:", currentUser);
 
-    const orderData = {
-        userId: currentUser.uid,
-        userEmail: currentUser.email,
-        restaurantId: selectedRestaurant.id,
-        restaurantName: selectedRestaurant.name,
-        items: cart.map(item => ({
-            id: item.id,
-            name: item.name,
-            quantity: item.quantity,
-            price: item.finalPrice,
-            size: item.selectedSize.name,
-            addons: item.selectedAddons.map(a => a.name)
-        })),
-        total: subtotal,
-        status: "awaiting_payment",
-        arrivalTime: arrivalTime,
-        createdAt: serverTimestamp(),
-        hasReview: false,
+      if (!isAuthReady || !currentUser) {
+          showNotification("Please log in to place an order.", "error");
+          return;
+      }
+      // --- END: New Diagnostic Code ---
+
+      setIsCheckoutOpen(false);
+
+      const orderData = {
+          userId: currentUser.uid,
+          userEmail: currentUser.email,
+          restaurantId: selectedRestaurant.id,
+          restaurantName: selectedRestaurant.name,
+          items: cart.map(item => ({
+              id: item.id,
+              name: item.name,
+              quantity: item.quantity,
+              price: item.finalPrice,
+              size: item.selectedSize.name,
+              addons: item.selectedAddons.map(a => a.name)
+          })),
+          total: subtotal,
+          status: "awaiting_payment",
+          arrivalTime: arrivalTime,
+          createdAt: serverTimestamp(),
+          hasReview: false,
+      };
+
+      try {
+          // --- START: More Diagnostic Code ---
+          const idToken = await currentUser.getIdToken(true); // Force a token refresh
+          console.log("Successfully retrieved a fresh ID token.");
+          // --- END: More Diagnostic Code ---
+
+          const orderRef = await addDoc(collection(db, "orders"), orderData);
+          const orderId = orderRef.id;
+
+          const phonePePay = httpsCallable(functions, 'phonePePay');
+          const response = await phonePePay({ orderId: orderId, amount: subtotal });
+          
+          const { redirectUrl } = response.data;
+
+          if (redirectUrl) {
+              window.location.href = redirectUrl;
+          } else {
+              throw new Error("Could not get payment redirect URL.");
+          }
+
+      } catch (error) {
+          console.error("Error during payment process:", error); // Log the full error
+          showNotification(error.message || "Failed to initiate payment. Please try again.", "error");
+      }
     };
-
-    try {
-        const orderRef = await addDoc(collection(db, "orders"), orderData);
-        const orderId = orderRef.id;
-
-        const phonePePay = httpsCallable(functions, 'phonePePay');
-        const response = await phonePePay({ orderId: orderId, amount: subtotal });
-        
-        const { redirectUrl } = response.data;
-
-        if (redirectUrl) {
-            window.location.href = redirectUrl;
-        } else {
-            throw new Error("Could not get payment redirect URL.");
-        }
-
-    } catch (error) {
-        console.error("Error placing order or initiating payment: ", error);
-        showNotification(error.message || "Failed to initiate payment. Please try again.", "error");
-    }
-  };
   
   const handleSubmitReview = async (order, reviewData) => {
     const review = {
