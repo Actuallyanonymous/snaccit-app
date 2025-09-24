@@ -3,12 +3,6 @@ import { ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, Le
 import { initializeApp } from "firebase/app";
 // App.jsx
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { ChefHat, Smartphone, /* ... other lucide-react imports */ } from 'lucide-react';
-
-// --- Import all Firebase services from your central file ---
-import { auth, db, functions } from './firebase'; // Adjust path if needed
-
 // --- Import specific functions you need ---
 import { 
   createUserWithEmailAndPassword, 
