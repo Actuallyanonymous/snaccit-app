@@ -1,8 +1,14 @@
-const functions = require("firebase-functions");
+// --- START: MODIFIED IMPORTS ---
+// Use the new V2 imports for onCall and onRequest
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onRequest } = require("firebase-functions/v2/https");
+const logger = require("firebase-functions/logger"); // Use the new logger
+// Keep your other imports
 const admin = require("firebase-admin");
 const axios = require("axios");
 const crypto = require("crypto");
 const { defineString } = require('firebase-functions/params');
+// --- END: MODIFIED IMPORTS ---
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -12,16 +18,19 @@ const PHONEPE_SALT_KEY = defineString("PHONEPE_SALT_KEY");
 const PHONEPE_SALT_INDEX = defineString("PHONEPE_SALT_INDEX");
 
 const PHONEPE_PAY_API_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay";
-const APP_BASE_URL = "https://snaccit-7d853.web.app"; 
+const APP_BASE_URL = "https://snaccit-7d853.web.app";
 
-exports.phonePePay = functions.https.onCall(async (data, context) => {
-  // ... (keep the top part of the function the same)
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "The function must be called while authenticated.");
+// --- START: CONVERTED phonePePay to V2 ---
+// The function now uses onCall() and takes a single `request` object
+exports.phonePePay = onCall(async (request) => {
+  // The user's authentication data is now in `request.auth`
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
   }
 
-  const { orderId, amount } = data;
-  const userId = context.auth.uid;
+  // The data sent from your app is now in `request.data`
+  const { orderId, amount } = request.data;
+  const userId = request.auth.uid;
   const merchantTransactionId = `SNCT_${orderId}`;
 
   const payload = {
@@ -32,7 +41,7 @@ exports.phonePePay = functions.https.onCall(async (data, context) => {
     redirectUrl: `${APP_BASE_URL}/payment-status?orderId=${orderId}`,
     redirectMode: "REDIRECT",
     callbackUrl: `https://us-central1-snaccit-7d853.cloudfunctions.net/phonePeCallback`,
-    mobileNumber: "9999999999", 
+    mobileNumber: "9999999999",
     paymentInstrument: {
       type: "PAY_PAGE",
     },
@@ -58,34 +67,35 @@ exports.phonePePay = functions.https.onCall(async (data, context) => {
 
   try {
     const response = await axios.request(options);
-    
+
     if (response.data.success) {
       const redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
       await db.collection("orders").doc(orderId).update({ merchantTransactionId });
       return { redirectUrl };
     } else {
-      // This case handles non-crashing errors from PhonePe
       const phonePeMessage = response.data.message || "PhonePe returned an unspecified error.";
-      throw new functions.https.HttpsError("internal", `PhonePe Error: ${phonePeMessage}`);
+      throw new HttpsError("internal", `PhonePe Error: ${phonePeMessage}`);
     }
   } catch (error) {
-    // --- THIS IS THE MODIFIED PART ---
-    // This will now catch crashes and provide a detailed reason
-    console.error("Error calling PhonePe API:", error);
-    
-    // Check if this is an error from the PhonePe server
+    // Use the new logger for better debugging
+    logger.error("Error calling PhonePe API:", error);
+
     if (error.response && error.response.data) {
         const detailedMessage = error.response.data.message || JSON.stringify(error.response.data);
-        throw new functions.https.HttpsError("internal", `Payment API failed: ${detailedMessage}`);
+        throw new HttpsError("internal", `Payment API failed: ${detailedMessage}`);
     }
-
-    // Otherwise, throw a generic error
-    throw new functions.https.HttpsError("internal", "Failed to initiate payment due to an unexpected server error.");
+    // Check if it's already an HttpsError before wrapping it
+    if (error instanceof HttpsError) {
+        throw error;
+    }
+    throw new HttpsError("internal", "Failed to initiate payment due to an unexpected server error.");
   }
 });
+// --- END: CONVERTED phonePePay to V2 ---
 
-// ... (keep the phonePeCallback function exactly as it is)
-exports.phonePeCallback = functions.https.onRequest(async (req, res) => {
+
+// --- NOTE: phonePeCallback uses onRequest, which has a similar syntax in V2, so no changes needed here. ---
+exports.phonePeCallback = onRequest(async (req, res) => {
     if (req.method !== "POST") {
         res.status(405).send("Method Not Allowed");
         return;
@@ -93,19 +103,19 @@ exports.phonePeCallback = functions.https.onRequest(async (req, res) => {
 
     try {
         const xVerifyHeader = req.headers["x-verify"];
-        const responsePayload = req.body.response; 
+        const responsePayload = req.body.response;
 
         const calculatedHash = crypto.createHash("sha256").update(responsePayload + PHONEPE_SALT_KEY.value()).digest("hex");
         const calculatedXVerify = calculatedHash + "###" + PHONEPE_SALT_INDEX.value();
 
         if (xVerifyHeader !== calculatedXVerify) {
-            console.error("Callback verification failed.");
+            logger.error("Callback verification failed.");
             res.status(400).send("Callback verification failed.");
             return;
         }
-        
+
         const decodedResponse = JSON.parse(Buffer.from(responsePayload, "base64").toString());
-        
+
         const merchantTransactionId = decodedResponse.data.merchantTransactionId;
         const paymentStatus = decodedResponse.code;
 
@@ -113,13 +123,13 @@ exports.phonePeCallback = functions.https.onRequest(async (req, res) => {
         const querySnapshot = await ordersQuery.get();
 
         if (querySnapshot.empty) {
-            console.error(`No order found for transaction ID: ${merchantTransactionId}`);
+            logger.error(`No order found for transaction ID: ${merchantTransactionId}`);
             res.status(404).send("Order not found");
             return;
         }
 
         const orderDoc = querySnapshot.docs[0];
-        
+
         if (paymentStatus === "PAYMENT_SUCCESS") {
             await orderDoc.ref.update({ status: "pending", paymentDetails: decodedResponse.data });
         } else {
@@ -129,7 +139,7 @@ exports.phonePeCallback = functions.https.onRequest(async (req, res) => {
         res.status(200).send("Callback received successfully.");
 
     } catch (error) {
-        console.error("Error in PhonePe callback handler:", error);
+        logger.error("Error in PhonePe callback handler:", error);
         res.status(500).send("Internal Server Error");
     }
 });
