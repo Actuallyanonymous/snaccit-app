@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 
 // --- Import the initialized Firebase services from your central file ---
-// FIX: Added .js extension to resolve the build error
 import { auth, db, functions } from './firebase.js'; 
 
 // --- Import the specific functions you need from the Firebase SDKs ---
