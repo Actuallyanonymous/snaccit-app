@@ -17,7 +17,8 @@ const PHONEPE_MERCHANT_ID = defineString("PHONEPE_MERCHANT_ID");
 const PHONEPE_SALT_KEY = defineString("PHONEPE_SALT_KEY");
 const PHONEPE_SALT_INDEX = defineString("PHONEPE_SALT_INDEX");
 
-const PHONEPE_PAY_API_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay";
+// --- THIS IS THE ONLY LINE THAT HAS CHANGED ---
+const PHONEPE_PAY_API_URL = "https://api.phonepe.com/apis/hermes/pg/v1/pay";
 const APP_BASE_URL = "https://snaccit-7d853.web.app";
 
 // --- START: CONVERTED phonePePay to V2 ---
@@ -143,3 +144,4 @@ exports.phonePeCallback = onRequest(async (req, res) => {
         res.status(500).send("Internal Server Error");
     }
 });
+
