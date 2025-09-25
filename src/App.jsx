@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 
 // --- Import the initialized Firebase services from your central file ---
-import { auth, db, functions } from './firebase'; 
+// FIX: Added .js extension to resolve the build error
+import { auth, db, functions } from './firebase.js'; 
 
 // --- Import the specific functions you need from the Firebase SDKs ---
 import { 
@@ -267,12 +268,12 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {topDishes.map((dish, index) => (
               <div key={index} className="relative rounded-3xl overflow-hidden group cursor-pointer shadow-lg transform hover:scale-105 transition-transform duration-300">
-                 <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                 <div className="absolute bottom-0 left-0 p-6 text-white">
-                    <h4 className="text-xl font-bold drop-shadow-lg">{dish.name}</h4>
-                    <p className="text-sm opacity-80">{dish.restaurant}</p>
-                 </div>
+                   <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>
+                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                   <div className="absolute bottom-0 left-0 p-6 text-white">
+                       <h4 className="text-xl font-bold drop-shadow-lg">{dish.name}</h4>
+                       <p className="text-sm opacity-80">{dish.restaurant}</p>
+                   </div>
               </div>
             ))}
           </div>
@@ -294,11 +295,11 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Search className="text-gray-400" /></div>
               <input type="text" placeholder={searchType === 'restaurant' ? 'Search by restaurant or cuisine...' : 'Search for your favorite dish...'} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full py-4 pl-12 pr-4 text-lg border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
             </div>
-             <div className="flex justify-center mt-6 space-x-4">
-                <button onClick={() => setActiveFilter('all')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'all' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}>All</button>
-                <button onClick={() => setActiveFilter('topRated')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'topRated' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}><Award size={16} className="mr-2"/>Top Rated</button>
-                <button onClick={() => setActiveFilter('veg')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'veg' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}><Leaf size={16} className="mr-2"/>Pure Veg</button>
-            </div>
+               <div className="flex justify-center mt-6 space-x-4">
+                  <button onClick={() => setActiveFilter('all')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'all' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}>All</button>
+                  <button onClick={() => setActiveFilter('topRated')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'topRated' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}><Award size={16} className="mr-2"/>Top Rated</button>
+                  <button onClick={() => setActiveFilter('veg')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'veg' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}><Leaf size={16} className="mr-2"/>Pure Veg</button>
+               </div>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {isLoading ? (<p>Loading...</p>) : (
@@ -529,9 +530,9 @@ const ItemCustomizationModal = ({ isOpen, onClose, item, onConfirmAddToCart }) =
                 </div>
                 <div className="p-4 mt-auto border-t bg-gray-50">
                      <button onClick={handleAddToCartClick} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-4 rounded-full hover:shadow-lg flex justify-between items-center px-6 text-lg">
-                        <span>Add to Cart</span>
-                        <span>₹{totalPrice}</span>
-                    </button>
+                         <span>Add to Cart</span>
+                         <span>₹{totalPrice}</span>
+                     </button>
                 </div>
             </div>
         </div>
@@ -702,7 +703,8 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg m-4 relative">
+      {/* FIX: Added flex flex-col and max-h-[90vh] to make the modal scrollable on smaller screens */}
+      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg m-4 relative flex flex-col max-h-[90vh]">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">Confirm Your Pre-order</h2>
         <p className="text-center text-gray-500 mb-6">You're ordering from <span className="font-bold">{restaurant.name}</span>.</p>
@@ -715,13 +717,17 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
           <p className="font-bold mt-2 text-right">Total: ₹{subtotal.toFixed(2)}</p>
         </div>
 
-        <div className="mb-6">
+        {/* FIX: Added overflow-y-auto to this container to make the time slots scrollable */}
+        <div className="mb-6 overflow-y-auto">
           <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} restaurant={restaurant} />
         </div>
         
-        <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-          {isPlacingOrder ? 'Placing Order...' : 'Proceed to Payment'}
-        </button>
+        {/* Added mt-auto to push the button to the bottom */}
+        <div className="mt-auto">
+            <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+            {isPlacingOrder ? 'Placing Order...' : 'Proceed to Payment'}
+            </button>
+        </div>
       </div>
     </div>
   );
@@ -1360,8 +1366,8 @@ const App = () => {
             <h1 onClick={() => handleGoHome()} className="text-3xl font-bold text-green-700 tracking-tight cursor-pointer">Snaccit</h1>
             <div className="flex items-center space-x-4">
                <button onClick={() => handleGoHome('restaurants')} className="text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100 transition-colors">
-                <Search size={22} />
-              </button>
+                 <Search size={22} />
+               </button>
               {currentUser ? (
                 <>
                   <button onClick={() => setIsCartOpen(true)} className="relative text-gray-600 hover:text-green-600">
@@ -1385,14 +1391,14 @@ const App = () => {
 
         <footer className="bg-white border-t border-gray-200">
           <div className="container mx-auto px-6 py-12 text-center">
-             <BrandLogo />
-             <p className="text-gray-500 mt-4">Skip the wait. Savor the moment.</p>
-             <div className="mt-6 flex justify-center space-x-6">
+              <BrandLogo />
+              <p className="text-gray-500 mt-4">Skip the wait. Savor the moment.</p>
+              <div className="mt-6 flex justify-center space-x-6">
                <a href="#" className="text-gray-500 hover:text-green-600">Terms of Service</a>
                <a href="#" className="text-gray-500 hover:text-green-600">Privacy Policy</a>
                <a href="#" className="text-gray-500 hover:text-green-600">Contact</a>
-             </div>
-             <p className="text-gray-400 mt-8 text-sm">© 2024 Snaccit Inc. All rights reserved.</p>
+              </div>
+              <p className="text-gray-400 mt-8 text-sm">© 2024 Snaccit Inc. All rights reserved.</p>
           </div>
         </footer>
       </div>

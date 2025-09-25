@@ -1,4 +1,3 @@
-// --- START: MODIFIED IMPORTS ---
 // Use the new V2 imports for onCall and onRequest
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onRequest } = require("firebase-functions/v2/https");
@@ -8,7 +7,6 @@ const admin = require("firebase-admin");
 const axios = require("axios");
 const crypto = require("crypto");
 const { defineString } = require('firebase-functions/params');
-// --- END: MODIFIED IMPORTS ---
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -17,13 +15,13 @@ const PHONEPE_MERCHANT_ID = defineString("PHONEPE_MERCHANT_ID");
 const PHONEPE_SALT_KEY = defineString("PHONEPE_SALT_KEY");
 const PHONEPE_SALT_INDEX = defineString("PHONEPE_SALT_INDEX");
 
-// --- THIS IS THE ONLY LINE THAT HAS CHANGED ---
 const PHONEPE_PAY_API_URL = "https://api.phonepe.com/apis/hermes/pg/v1/pay";
 const APP_BASE_URL = "https://snaccit-7d853.web.app";
 
-// --- START: CONVERTED phonePePay to V2 ---
-// The function now uses onCall() and takes a single `request` object
-exports.phonePePay = onCall(async (request) => {
+
+// --- THIS IS THE MODIFIED LINE ---
+// We've added { minInstances: 1 } to keep the function "warm"
+exports.phonePePay = onCall({ minInstances: 1 }, async (request) => {
   // The user's authentication data is now in `request.auth`
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
@@ -78,24 +76,20 @@ exports.phonePePay = onCall(async (request) => {
       throw new HttpsError("internal", `PhonePe Error: ${phonePeMessage}`);
     }
   } catch (error) {
-    // Use the new logger for better debugging
     logger.error("Error calling PhonePe API:", error);
 
     if (error.response && error.response.data) {
         const detailedMessage = error.response.data.message || JSON.stringify(error.response.data);
         throw new HttpsError("internal", `Payment API failed: ${detailedMessage}`);
     }
-    // Check if it's already an HttpsError before wrapping it
     if (error instanceof HttpsError) {
         throw error;
     }
     throw new HttpsError("internal", "Failed to initiate payment due to an unexpected server error.");
   }
 });
-// --- END: CONVERTED phonePePay to V2 ---
 
 
-// --- NOTE: phonePeCallback uses onRequest, which has a similar syntax in V2, so no changes needed here. ---
 exports.phonePeCallback = onRequest(async (req, res) => {
     if (req.method !== "POST") {
         res.status(405).send("Method Not Allowed");
@@ -144,4 +138,3 @@ exports.phonePeCallback = onRequest(async (req, res) => {
         res.status(500).send("Internal Server Error");
     }
 });
-
