@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 
 // --- Import the initialized Firebase services from your central file ---
-import { auth, db, functions } from './firebase.js'; 
+// FIX: Corrected the import path to remove the file extension, which resolves the build error.
+import { auth, db, functions } from './firebase'; 
 
 // --- Import the specific functions you need from the Firebase SDKs ---
 import { 
@@ -736,7 +737,6 @@ const OrderConfirmation = ({ onGoHome }) => {
 
 // --- Payment Status Page Component ---
 const PaymentStatusPage = ({ onGoHome }) => {
-    // FIX: Changed initial state to 'awaiting_payment' to match the database
     const [orderStatus, setOrderStatus] = useState('awaiting_payment'); 
     const [orderId, setOrderId] = useState(null);
 
@@ -751,24 +751,31 @@ const PaymentStatusPage = ({ onGoHome }) => {
         }
 
         const orderRef = doc(db, 'orders', currentOrderId);
-        // This onSnapshot listener will now update the UI in real-time
         const unsubscribe = onSnapshot(orderRef, (docSnapshot) => {
             if (docSnapshot.exists()) {
                 const status = docSnapshot.data().status;
-                // FIX: Directly set the status from the database
                 setOrderStatus(status); 
             } else {
                 setOrderStatus('error');
             }
         });
 
-        return () => unsubscribe();
-    }, []);
+        // Set a timeout to handle cases where the webhook is delayed
+        const timer = setTimeout(() => {
+            if (orderStatus === 'awaiting_payment') {
+                setOrderStatus('delayed');
+            }
+        }, 25000); // 25 seconds
+
+        return () => {
+            unsubscribe();
+            clearTimeout(timer);
+        };
+    }, [orderStatus]); // Rerun effect if orderStatus changes
 
     const renderContent = () => {
-        // FIX: The switch statement now handles all states correctly
         switch (orderStatus) {
-            case 'awaiting_payment': // This is the new initial state
+            case 'awaiting_payment':
                 return (
                     <>
                         <Loader2 size={64} className="text-blue-500 mb-6 animate-spin" />
@@ -776,7 +783,7 @@ const PaymentStatusPage = ({ onGoHome }) => {
                         <p className="text-lg text-gray-600 mt-4">Please wait, we are confirming your payment with the bank.</p>
                     </>
                 );
-            case 'pending': // This is the true success state from the backend
+            case 'pending':
                 return (
                     <>
                         <PartyPopper size={64} className="text-green-500 mb-6" />
@@ -792,7 +799,15 @@ const PaymentStatusPage = ({ onGoHome }) => {
                         <p className="text-lg text-gray-600 mt-4">There was an issue with your payment. Please try again.</p>
                     </>
                 );
-            default: // This handles 'error' or any other unexpected status
+            case 'delayed':
+                return (
+                     <>
+                        <Clock size={64} className="text-amber-500 mb-6" />
+                        <h1 className="text-4xl font-bold text-gray-800">Payment is Processing</h1>
+                        <p className="text-lg text-gray-600 mt-4 max-w-2xl">Your payment is taking longer than usual to confirm. You can safely leave this page. We will update your order status in your profile once it's complete.</p>
+                    </>
+                );
+            default:
                 return (
                     <>
                         <Info size={64} className="text-yellow-500 mb-6" />
@@ -1397,3 +1412,4 @@ const App = () => {
 };
 
 export default App;
+
