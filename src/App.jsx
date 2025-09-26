@@ -702,29 +702,19 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
-      {/* FIX: Added flex flex-col and max-h-[90vh] to make the modal scrollable on smaller screens */}
       <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg m-4 relative flex flex-col max-h-[90vh]">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">Confirm Your Pre-order</h2>
         <p className="text-center text-gray-500 mb-6">You're ordering from <span className="font-bold">{restaurant.name}</span>.</p>
         
-        <div className="bg-gray-50 rounded-xl p-4 mb-6 max-h-48 overflow-y-auto">
-          <h3 className="font-bold mb-2">Your Items:</h3>
-          {cart.map(item => (
-            <p key={item.cartItemId} className="text-sm">{item.quantity} x {item.name} ({item.selectedSize.name})</p>
-          ))}
-          <p className="font-bold mt-2 text-right">Total: ₹{subtotal.toFixed(2)}</p>
-        </div>
-
-        {/* FIX: Added overflow-y-auto to this container to make the time slots scrollable */}
         <div className="mb-6 overflow-y-auto">
           <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} restaurant={restaurant} />
         </div>
         
-        {/* Added mt-auto to push the button to the bottom */}
         <div className="mt-auto">
-            <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-            {isPlacingOrder ? 'Placing Order...' : 'Proceed to Payment'}
+            <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex justify-between px-6">
+                <span>{isPlacingOrder ? 'Processing...' : 'Proceed to Payment'}</span>
+                <span>₹{subtotal.toFixed(2)}</span>
             </button>
         </div>
       </div>
@@ -746,7 +736,8 @@ const OrderConfirmation = ({ onGoHome }) => {
 
 // --- Payment Status Page Component ---
 const PaymentStatusPage = ({ onGoHome }) => {
-    const [orderStatus, setOrderStatus] = useState('processing');
+    // FIX: Changed initial state to 'awaiting_payment' to match the database
+    const [orderStatus, setOrderStatus] = useState('awaiting_payment'); 
     const [orderId, setOrderId] = useState(null);
 
     useEffect(() => {
@@ -760,14 +751,14 @@ const PaymentStatusPage = ({ onGoHome }) => {
         }
 
         const orderRef = doc(db, 'orders', currentOrderId);
+        // This onSnapshot listener will now update the UI in real-time
         const unsubscribe = onSnapshot(orderRef, (docSnapshot) => {
             if (docSnapshot.exists()) {
                 const status = docSnapshot.data().status;
-                if (status === 'pending') {
-                    setOrderStatus('success');
-                } else if (status === 'payment_failed') {
-                    setOrderStatus('failed');
-                }
+                // FIX: Directly set the status from the database
+                setOrderStatus(status); 
+            } else {
+                setOrderStatus('error');
             }
         });
 
@@ -775,8 +766,9 @@ const PaymentStatusPage = ({ onGoHome }) => {
     }, []);
 
     const renderContent = () => {
+        // FIX: The switch statement now handles all states correctly
         switch (orderStatus) {
-            case 'processing':
+            case 'awaiting_payment': // This is the new initial state
                 return (
                     <>
                         <Loader2 size={64} className="text-blue-500 mb-6 animate-spin" />
@@ -784,7 +776,7 @@ const PaymentStatusPage = ({ onGoHome }) => {
                         <p className="text-lg text-gray-600 mt-4">Please wait, we are confirming your payment with the bank.</p>
                     </>
                 );
-            case 'success':
+            case 'pending': // This is the true success state from the backend
                 return (
                     <>
                         <PartyPopper size={64} className="text-green-500 mb-6" />
@@ -792,7 +784,7 @@ const PaymentStatusPage = ({ onGoHome }) => {
                         <p className="text-lg text-gray-600 mt-4">The restaurant has been notified. Your food will be ready when you arrive.</p>
                     </>
                 );
-            case 'failed':
+            case 'payment_failed':
                 return (
                     <>
                         <Frown size={64} className="text-red-500 mb-6" />
@@ -800,7 +792,7 @@ const PaymentStatusPage = ({ onGoHome }) => {
                         <p className="text-lg text-gray-600 mt-4">There was an issue with your payment. Please try again.</p>
                     </>
                 );
-            default:
+            default: // This handles 'error' or any other unexpected status
                 return (
                     <>
                         <Info size={64} className="text-yellow-500 mb-6" />
@@ -815,7 +807,7 @@ const PaymentStatusPage = ({ onGoHome }) => {
         <div className="container mx-auto px-6 py-20 text-center flex flex-col items-center justify-center min-h-[60vh]">
             {renderContent()}
             <button onClick={onGoHome} className="mt-8 bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition-colors">
-                {orderStatus === 'success' ? 'Browse More Restaurants' : 'Go Back Home'}
+                {orderStatus === 'pending' ? 'Browse More Restaurants' : 'Go Back Home'}
             </button>
         </div>
     );
@@ -1063,7 +1055,6 @@ const App = () => {
   const [scrollToSection, setScrollToSection] = useState(null);
   const [orderToReview, setOrderToReview] = useState(null);
   
-  // --- THIS IS THE NEW FIX ---
   const [isAuthReady, setIsAuthReady] = useState(false);
 
   const showNotification = (message, type) => {
@@ -1095,10 +1086,9 @@ const App = () => {
     };
     fetchRestaurantsAndMenus();
 
-    // --- THIS LISTENER IS NOW UPDATED ---
     const unsubAuth = onAuthStateChanged(auth, (user) => {
         setCurrentUser(user);
-        setIsAuthReady(true); // Signal that the initial auth check is complete
+        setIsAuthReady(true);
     });
     return () => unsubAuth();
   }, []);
@@ -1138,7 +1128,7 @@ const App = () => {
       }
       return [...prevCart, { ...customizedItem, quantity: 1 }];
     });
-    setItemToCustomize(null); // Close modal
+    setItemToCustomize(null);
   };
 
   const handleUpdateQuantity = (cartItemId, newQuantity) => {
@@ -1148,10 +1138,8 @@ const App = () => {
       setCart(prevCart => prevCart.map(item => item.cartItemId === cartItemId ? { ...item, quantity: newQuantity } : item));
     }
   };
-// In App.jsx
 
     const handlePlaceOrder = async (arrivalTime, subtotal) => {
-      // --- START: New Diagnostic Code ---
       console.log("Attempting to place order...");
       console.log("Current user object:", currentUser);
 
@@ -1159,7 +1147,6 @@ const App = () => {
           showNotification("Please log in to place an order.", "error");
           return;
       }
-      // --- END: New Diagnostic Code ---
 
       setIsCheckoutOpen(false);
 
@@ -1184,10 +1171,8 @@ const App = () => {
       };
 
       try {
-          // --- START: More Diagnostic Code ---
-          const idToken = await currentUser.getIdToken(true); // Force a token refresh
+          const idToken = await currentUser.getIdToken(true);
           console.log("Successfully retrieved a fresh ID token.");
-          // --- END: More Diagnostic Code ---
 
           const orderRef = await addDoc(collection(db, "orders"), orderData);
           const orderId = orderRef.id;
@@ -1204,8 +1189,14 @@ const App = () => {
           }
 
       } catch (error) {
-          console.error("Error during payment process:", error); // Log the full error
-          showNotification(error.message || "Failed to initiate payment. Please try again.", "error");
+          console.error("Error during payment process:", error);
+          let errorMessage = "Failed to initiate payment. Please try again.";
+          if (error.code === 'functions/unauthenticated') {
+              errorMessage = "Payment failed. This can be caused by browser extensions (like an ad-blocker). Please try disabling them or using a private window.";
+          } else if (error.message) {
+              errorMessage = error.message;
+          }
+          showNotification(errorMessage, "error");
       }
     };
   
