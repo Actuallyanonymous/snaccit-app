@@ -1052,75 +1052,62 @@ const ReviewModal = ({ isOpen, onClose, order, onSubmitReview }) => {
     );
 };
 
-// --- Privacy Policy Page Component (NEW) ---
+// --- Privacy Policy Page Component (IMPROVED) ---
 const PrivacyPolicyPage = () => {
   return (
-    <div className="bg-white py-12">
-      <div className="container mx-auto px-6 prose lg:prose-xl">
-        <h1>Privacy Policy for Snaccit</h1>
-        <p><strong>Last updated: September 30, 2025</strong></p>
-        
-        <p>
-          Snaccit ("us", "we", or "our") operates the Snaccit web application (the "Service"). This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service and the choices you have associated with that data.
-        </p>
+    <div className="bg-white py-16 sm:py-24">
+      <div className="container mx-auto px-6">
+        <article className="prose lg:prose-lg max-w-4xl mx-auto">
+          <h1>Privacy Policy</h1>
+          <p className="lead">Last updated: September 30, 2025</p>
+          <p>
+            Welcome to Snaccit. We are committed to protecting your personal information and your right to privacy. If you have any questions or concerns about this privacy notice, or our practices with regards to your personal information, please contact us at <a href="mailto:support@snaccit.com">support@snaccit.com</a>.
+          </p>
+          <p>
+            When you use our web application (the "App") and more generally, use any of our services (the "Services", which include the App), we appreciate that you are trusting us with your personal information. We take your privacy very seriously. In this privacy notice, we seek to explain to you in the clearest way possible what information we collect, how we use it and what rights you have in relation to it. We hope you take some time to read through it carefully, as it is important.
+          </p>
 
-        <h2>Information Collection and Use</h2>
-        <p>We collect several different types of information for various purposes to provide and improve our Service to you.</p>
+          <h2>1. WHAT INFORMATION DO WE COLLECT?</h2>
+          <p>
+            We collect personal information that you voluntarily provide to us when you register on the App, express an interest in obtaining information about us or our products and Services, when you participate in activities on the App or otherwise when you contact us.
+          </p>
+          <p>The personal information that we collect depends on the context of your interactions with us and the App, the choices you make and the products and features you use. The personal information we collect may include the following:</p>
+          <ul>
+            <li><strong>Personal Information Provided by You.</strong> We collect names; phone numbers; email addresses; and other similar information.</li>
+            <li><strong>Payment Data.</strong> We may collect data necessary to process your payment if you make purchases, however, we do not store this information. All payment data is handled by our third-party payment processor, PhonePe. You may find their privacy notice link(s) here: <a href="https://www.phonepe.com/privacy-policy/" target="_blank" rel="noopener noreferrer">https://www.phonepe.com/privacy-policy/</a>.</li>
+          </ul>
 
-        <h3>Types of Data Collected</h3>
-        <h4>Personal Data</h4>
-        <p>While using our Service, we may ask you to provide us with certain personally identifiable information that can be used to contact or identify you ("Personal Data"). Personally identifiable information may include, but is not limited to:</p>
-        <ul>
-          <li>Email address</li>
-          <li>First name and last name (Username)</li>
-          <li>Phone number</li>
-          <li>Order history and preferences</li>
-        </ul>
+          <h2>2. HOW DO WE USE YOUR INFORMATION?</h2>
+          <p>We use personal information collected via our App for a variety of business purposes described below. We process your personal information for these purposes in reliance on our legitimate business interests, in order to enter into or perform a contract with you, with your consent, and/or for compliance with our legal obligations.</p>
+          <ul>
+            <li><strong>To facilitate account creation and logon process.</strong></li>
+            <li><strong>To manage user orders.</strong> We may use your information to manage your orders, payments, and reviews made through the App.</li>
+            <li><strong>To respond to user inquiries/offer support to users.</strong> We may use your information to respond to your inquiries and solve any potential issues you might have with the use of our Services.</li>
+            <li><strong>For other business purposes.</strong> We may use your information for other business purposes, such as data analysis, identifying usage trends, and to evaluate and improve our App, products, marketing and your experience.</li>
+          </ul>
 
-        <h4>Usage Data</h4>
-        <p>We may also collect information on how the Service is accessed and used ("Usage Data"). This Usage Data may include information such as your computer's Internet Protocol address (e.g. IP address), browser type, browser version, the pages of our Service that you visit, the time and date of your visit, the time spent on those pages, unique device identifiers and other diagnostic data.</p>
-        
-        <h2>Use of Data</h2>
-        <p>Snaccit uses the collected data for various purposes:</p>
-        <ul>
-          <li>To provide and maintain our Service</li>
-          <li>To notify you about changes to our Service</li>
-          <li>To process your orders and manage payments</li>
-          <li>To provide customer support</li>
-          <li>To gather analysis or valuable information so that we can improve our Service</li>
-          <li>To monitor the usage of our Service</li>
-        </ul>
+          <h2>3. WILL YOUR INFORMATION BE SHARED WITH ANYONE?</h2>
+          <p>We only share information with your consent, to comply with laws, to provide you with services, to protect your rights, or to fulfill business obligations.</p>
+          <ul>
+            <li><strong>Vendors, Consultants and Other Third-Party Service Providers.</strong> We may share your data with third-party vendors, service providers, contractors or agents who perform services for us or on our behalf and require access to such information to do that work. This includes our hosting provider (Firebase) and payment processor (PhonePe).</li>
+            <li><strong>Business Transfers.</strong> We may share or transfer your information in connection with, or during negotiations of, any merger, sale of company assets, financing, or acquisition of all or a portion of our business to another company.</li>
+          </ul>
 
-        <h2>Data Transfer & Storage</h2>
-        <p>Your information, including Personal Data, is stored and processed using Firebase, a platform by Google. Your information may be transferred to — and maintained on — computers located outside of your state, province, country or other governmental jurisdiction where the data protection laws may differ from those from your jurisdiction.</p>
-        <p>We will take all steps reasonably necessary to ensure that your data is treated securely and in accordance with this Privacy Policy.</p>
+          <h2>4. HOW LONG DO WE KEEP YOUR INFORMATION?</h2>
+          <p>We will only keep your personal information for as long as it is necessary for the purposes set out in this privacy notice, unless a longer retention period is required or permitted by law (such as tax, accounting or other legal requirements). When we have no ongoing legitimate business need to process your personal information, we will either delete or anonymize such information.</p>
 
-        <h2>Disclosure of Data</h2>
-        <p>We do not sell your personal data. We may disclose your Personal Data in the good faith belief that such action is necessary to:</p>
-        <ul>
-            <li>To comply with a legal obligation</li>
-            <li>To protect and defend the rights or property of Snaccit</li>
-            <li>To prevent or investigate possible wrongdoing in connection with the Service</li>
-            <li>To protect the personal safety of users of the Service or the public</li>
-        </ul>
-        
-        <h2>Payment Processing</h2>
-        <p>We use a third-party payment processor (PhonePe) to handle payments. We do not store or collect your payment card details. That information is provided directly to our third-party payment processors whose use of your personal information is governed by their Privacy Policy.</p>
+          <h2>5. HOW DO WE KEEP YOUR INFORMATION SAFE?</h2>
+          <p>We have implemented appropriate technical and organizational security measures designed to protect the security of any personal information we process. However, despite our safeguards and efforts to secure your information, no electronic transmission over the Internet or information storage technology can be guaranteed to be 100% secure, so we cannot promise or guarantee that hackers, cybercriminals, or other unauthorized third parties will not be able to defeat our security and improperly collect, access, steal, or modify your information.</p>
 
-        <h2>Security of Data</h2>
-        <p>The security of your data is important to us, but remember that no method of transmission over the Internet, or method of electronic storage is 100% secure. While we strive to use commercially acceptable means to protect your Personal Data, we cannot guarantee its absolute security.</p>
-        
-        <h2>Your Rights</h2>
-        <p>You have the right to access, update, or delete the information we have on you. You can do this at any time through your Profile page or by contacting us.</p>
+          <h2>6. WHAT ARE YOUR PRIVACY RIGHTS?</h2>
+          <p>You have the right to review, change, or terminate your account at any time. You can review or change the information in your account or terminate your account by logging into your account settings and updating your user account.</p>
 
-        <h2>Changes to This Privacy Policy</h2>
-        <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page. You are advised to review this Privacy Policy periodically for any changes.</p>
-        
-        <h2>Contact Us</h2>
-        <p>If you have any questions about this Privacy Policy, please contact us:</p>
-        <ul>
-          <li>By email: support@snaccit.com</li>
-        </ul>
+          <h2>7. DO WE MAKE UPDATES TO THIS NOTICE?</h2>
+          <p>We may update this privacy notice from time to time. The updated version will be indicated by an updated "Last updated" date and the updated version will be effective as soon as it is accessible. We encourage you to review this privacy notice frequently to be informed of how we are protecting your information.</p>
+
+          <h2>8. HOW CAN YOU CONTACT US ABOUT THIS NOTICE?</h2>
+          <p>If you have questions or comments about this notice, you may email us at <a href="mailto:support@snaccit.com">support@snaccit.com</a>.</p>
+        </article>
       </div>
     </div>
   );
@@ -1150,7 +1137,7 @@ const App = () => {
   };
 
   useEffect(() => {
-    // MODIFICATION: Check for special URL paths on initial load
+    // Check for special URL paths on initial load
     const path = window.location.pathname;
     if (path === '/payment-status') {
         setView('paymentStatus');
@@ -1415,7 +1402,6 @@ const App = () => {
         return <OrderConfirmation onGoHome={() => handleGoHome()} />;
       case 'paymentStatus':
         return <PaymentStatusPage onGoHome={() => handleGoHome()} />;
-      // MODIFICATION: Added case for privacy policy
       case 'privacy':
         return <PrivacyPolicyPage />;
       case 'profile':
@@ -1486,7 +1472,6 @@ const App = () => {
               <p className="text-gray-500 mt-4">Skip the wait. Savor the moment.</p>
               <div className="mt-6 flex justify-center space-x-6">
                <a href="#" className="text-gray-500 hover:text-green-600">Terms of Service</a>
-               {/* MODIFICATION: Updated link to handle client-side routing */}
                <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); setView('privacy'); window.history.pushState({}, '', '/privacy-policy'); }} className="text-gray-500 hover:text-green-600">Privacy Policy</a>
                <a href="#" className="text-gray-500 hover:text-green-600">Contact</a>
               </div>
