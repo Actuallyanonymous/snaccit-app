@@ -1077,7 +1077,7 @@ const App = () => {
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [scrollToSection, setScrollToSection] = useState(null);
   const [orderToReview, setOrderToReview] = useState(null);
-  
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
   const showNotification = (message, type) => {
@@ -1163,11 +1163,14 @@ const App = () => {
   };
 
     const handlePlaceOrder = async (arrivalTime, subtotal) => {
+      setIsRedirecting(true);
+
       console.log("Attempting to place order...");
       console.log("Current user object:", currentUser);
 
       if (!isAuthReady || !currentUser) {
           showNotification("Please log in to place an order.", "error");
+          setIsRedirecting(false);
           return;
       }
 
@@ -1376,6 +1379,8 @@ const App = () => {
       />
       <ReviewModal isOpen={!!orderToReview} onClose={() => setOrderToReview(null)} order={orderToReview} onSubmitReview={handleSubmitReview} />
       
+      <PaymentRedirectOverlay isOpen={isRedirecting} />
+      
       <div className="bg-cream-50 font-sans text-slate-800">
         <header className="bg-white/80 backdrop-blur-xl sticky top-0 z-30 border-b border-gray-200/80">
           <div className="container mx-auto px-6 py-4 flex justify-between items-center">
@@ -1419,6 +1424,21 @@ const App = () => {
         </footer>
       </div>
     </>
+  );
+};
+
+// --- Payment Redirect Overlay Component ---
+const PaymentRedirectOverlay = ({ isOpen }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center">
+      <div className="text-center text-white p-8">
+        <Loader2 size={64} className="mx-auto animate-spin mb-6" />
+        <h2 className="text-2xl font-bold mb-2">Connecting to Payment Gateway...</h2>
+        <p className="text-lg opacity-80">Please wait, you are being redirected securely.</p>
+      </div>
+    </div>
   );
 };
 

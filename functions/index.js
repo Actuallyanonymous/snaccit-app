@@ -85,7 +85,13 @@ exports.phonePePay = onCall({ minInstances: 1 }, async (request) => {
 
     if (response.data.success) {
       const redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
-      await db.collection("orders").doc(orderId).update({ merchantTransactionId });
+      db.collection("orders").doc(orderId).update({ merchantTransactionId })
+      .catch(err => {
+        logger.error(
+          `[Order ID: ${orderId}] CRITICAL: Failed to update order with merchantTransactionId after getting PhonePe URL. Error:`, 
+          err
+        );
+      });
       
       // ADDED: Log to confirm successful processing before returning.
       logger.info(`[Order ID: ${orderId}] Successfully processed. Returning redirect URL.`);
