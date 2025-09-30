@@ -1,3 +1,5 @@
+// functions/index.js
+
 // Use the new V2 imports for onCall and onRequest
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onRequest } = require("firebase-functions/v2/https");
@@ -11,6 +13,7 @@ const { defineString } = require('firebase-functions/params');
 admin.initializeApp();
 const db = admin.firestore();
 
+// Make sure your environment variables are set in Firebase
 const PHONEPE_MERCHANT_ID = defineString("PHONEPE_MERCHANT_ID");
 const PHONEPE_SALT_KEY = defineString("PHONEPE_SALT_KEY");
 const PHONEPE_SALT_INDEX = defineString("PHONEPE_SALT_INDEX");
@@ -32,6 +35,9 @@ exports.phonePePay = onCall({ minInstances: 1 }, async (request) => {
   const userId = request.auth.uid;
   const merchantTransactionId = `SNCT_${orderId}`;
 
+  // ADDED: Log when the function is invoked to see the start time.
+  logger.info(`[Order ID: ${orderId}] Function invoked.`);
+
   const payload = {
     merchantId: PHONEPE_MERCHANT_ID.value(),
     merchantTransactionId: merchantTransactionId,
@@ -40,7 +46,7 @@ exports.phonePePay = onCall({ minInstances: 1 }, async (request) => {
     redirectUrl: `${APP_BASE_URL}/payment-status?orderId=${orderId}`,
     redirectMode: "REDIRECT",
     callbackUrl: `https://us-central1-snaccit-7d853.cloudfunctions.net/phonePeCallback`,
-    mobileNumber: "9999999999",
+    mobileNumber: "9999999999", // This should ideally be the user's mobile number
     paymentInstrument: {
       type: "PAY_PAGE",
     },
@@ -65,18 +71,32 @@ exports.phonePePay = onCall({ minInstances: 1 }, async (request) => {
   };
 
   try {
+    // ADDED: Log right before calling the external API and start a timer.
+    logger.info(`[Order ID: ${orderId}] Calling PhonePe API...`);
+    const startTime = Date.now();
+
     const response = await axios.request(options);
+
+    // ADDED: Log right after the external API call finishes and calculate the duration.
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    logger.info(`[Order ID: ${orderId}] PhonePe API response received. Call duration: ${duration}ms`);
+
 
     if (response.data.success) {
       const redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
       await db.collection("orders").doc(orderId).update({ merchantTransactionId });
+      
+      // ADDED: Log to confirm successful processing before returning.
+      logger.info(`[Order ID: ${orderId}] Successfully processed. Returning redirect URL.`);
+      
       return { redirectUrl };
     } else {
       const phonePeMessage = response.data.message || "PhonePe returned an unspecified error.";
       throw new HttpsError("internal", `PhonePe Error: ${phonePeMessage}`);
     }
   } catch (error) {
-    logger.error("Error calling PhonePe API:", error);
+    logger.error(`[Order ID: ${orderId}] Error calling PhonePe API:`, error);
 
     if (error.response && error.response.data) {
         const detailedMessage = error.response.data.message || JSON.stringify(error.response.data);
@@ -113,6 +133,9 @@ exports.phonePeCallback = onRequest(async (req, res) => {
 
         const merchantTransactionId = decodedResponse.data.merchantTransactionId;
         const paymentStatus = decodedResponse.code;
+        
+        // Log the callback status for debugging
+        logger.info(`Callback received for MTID: ${merchantTransactionId} with status: ${paymentStatus}`);
 
         const ordersQuery = db.collection("orders").where("merchantTransactionId", "==", merchantTransactionId);
         const querySnapshot = await ordersQuery.get();
@@ -128,6 +151,7 @@ exports.phonePeCallback = onRequest(async (req, res) => {
         if (paymentStatus === "PAYMENT_SUCCESS") {
             await orderDoc.ref.update({ status: "pending", paymentDetails: decodedResponse.data });
         } else {
+            // Includes PAYMENT_ERROR, PAYMENT_PENDING, etc.
             await orderDoc.ref.update({ status: "payment_failed", paymentDetails: decodedResponse.data });
         }
 

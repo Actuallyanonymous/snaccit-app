@@ -697,6 +697,14 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
     setIsPlacingOrder(true);
     await onPlaceOrder(arrivalTime, subtotal);
     setIsPlacingOrder(false);
+
+    <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} /* ... */>
+    <span>
+        {isPlacingOrder ? 'Contacting Payment Gateway...' : 'Proceed to Payment'}
+    </span>
+    <span>₹{subtotal.toFixed(2)}</span>
+    </button>
+
   };
 
   if (!isOpen) return null;
@@ -1186,24 +1194,27 @@ const App = () => {
       };
 
       try {
-          const idToken = await currentUser.getIdToken(true);
-          console.log("Successfully retrieved a fresh ID token.");
+        console.log(`[${new Date().toLocaleTimeString()}] Step 1: Starting order process.`);
 
-          const orderRef = await addDoc(collection(db, "orders"), orderData);
-          const orderId = orderRef.id;
+        const orderRef = await addDoc(collection(db, "orders"), orderData);
+        const orderId = orderRef.id;
+        console.log(`[${new Date().toLocaleTimeString()}] Step 2: Order document created in Firestore. ID: ${orderId}`);
 
-          const phonePePay = httpsCallable(functions, 'phonePePay');
-          const response = await phonePePay({ orderId: orderId, amount: subtotal });
-          
-          const { redirectUrl } = response.data;
+        const phonePePay = httpsCallable(functions, 'phonePePay');
+        console.log(`[${new Date().toLocaleTimeString()}] Step 3: Calling 'phonePePay' cloud function...`);
 
-          if (redirectUrl) {
-              window.location.href = redirectUrl;
-          } else {
-              throw new Error("Could not get payment redirect URL.");
-          }
+        const response = await phonePePay({ orderId: orderId, amount: subtotal });
+        console.log(`[${new Date().toLocaleTimeString()}] Step 4: Received response from cloud function.`);
+        
+        const { redirectUrl } = response.data;
 
-      } catch (error) {
+        if (redirectUrl) {
+            console.log(`[${new Date().toLocaleTimeString()}] Step 5: Redirecting to PhonePe.`);
+            window.location.href = redirectUrl;
+        } else {
+            throw new Error("Could not get payment redirect URL.");
+        }
+      }catch (error) {
           console.error("Error during payment process:", error);
           let errorMessage = "Failed to initiate payment. Please try again.";
           if (error.code === 'functions/unauthenticated') {
