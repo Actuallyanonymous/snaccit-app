@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 
 // --- Import the initialized Firebase services from your central file ---
-// FIX: Corrected the import path to remove the file extension, which resolves the build error.
 import { auth, db, functions } from './firebase'; 
 
 // --- Import the specific functions you need from the Firebase SDKs ---
@@ -119,10 +118,10 @@ const AuthModal = ({ isOpen, onClose }) => {
         const user = userCredential.user;
         const userDocRef = doc(db, "users", user.uid);
         await setDoc(userDocRef, {
-            email: user.email,
-            username: '',
-            mobile: '',
-            createdAt: serverTimestamp()
+          email: user.email,
+          username: '',
+          mobile: '',
+          createdAt: serverTimestamp()
         }, { merge: true });
       }
       onClose();
@@ -268,12 +267,12 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {topDishes.map((dish, index) => (
               <div key={index} className="relative rounded-3xl overflow-hidden group cursor-pointer shadow-lg transform hover:scale-105 transition-transform duration-300">
-                   <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>
-                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                   <div className="absolute bottom-0 left-0 p-6 text-white">
-                       <h4 className="text-xl font-bold drop-shadow-lg">{dish.name}</h4>
-                       <p className="text-sm opacity-80">{dish.restaurant}</p>
-                   </div>
+                      <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                      <div className="absolute bottom-0 left-0 p-6 text-white">
+                          <h4 className="text-xl font-bold drop-shadow-lg">{dish.name}</h4>
+                          <p className="text-sm opacity-80">{dish.restaurant}</p>
+                      </div>
               </div>
             ))}
           </div>
@@ -295,11 +294,11 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Search className="text-gray-400" /></div>
               <input type="text" placeholder={searchType === 'restaurant' ? 'Search by restaurant or cuisine...' : 'Search for your favorite dish...'} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full py-4 pl-12 pr-4 text-lg border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
             </div>
-               <div className="flex justify-center mt-6 space-x-4">
-                  <button onClick={() => setActiveFilter('all')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'all' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}>All</button>
-                  <button onClick={() => setActiveFilter('topRated')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'topRated' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}><Award size={16} className="mr-2"/>Top Rated</button>
-                  <button onClick={() => setActiveFilter('veg')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'veg' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}><Leaf size={16} className="mr-2"/>Pure Veg</button>
-               </div>
+                  <div className="flex justify-center mt-6 space-x-4">
+                      <button onClick={() => setActiveFilter('all')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'all' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}>All</button>
+                      <button onClick={() => setActiveFilter('topRated')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'topRated' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}><Award size={16} className="mr-2"/>Top Rated</button>
+                      <button onClick={() => setActiveFilter('veg')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'veg' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}><Leaf size={16} className="mr-2"/>Pure Veg</button>
+                  </div>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {isLoading ? (<p>Loading...</p>) : (
@@ -697,14 +696,6 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
     setIsPlacingOrder(true);
     await onPlaceOrder(arrivalTime, subtotal);
     setIsPlacingOrder(false);
-
-    <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} /* ... */>
-    <span>
-        {isPlacingOrder ? 'Contacting Payment Gateway...' : 'Proceed to Payment'}
-    </span>
-    <span>₹{subtotal.toFixed(2)}</span>
-    </button>
-
   };
 
   if (!isOpen) return null;
@@ -809,7 +800,7 @@ const PaymentStatusPage = ({ onGoHome }) => {
                 );
             case 'delayed':
                 return (
-                     <>
+                   <>
                         <Clock size={64} className="text-amber-500 mb-6" />
                         <h1 className="text-4xl font-bold text-gray-800">Payment is Processing</h1>
                         <p className="text-lg text-gray-600 mt-4 max-w-2xl">Your payment is taking longer than usual to confirm. You can safely leave this page. We will update your order status in your profile once it's complete.</p>
@@ -1061,6 +1052,80 @@ const ReviewModal = ({ isOpen, onClose, order, onSubmitReview }) => {
     );
 };
 
+// --- Privacy Policy Page Component (NEW) ---
+const PrivacyPolicyPage = () => {
+  return (
+    <div className="bg-white py-12">
+      <div className="container mx-auto px-6 prose lg:prose-xl">
+        <h1>Privacy Policy for Snaccit</h1>
+        <p><strong>Last updated: September 30, 2025</strong></p>
+        
+        <p>
+          Snaccit ("us", "we", or "our") operates the Snaccit web application (the "Service"). This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service and the choices you have associated with that data.
+        </p>
+
+        <h2>Information Collection and Use</h2>
+        <p>We collect several different types of information for various purposes to provide and improve our Service to you.</p>
+
+        <h3>Types of Data Collected</h3>
+        <h4>Personal Data</h4>
+        <p>While using our Service, we may ask you to provide us with certain personally identifiable information that can be used to contact or identify you ("Personal Data"). Personally identifiable information may include, but is not limited to:</p>
+        <ul>
+          <li>Email address</li>
+          <li>First name and last name (Username)</li>
+          <li>Phone number</li>
+          <li>Order history and preferences</li>
+        </ul>
+
+        <h4>Usage Data</h4>
+        <p>We may also collect information on how the Service is accessed and used ("Usage Data"). This Usage Data may include information such as your computer's Internet Protocol address (e.g. IP address), browser type, browser version, the pages of our Service that you visit, the time and date of your visit, the time spent on those pages, unique device identifiers and other diagnostic data.</p>
+        
+        <h2>Use of Data</h2>
+        <p>Snaccit uses the collected data for various purposes:</p>
+        <ul>
+          <li>To provide and maintain our Service</li>
+          <li>To notify you about changes to our Service</li>
+          <li>To process your orders and manage payments</li>
+          <li>To provide customer support</li>
+          <li>To gather analysis or valuable information so that we can improve our Service</li>
+          <li>To monitor the usage of our Service</li>
+        </ul>
+
+        <h2>Data Transfer & Storage</h2>
+        <p>Your information, including Personal Data, is stored and processed using Firebase, a platform by Google. Your information may be transferred to — and maintained on — computers located outside of your state, province, country or other governmental jurisdiction where the data protection laws may differ from those from your jurisdiction.</p>
+        <p>We will take all steps reasonably necessary to ensure that your data is treated securely and in accordance with this Privacy Policy.</p>
+
+        <h2>Disclosure of Data</h2>
+        <p>We do not sell your personal data. We may disclose your Personal Data in the good faith belief that such action is necessary to:</p>
+        <ul>
+            <li>To comply with a legal obligation</li>
+            <li>To protect and defend the rights or property of Snaccit</li>
+            <li>To prevent or investigate possible wrongdoing in connection with the Service</li>
+            <li>To protect the personal safety of users of the Service or the public</li>
+        </ul>
+        
+        <h2>Payment Processing</h2>
+        <p>We use a third-party payment processor (PhonePe) to handle payments. We do not store or collect your payment card details. That information is provided directly to our third-party payment processors whose use of your personal information is governed by their Privacy Policy.</p>
+
+        <h2>Security of Data</h2>
+        <p>The security of your data is important to us, but remember that no method of transmission over the Internet, or method of electronic storage is 100% secure. While we strive to use commercially acceptable means to protect your Personal Data, we cannot guarantee its absolute security.</p>
+        
+        <h2>Your Rights</h2>
+        <p>You have the right to access, update, or delete the information we have on you. You can do this at any time through your Profile page or by contacting us.</p>
+
+        <h2>Changes to This Privacy Policy</h2>
+        <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page. You are advised to review this Privacy Policy periodically for any changes.</p>
+        
+        <h2>Contact Us</h2>
+        <p>If you have any questions about this Privacy Policy, please contact us:</p>
+        <ul>
+          <li>By email: support@snaccit.com</li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
 
 // --- Main App Component (The Router) ---
 const App = () => {
@@ -1085,10 +1150,12 @@ const App = () => {
   };
 
   useEffect(() => {
-    // Check if we are on the payment status page
+    // MODIFICATION: Check for special URL paths on initial load
     const path = window.location.pathname;
     if (path === '/payment-status') {
         setView('paymentStatus');
+    } else if (path === '/privacy-policy') {
+        setView('privacy');
     }
 
     const fetchRestaurantsAndMenus = async () => {
@@ -1348,6 +1415,9 @@ const App = () => {
         return <OrderConfirmation onGoHome={() => handleGoHome()} />;
       case 'paymentStatus':
         return <PaymentStatusPage onGoHome={() => handleGoHome()} />;
+      // MODIFICATION: Added case for privacy policy
+      case 'privacy':
+        return <PrivacyPolicyPage />;
       case 'profile':
         return <ProfilePage currentUser={currentUser} showNotification={showNotification} onReorder={handleReorder} onRateOrder={setOrderToReview} />;
       default:
@@ -1416,7 +1486,8 @@ const App = () => {
               <p className="text-gray-500 mt-4">Skip the wait. Savor the moment.</p>
               <div className="mt-6 flex justify-center space-x-6">
                <a href="#" className="text-gray-500 hover:text-green-600">Terms of Service</a>
-               <a href="#" className="text-gray-500 hover:text-green-600">Privacy Policy</a>
+               {/* MODIFICATION: Updated link to handle client-side routing */}
+               <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); setView('privacy'); window.history.pushState({}, '', '/privacy-policy'); }} className="text-gray-500 hover:text-green-600">Privacy Policy</a>
                <a href="#" className="text-gray-500 hover:text-green-600">Contact</a>
               </div>
               <p className="text-gray-400 mt-8 text-sm">© 2024 Snaccit Inc. All rights reserved.</p>
@@ -1443,4 +1514,3 @@ const PaymentRedirectOverlay = ({ isOpen }) => {
 };
 
 export default App;
-
