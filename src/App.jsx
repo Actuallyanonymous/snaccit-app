@@ -1052,7 +1052,7 @@ const ReviewModal = ({ isOpen, onClose, order, onSubmitReview }) => {
     );
 };
 
-// --- Privacy Policy Page Component (IMPROVED) ---
+// --- Privacy Policy Page Component ---
 const PrivacyPolicyPage = () => {
   return (
     <div className="bg-white py-16 sm:py-24">
@@ -1066,51 +1066,70 @@ const PrivacyPolicyPage = () => {
           <p>
             When you use our web application (the "App") and more generally, use any of our services (the "Services", which include the App), we appreciate that you are trusting us with your personal information. We take your privacy very seriously. In this privacy notice, we seek to explain to you in the clearest way possible what information we collect, how we use it and what rights you have in relation to it. We hope you take some time to read through it carefully, as it is important.
           </p>
-
           <h2>1. WHAT INFORMATION DO WE COLLECT?</h2>
-          <p>
-            We collect personal information that you voluntarily provide to us when you register on the App, express an interest in obtaining information about us or our products and Services, when you participate in activities on the App or otherwise when you contact us.
-          </p>
-          <p>The personal information that we collect depends on the context of your interactions with us and the App, the choices you make and the products and features you use. The personal information we collect may include the following:</p>
-          <ul>
-            <li><strong>Personal Information Provided by You.</strong> We collect names; phone numbers; email addresses; and other similar information.</li>
-            <li><strong>Payment Data.</strong> We may collect data necessary to process your payment if you make purchases, however, we do not store this information. All payment data is handled by our third-party payment processor, PhonePe. You may find their privacy notice link(s) here: <a href="https://www.phonepe.com/privacy-policy/" target="_blank" rel="noopener noreferrer">https://www.phonepe.com/privacy-policy/</a>.</li>
-          </ul>
-
+          <p>We collect personal information that you voluntarily provide to us when you register on the App, place an order, or otherwise contact us. The personal information we collect may include names, phone numbers, and email addresses.</p>
           <h2>2. HOW DO WE USE YOUR INFORMATION?</h2>
-          <p>We use personal information collected via our App for a variety of business purposes described below. We process your personal information for these purposes in reliance on our legitimate business interests, in order to enter into or perform a contract with you, with your consent, and/or for compliance with our legal obligations.</p>
-          <ul>
-            <li><strong>To facilitate account creation and logon process.</strong></li>
-            <li><strong>To manage user orders.</strong> We may use your information to manage your orders, payments, and reviews made through the App.</li>
-            <li><strong>To respond to user inquiries/offer support to users.</strong> We may use your information to respond to your inquiries and solve any potential issues you might have with the use of our Services.</li>
-            <li><strong>For other business purposes.</strong> We may use your information for other business purposes, such as data analysis, identifying usage trends, and to evaluate and improve our App, products, marketing and your experience.</li>
-          </ul>
-
+          <p>We use your information to provide, operate, and maintain our Services, including to process and manage your orders and to communicate with you.</p>
           <h2>3. WILL YOUR INFORMATION BE SHARED WITH ANYONE?</h2>
-          <p>We only share information with your consent, to comply with laws, to provide you with services, to protect your rights, or to fulfill business obligations.</p>
-          <ul>
-            <li><strong>Vendors, Consultants and Other Third-Party Service Providers.</strong> We may share your data with third-party vendors, service providers, contractors or agents who perform services for us or on our behalf and require access to such information to do that work. This includes our hosting provider (Firebase) and payment processor (PhonePe).</li>
-            <li><strong>Business Transfers.</strong> We may share or transfer your information in connection with, or during negotiations of, any merger, sale of company assets, financing, or acquisition of all or a portion of our business to another company.</li>
-          </ul>
-
-          <h2>4. HOW LONG DO WE KEEP YOUR INFORMATION?</h2>
-          <p>We will only keep your personal information for as long as it is necessary for the purposes set out in this privacy notice, unless a longer retention period is required or permitted by law (such as tax, accounting or other legal requirements). When we have no ongoing legitimate business need to process your personal information, we will either delete or anonymize such information.</p>
-
-          <h2>5. HOW DO WE KEEP YOUR INFORMATION SAFE?</h2>
-          <p>We have implemented appropriate technical and organizational security measures designed to protect the security of any personal information we process. However, despite our safeguards and efforts to secure your information, no electronic transmission over the Internet or information storage technology can be guaranteed to be 100% secure, so we cannot promise or guarantee that hackers, cybercriminals, or other unauthorized third parties will not be able to defeat our security and improperly collect, access, steal, or modify your information.</p>
-
-          <h2>6. WHAT ARE YOUR PRIVACY RIGHTS?</h2>
-          <p>You have the right to review, change, or terminate your account at any time. You can review or change the information in your account or terminate your account by logging into your account settings and updating your user account.</p>
-
-          <h2>7. DO WE MAKE UPDATES TO THIS NOTICE?</h2>
-          <p>We may update this privacy notice from time to time. The updated version will be indicated by an updated "Last updated" date and the updated version will be effective as soon as it is accessible. We encourage you to review this privacy notice frequently to be informed of how we are protecting your information.</p>
-
-          <h2>8. HOW CAN YOU CONTACT US ABOUT THIS NOTICE?</h2>
+          <p>We share information with our restaurant partners to fulfill your orders and with our payment processor (PhonePe) to handle transactions. We do not sell your personal data.</p>
+          <h2>4. HOW DO WE KEEP YOUR INFORMATION SAFE?</h2>
+          <p>We use administrative, technical, and physical security measures to help protect your personal information. While we have taken reasonable steps to secure the personal information you provide to us, please be aware that no security measures are perfect or impenetrable.</p>
+          <h2>5. WHAT ARE YOUR PRIVACY RIGHTS?</h2>
+          <p>You may review, change, or terminate your account at any time by accessing your profile settings.</p>
+          <h2>6. HOW CAN YOU CONTACT US ABOUT THIS NOTICE?</h2>
           <p>If you have questions or comments about this notice, you may email us at <a href="mailto:support@snaccit.com">support@snaccit.com</a>.</p>
         </article>
       </div>
     </div>
   );
+};
+
+// --- Terms of Service Page Component (NEW) ---
+const TermsOfServicePage = () => {
+    return (
+        <div className="bg-white py-16 sm:py-24">
+            <div className="container mx-auto px-6">
+                <article className="prose lg:prose-lg max-w-4xl mx-auto">
+                    <h1>Terms of Service</h1>
+                    <p className="lead">Last updated: September 30, 2025</p>
+                    <p>
+                        Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the Snaccit web application (the "Service") operated by Snaccit ("us", "we", or "our").
+                    </p>
+                    <p>
+                        Your access to and use of the Service is conditioned upon your acceptance of and compliance with these Terms. These Terms apply to all visitors, users, and others who wish to access or use the Service. By accessing or using the Service, you agree to be bound by these Terms.
+                    </p>
+
+                    <h2>1. Description of Service</h2>
+                    <p>Snaccit is a platform that connects users with restaurant partners ("Restaurants") to allow users to pre-order food and beverages for dine-in. The Service's purpose is to ensure your meal is ready by your specified arrival time.</p>
+                    
+                    <h2>2. User Accounts</h2>
+                    <p>When you create an account with us, you guarantee that the information you provide is accurate, complete, and current at all times. You are responsible for safeguarding the password that you use to access the Service and for any activities or actions under your password.</p>
+
+                    <h2>3. Orders, Payments, and Cancellations</h2>
+                    <p>By placing an order through Snaccit, you are making a binding offer to purchase the selected items. All payments are processed through our third-party payment gateway, PhonePe. Snaccit does not store your payment card details.</p>
+                    <p>Cancellation policies are at the discretion of the Restaurant. Generally, an order cannot be canceled after it has been accepted by the Restaurant. We are not responsible for any disputes regarding cancellations or refunds.</p>
+
+                    <h2>4. Restaurant Partner Responsibilities</h2>
+                    <p>Snaccit acts as an intermediary between you and the Restaurant. The Restaurant is solely responsible for the preparation, quality, and safety of the food, as well as for the accuracy of menu information, including prices and allergy warnings. Any issues with the food or service should be addressed directly with the Restaurant.</p>
+
+                    <h2>5. Reviews and User Content</h2>
+                    <p>You may post reviews of your experiences. By posting content, you grant us a non-exclusive, royalty-free license to use, display, and distribute your content in connection with the Service. You are responsible for the content you post and must not submit reviews that are false, defamatory, or offensive.</p>
+
+                    <h2>6. Limitation of Liability</h2>
+                    <p>In no event shall Snaccit, nor its directors, employees, partners, or agents, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, or other intangible losses, resulting from your access to or use of the Service or any product procured from a Restaurant.</p>
+
+                    <h2>7. Governing Law</h2>
+                    <p>These Terms shall be governed and construed in accordance with the laws of India, without regard to its conflict of law provisions. Our failure to enforce any right or provision of these Terms will not be considered a waiver of those rights.</p>
+
+                    <h2>8. Changes to Terms</h2>
+                    <p>We reserve the right, at our sole discretion, to modify or replace these Terms at any time. We will provide notice of any changes by posting the new Terms of Service on this page. By continuing to access or use our Service after any revisions become effective, you agree to be bound by the revised terms.</p>
+                    
+                    <h2>9. Contact Us</h2>
+                    <p>If you have any questions about these Terms, please contact us at <a href="mailto:support@snaccit.com">support@snaccit.com</a>.</p>
+                </article>
+            </div>
+        </div>
+    );
 };
 
 
@@ -1143,6 +1162,8 @@ const App = () => {
         setView('paymentStatus');
     } else if (path === '/privacy-policy') {
         setView('privacy');
+    } else if (path === '/terms-of-service') {
+        setView('terms');
     }
 
     const fetchRestaurantsAndMenus = async () => {
@@ -1219,9 +1240,6 @@ const App = () => {
     const handlePlaceOrder = async (arrivalTime, subtotal) => {
       setIsRedirecting(true);
 
-      console.log("Attempting to place order...");
-      console.log("Current user object:", currentUser);
-
       if (!isAuthReady || !currentUser) {
           showNotification("Please log in to place an order.", "error");
           setIsRedirecting(false);
@@ -1251,22 +1269,13 @@ const App = () => {
       };
 
       try {
-        console.log(`[${new Date().toLocaleTimeString()}] Step 1: Starting order process.`);
-
         const orderRef = await addDoc(collection(db, "orders"), orderData);
         const orderId = orderRef.id;
-        console.log(`[${new Date().toLocaleTimeString()}] Step 2: Order document created in Firestore. ID: ${orderId}`);
-
         const phonePePay = httpsCallable(functions, 'phonePePay');
-        console.log(`[${new Date().toLocaleTimeString()}] Step 3: Calling 'phonePePay' cloud function...`);
-
         const response = await phonePePay({ orderId: orderId, amount: subtotal });
-        console.log(`[${new Date().toLocaleTimeString()}] Step 4: Received response from cloud function.`);
-        
         const { redirectUrl } = response.data;
 
         if (redirectUrl) {
-            console.log(`[${new Date().toLocaleTimeString()}] Step 5: Redirecting to PhonePe.`);
             window.location.href = redirectUrl;
         } else {
             throw new Error("Could not get payment redirect URL.");
@@ -1335,7 +1344,7 @@ const App = () => {
       const menuItem = currentMenu.find(item => item.id === orderedItem.id);
       if (menuItem) {
         const selectedSize = menuItem.sizes.find(s => s.name === orderedItem.size);
-        const selectedAddons = menuItem.addons.filter(addon => (orderedItem.addons || []).includes(addon.name));
+        const selectedAddons = menuItem.addons ? menuItem.addons.filter(addon => (orderedItem.addons || []).includes(addon.name)) : [];
 
         if (selectedSize) {
           const finalPrice = selectedSize.price + selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
@@ -1404,6 +1413,8 @@ const App = () => {
         return <PaymentStatusPage onGoHome={() => handleGoHome()} />;
       case 'privacy':
         return <PrivacyPolicyPage />;
+      case 'terms':
+        return <TermsOfServicePage />;
       case 'profile':
         return <ProfilePage currentUser={currentUser} showNotification={showNotification} onReorder={handleReorder} onRateOrder={setOrderToReview} />;
       default:
@@ -1471,7 +1482,7 @@ const App = () => {
               <BrandLogo />
               <p className="text-gray-500 mt-4">Skip the wait. Savor the moment.</p>
               <div className="mt-6 flex justify-center space-x-6">
-               <a href="#" className="text-gray-500 hover:text-green-600">Terms of Service</a>
+               <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); setView('terms'); window.history.pushState({}, '', '/terms-of-service'); }} className="text-gray-500 hover:text-green-600">Terms of Service</a>
                <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); setView('privacy'); window.history.pushState({}, '', '/privacy-policy'); }} className="text-gray-500 hover:text-green-600">Privacy Policy</a>
                <a href="#" className="text-gray-500 hover:text-green-600">Contact</a>
               </div>
