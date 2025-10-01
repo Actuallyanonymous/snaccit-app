@@ -1318,52 +1318,51 @@ const App = () => {
     }
   };
 
-    const handlePlaceOrder = async (arrivalTime, subtotal) => {
-      setIsRedirecting(true);
+   
 
-      if (!isAuthReady || !currentUser) {
-          showNotification("Please log in to place an order.", "error");
-          setIsRedirecting(false);
-          return;
-      }
+  const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode) => {
+    setIsRedirecting(true);
 
-      setIsCheckoutOpen(false);
-      const grandTotal = subtotal - discount;
+    if (!isAuthReady || !currentUser) {
+        showNotification("Please log in to place an order.", "error");
+        setIsRedirecting(false);
+        return;
+    }
 
+    setIsCheckoutOpen(false);
+    
+    const grandTotal = subtotal - discount;
 
-      const orderData = {
-          userId: currentUser.uid,
-          userEmail: currentUser.email,
-          restaurantId: selectedRestaurant.id,
-          restaurantName: selectedRestaurant.name,
-          items: cart.map(item => ({
-              id: item.id,
-              name: item.name,
-              quantity: item.quantity,
-              price: item.finalPrice,
-              size: item.selectedSize.name,
-              addons: item.selectedAddons.map(a => a.name)
-          })),
-          total: subtotal,
-          status: "awaiting_payment",
-          arrivalTime: arrivalTime,
-          createdAt: serverTimestamp(),
-          hasReview: false,
-          subtotal: subtotal,
-          discount: discount,
-          couponCode: couponCode,
-          total: grandTotal, // The final amount to be paid
-          status: "awaiting_payment",
-          arrivalTime: arrivalTime,
-          createdAt: serverTimestamp(),
-          hasReview: false,
-      };
+    const orderData = {
+        userId: currentUser.uid,
+        userEmail: currentUser.email,
+        restaurantId: selectedRestaurant.id,
+        restaurantName: selectedRestaurant.name,
+        items: cart.map(item => ({
+            id: item.id,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.finalPrice,
+            size: item.selectedSize.name,
+            addons: item.selectedAddons.map(a => a.name)
+        })),
+        subtotal: subtotal,
+        discount: discount,
+        couponCode: couponCode || null,
+        total: grandTotal, // The final amount to be paid
+        status: "awaiting_payment",
+        arrivalTime: arrivalTime,
+        createdAt: serverTimestamp(),
+        hasReview: false,
+    };
 
-      try {
+    try {
         const orderRef = await addDoc(collection(db, "orders"), orderData);
         const orderId = orderRef.id;
         const phonePePay = httpsCallable(functions, 'phonePePay');
-        const response = await phonePePePay({ orderId: orderId, amount: subtotal }); 
+        
+        // Call the function WITHOUT the amount, as the backend handles it. Typo also fixed.
+        const response = await phonePePay({ orderId: orderId }); 
         const { redirectUrl } = response.data;
 
         if (redirectUrl) {
@@ -1371,17 +1370,18 @@ const App = () => {
         } else {
             throw new Error("Could not get payment redirect URL.");
         }
-      }catch (error) {
-          console.error("Error during payment process:", error);
-          let errorMessage = "Failed to initiate payment. Please try again.";
-          if (error.code === 'functions/unauthenticated') {
-              errorMessage = "Payment failed. This can be caused by browser extensions (like an ad-blocker). Please try disabling them or using a private window.";
-          } else if (error.message) {
-              errorMessage = error.message;
-          }
-          showNotification(errorMessage, "error");
-      }
-    };
+    } catch (error) {
+        console.error("Error during payment process:", error);
+        let errorMessage = "Failed to initiate payment. Please try again.";
+        if (error.code === 'functions/unauthenticated') {
+            errorMessage = "Payment failed. This can be caused by browser extensions (like an ad-blocker). Please try disabling them or using a private window.";
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        showNotification(errorMessage, "error");
+        setIsRedirecting(false); // Stop loading on error
+    }
+};
   
   const handleSubmitReview = async (order, reviewData) => {
     const review = {

@@ -1,4 +1,4 @@
-// functions/index.js
+// functions/index.js (Corrected v2 Syntax)
 
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onRequest } = require("firebase-functions/v2/https");
@@ -11,14 +11,11 @@ const { defineString } = require('firebase-functions/params');
 admin.initializeApp();
 const db = admin.firestore();
 
-// We only define the NON-sensitive URL as a parameter.
 const APP_BASE_URL = defineString("APP_BASE_URL");
 const PHONEPE_PAY_API_URL = "https://api.phonepe.com/apis/hermes/pg/v1/pay";
 
-// phonePePay is a callable function that initiates the payment
 exports.phonePePay = onCall({ 
   minInstances: 1,
-  // Use 'secrets' for sensitive data. This tells Firebase to inject them.
   secrets: ["PHONEPE_MERCHANT_ID", "PHONEPE_SALT_KEY", "PHONEPE_SALT_INDEX"] 
 }, async (request) => {
 
@@ -26,11 +23,26 @@ exports.phonePePay = onCall({
     throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
   }
   
-  const { orderId, amount } = request.data;
+  const { orderId } = request.data;
   const userId = request.auth.uid;
-  const merchantTransactionId = `SNCT_${orderId}`;
 
-  // Access secrets securely from the function's process environment
+  // --- SERVER-SIDE VALIDATION ---
+  const orderRef = db.collection("orders").doc(orderId);
+  const orderDoc = await orderRef.get();
+
+  if (!orderDoc.exists) {
+    throw new HttpsError("not-found", "Order not found.");
+  }
+
+  const orderData = orderDoc.data();
+
+  if (orderData.userId !== userId) {
+    throw new HttpsError("permission-denied", "You do not have permission to pay for this order.");
+  }
+  
+  const amountToPay = orderData.total;
+  
+  const merchantTransactionId = `SNCT_${orderId}`;
   const merchantId = process.env.PHONEPE_MERCHANT_ID;
   const saltKey = process.env.PHONEPE_SALT_KEY;
   const saltIndex = process.env.PHONEPE_SALT_INDEX;
@@ -39,8 +51,7 @@ exports.phonePePay = onCall({
     merchantId: merchantId,
     merchantTransactionId: merchantTransactionId,
     merchantUserId: userId,
-    amount: amount * 100,
-    // Use .value() only for parameters defined with defineString
+    amount: Math.round(amountToPay * 100),
     redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderId}`,
     redirectMode: "REDIRECT",
     callbackUrl: `https://us-central1-snaccit-7d853.cloudfunctions.net/phonePeCallback`,
@@ -73,8 +84,7 @@ exports.phonePePay = onCall({
 
     if (response.data.success) {
       const redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
-      // Update Firestore in the background without making the user wait
-      db.collection("orders").doc(orderId).update({ merchantTransactionId })
+      orderRef.update({ merchantTransactionId })
         .catch(err => {
           logger.error(`[Order ID: ${orderId}] CRITICAL: Failed to update order. Error:`, err);
         });
@@ -86,6 +96,7 @@ exports.phonePePay = onCall({
     logger.error(`[Order ID: ${orderId}] Error in phonePePay function:`, error);
     if (error.response && error.response.data) {
         const detailedMessage = error.response.data.message || JSON.stringify(error.response.data);
+        await orderRef.update({ status: 'payment_failed', errorDetails: detailedMessage });
         throw new HttpsError("internal", `Payment API failed: ${detailedMessage}`);
     }
     if (error instanceof HttpsError) {
@@ -95,9 +106,7 @@ exports.phonePePay = onCall({
   }
 });
 
-// phonePeCallback handles the server-to-server response from PhonePe
 exports.phonePeCallback = onRequest({
-    // This function also needs secrets to verify the callback
     secrets: ["PHONEPE_SALT_KEY", "PHONEPE_SALT_INDEX"]
 }, async (req, res) => {
     if (req.method !== "POST") {
