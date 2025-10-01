@@ -682,43 +682,114 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
 
+
+  // NEW state for coupons
+  const [couponCode, setCouponCode] = useState('');
+  const [discount, setDiscount] = useState(0);
+  const [couponError, setCouponError] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
+  
+  const grandTotal = subtotal - discount;
+
   useEffect(() => {
-    if (isOpen) {
-        setArrivalTime('');
-    }
+      if (isOpen) {
+          setArrivalTime('');
+          setCouponCode('');
+          setDiscount(0);
+          setCouponError('');
+          setAppliedCoupon(null);
+      }
   }, [isOpen]);
+  
+  const handleApplyCoupon = async () => {
+      if (!couponCode) return;
+      setIsValidating(true);
+      setCouponError('');
+      setDiscount(0);
+      setAppliedCoupon(null);
+
+      const code = couponCode.toUpperCase();
+      const couponRef = doc(db, "coupons", code);
+      const couponSnap = await getDoc(couponRef);
+
+      if (!couponSnap.exists()) {
+          setCouponError("Invalid coupon code.");
+      } else {
+          const coupon = couponSnap.data();
+          if (!coupon.isActive) {
+              setCouponError("This coupon is no longer active.");
+          } else if (new Date() > coupon.expiryDate.toDate()) {
+              setCouponError("This coupon has expired.");
+          } else if (subtotal < coupon.minOrderValue) {
+              setCouponError(`Minimum order of ₹${coupon.minOrderValue} is required.`);
+          } else {
+              let calculatedDiscount = 0;
+              if (coupon.type === 'fixed') {
+                  calculatedDiscount = coupon.value;
+              } else if (coupon.type === 'percentage') {
+                  calculatedDiscount = (subtotal * coupon.value) / 100;
+              }
+              setDiscount(calculatedDiscount);
+              setAppliedCoupon({ code, ...coupon });
+          }
+      }
+      setIsValidating(false);
+  };
 
   const handleConfirm = async () => {
-    if (!arrivalTime) {
-      alert("Please select an arrival time.");
-      return;
-    }
-    setIsPlacingOrder(true);
-    await onPlaceOrder(arrivalTime, subtotal);
-    setIsPlacingOrder(false);
+      if (!arrivalTime) {
+          alert("Please select an arrival time.");
+          return;
+      }
+      setIsPlacingOrder(true);
+      // Pass coupon details to the order function
+      await onPlaceOrder(arrivalTime, subtotal, discount, appliedCoupon?.code);
+      setIsPlacingOrder(false);
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg m-4 relative flex flex-col max-h-[90vh]">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">Confirm Your Pre-order</h2>
-        <p className="text-center text-gray-500 mb-6">You're ordering from <span className="font-bold">{restaurant.name}</span>.</p>
-        
-        <div className="mb-6 overflow-y-auto">
-          <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} restaurant={restaurant} />
-        </div>
-        
-        <div className="mt-auto">
-            <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex justify-between px-6">
-                <span>{isPlacingOrder ? 'Processing...' : 'Proceed to Payment'}</span>
-                <span>₹{subtotal.toFixed(2)}</span>
-            </button>
-        </div>
+      <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg m-4 relative flex flex-col max-h-[90vh]">
+              <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
+              <div className="p-8">
+                  <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">Confirm Your Pre-order</h2>
+                  <p className="text-center text-gray-500 mb-6">You're ordering from <span className="font-bold">{restaurant.name}</span>.</p>
+              </div>
+              
+              <div className="px-8 pb-6 overflow-y-auto">
+                  <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} restaurant={restaurant} />
+              </div>
+              
+              <div className="mt-auto border-t p-6 bg-gray-50">
+                  <div className="flex gap-2 mb-4">
+                      <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Enter Coupon Code" className="w-full border rounded-lg p-2" disabled={appliedCoupon} />
+                      <button onClick={handleApplyCoupon} disabled={isValidating || appliedCoupon} className="bg-gray-200 font-semibold px-4 rounded-lg hover:bg-gray-300 disabled:opacity-50">
+                          {isValidating ? <Loader2 className="animate-spin" /> : 'Apply'}
+                      </button>
+                  </div>
+                  {couponError && <p className="text-red-500 text-sm mb-2">{couponError}</p>}
+                  
+                  <div className="space-y-2 mb-4">
+                       <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
+                       {discount > 0 && (
+                          <div className="flex justify-between text-green-600">
+                              <span>Discount ({appliedCoupon.code})</span>
+                              <span>- ₹{discount.toFixed(2)}</span>
+                          </div>
+                       )}
+                       <div className="flex justify-between font-bold text-xl border-t pt-2"><span >Grand Total</span><span>₹{grandTotal.toFixed(2)}</span></div>
+                  </div>
+                  
+                  <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg transition-all disabled:opacity-50 flex justify-between px-6">
+                      <span>{isPlacingOrder ? 'Processing...' : 'Proceed to Payment'}</span>
+                      <span>₹{grandTotal.toFixed(2)}</span>
+                  </button>
+              </div>
+          </div>
       </div>
-    </div>
   );
 };
 
@@ -1247,6 +1318,8 @@ const App = () => {
       }
 
       setIsCheckoutOpen(false);
+      const grandTotal = subtotal - discount;
+
 
       const orderData = {
           userId: currentUser.uid,
@@ -1266,13 +1339,21 @@ const App = () => {
           arrivalTime: arrivalTime,
           createdAt: serverTimestamp(),
           hasReview: false,
+          subtotal: subtotal,
+          discount: discount,
+          couponCode: couponCode,
+          total: grandTotal, // The final amount to be paid
+          status: "awaiting_payment",
+          arrivalTime: arrivalTime,
+          createdAt: serverTimestamp(),
+          hasReview: false,
       };
 
       try {
         const orderRef = await addDoc(collection(db, "orders"), orderData);
         const orderId = orderRef.id;
         const phonePePay = httpsCallable(functions, 'phonePePay');
-        const response = await phonePePay({ orderId: orderId, amount: subtotal });
+        const response = await phonePePePay({ orderId: orderId, amount: grandTotal }); 
         const { redirectUrl } = response.data;
 
         if (redirectUrl) {
