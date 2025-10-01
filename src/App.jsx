@@ -703,39 +703,49 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
   }, [isOpen]);
   
   const handleApplyCoupon = async () => {
-      if (!couponCode) return;
-      setIsValidating(true);
-      setCouponError('');
-      setDiscount(0);
-      setAppliedCoupon(null);
+    if (!couponCode) return;
+    setIsValidating(true);
+    setCouponError('');
+    setDiscount(0);
+    setAppliedCoupon(null);
 
-      const code = couponCode.toUpperCase();
-      const couponRef = doc(db, "coupons", code);
-      const couponSnap = await getDoc(couponRef);
+    try {
+        const code = couponCode.toUpperCase();
+        const couponRef = doc(db, "coupons", code);
+        const couponSnap = await getDoc(couponRef);
 
-      if (!couponSnap.exists()) {
-          setCouponError("Invalid coupon code.");
-      } else {
-          const coupon = couponSnap.data();
-          if (!coupon.isActive) {
-              setCouponError("This coupon is no longer active.");
-          } else if (new Date() > coupon.expiryDate.toDate()) {
-              setCouponError("This coupon has expired.");
-          } else if (subtotal < coupon.minOrderValue) {
-              setCouponError(`Minimum order of ₹${coupon.minOrderValue} is required.`);
-          } else {
-              let calculatedDiscount = 0;
-              if (coupon.type === 'fixed') {
-                  calculatedDiscount = coupon.value;
-              } else if (coupon.type === 'percentage') {
-                  calculatedDiscount = (subtotal * coupon.value) / 100;
-              }
-              setDiscount(calculatedDiscount);
-              setAppliedCoupon({ code, ...coupon });
-          }
-      }
-      setIsValidating(false);
-  };
+        if (!couponSnap.exists()) {
+            setCouponError("Invalid coupon code.");
+            return; // Exit the function
+        }
+
+        const coupon = couponSnap.data();
+        if (!coupon.isActive) {
+            setCouponError("This coupon is no longer active.");
+        } else if (new Date() > coupon.expiryDate.toDate()) {
+            setCouponError("This coupon has expired.");
+        } else if (subtotal < coupon.minOrderValue) {
+            setCouponError(`A minimum order of ₹${coupon.minOrderValue} is required to use this coupon.`);
+        } else {
+            // Success case
+            let calculatedDiscount = 0;
+            if (coupon.type === 'fixed') {
+                calculatedDiscount = coupon.value;
+            } else if (coupon.type === 'percentage') {
+                calculatedDiscount = (subtotal * coupon.value) / 100;
+            }
+            // Ensure discount doesn't exceed subtotal
+            setDiscount(Math.min(calculatedDiscount, subtotal));
+            setAppliedCoupon({ code, ...coupon });
+        }
+    } catch (error) {
+        console.error("Error validating coupon:", error);
+        setCouponError("Could not validate coupon. Please try again.");
+    } finally {
+        // This will always run, ensuring the spinner stops.
+        setIsValidating(false);
+    }
+};
 
   const handleConfirm = async () => {
       if (!arrivalTime) {
