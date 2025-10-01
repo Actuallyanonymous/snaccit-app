@@ -1363,7 +1363,7 @@ const App = () => {
         const orderRef = await addDoc(collection(db, "orders"), orderData);
         const orderId = orderRef.id;
         const phonePePay = httpsCallable(functions, 'phonePePay');
-        const response = await phonePePePay({ orderId: orderId, amount: grandTotal }); 
+        const response = await phonePePePay({ orderId: orderId, amount: subtotal }); 
         const { redirectUrl } = response.data;
 
         if (redirectUrl) {
