@@ -3,7 +3,8 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { getFunctions } from "firebase/functions"; // <-- Add this import
+import { getFunctions } from "firebase/functions"; 
+import { getMessaging } from "firebase/messaging";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -20,5 +21,5 @@ const app = initializeApp(firebaseConfig);
 // Initialize and export Firebase services from one place
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-// src/firebase.js
-export const functions = getFunctions(app, 'us-central1'); // <-- Initialize and export functions
+export const functions = getFunctions(app, 'us-central1'); 
+export const messaging = getMessaging(app); 

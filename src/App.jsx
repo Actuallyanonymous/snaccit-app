@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 // --- Import the initialized Firebase services from your central file ---
-import { auth, db, functions } from './firebase'; 
+import { auth, db, functions, messaging } from './firebase'; 
 
 // --- Import the specific functions you need from the Firebase SDKs ---
 import { 
@@ -22,6 +22,7 @@ import {
   query, where, orderBy, doc, setDoc, getDoc, updateDoc 
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
+import { getToken } from "firebase/messaging";
 
 // --- Notification Component ---
 const Notification = ({ message, type, onDismiss }) => {
@@ -1236,6 +1237,35 @@ const App = () => {
     setNotification({ message, type });
   };
 
+  const setupNotifications = async (user) => {
+    if (!user || !('Notification' in window)) {
+        console.log("This browser does not support desktop notification or user is not logged in.");
+        return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+        console.log('Notification permission granted.');
+        try {
+            const vapidKey = "BKTiwvssOvfLVbYe3YcRS7jOfopS_gGcV_uO_mdCZ_52Fo91YG231RfU_7VOtPXiBnjw_0PgBVSefnN466cG2wg"; 
+            const currentToken = await getToken(messaging, { vapidKey: vapidKey });
+
+            if (currentToken) {
+                console.log('FCM Token:', currentToken);
+                const userDocRef = doc(db, "users", user.uid);
+                // Save the token to the user's document
+                await updateDoc(userDocRef, { fcmToken: currentToken });
+            } else {
+                console.log('No registration token available. Request permission to generate one.');
+            }
+        } catch (err) {
+            console.error('An error occurred while retrieving token. ', err);
+        }
+    } else {
+        console.log('Unable to get permission to notify.');
+    }
+  };
+
   useEffect(() => {
     // Check for special URL paths on initial load
     const path = window.location.pathname;
@@ -1268,6 +1298,9 @@ const App = () => {
     const unsubAuth = onAuthStateChanged(auth, (user) => {
         setCurrentUser(user);
         setIsAuthReady(true);
+        if (user) {
+          setupNotifications(user);
+      }
     });
     return () => unsubAuth();
   }, []);
