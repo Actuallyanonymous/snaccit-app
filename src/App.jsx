@@ -1238,22 +1238,25 @@ const App = () => {
   };
 
   const setupNotifications = async (user) => {
-    if (!user || !('Notification' in window)) {
-        console.log("This browser does not support desktop notification or user is not logged in.");
+    // Check if the browser supports notifications
+    if (!('Notification' in window)) {
+        console.log("This browser does not support desktop notification.");
         return;
     }
-
+    
+    // Use the standard browser API to request permission
     const permission = await Notification.requestPermission();
+
     if (permission === 'granted') {
         console.log('Notification permission granted.');
         try {
-            const vapidKey = "BKTiwvssOvfLVbYe3YcRS7jOfopS_gGcV_uO_mdCZ_52Fo91YG231RfU_7VOtPXiBnjw_0PgBVSefnN466cG2wg"; 
+            // --- PASTE YOUR VAPID KEY HERE ---
+            const vapidKey = "BKTiwvssOvfLVbYe3YcRS7jOfopS_gGcV_uO_mdCZ_52Fo91YG231RfU_7VOtPXiBnjw_0PgBVSefnN466cG2wg";
             const currentToken = await getToken(messaging, { vapidKey: vapidKey });
 
             if (currentToken) {
                 console.log('FCM Token:', currentToken);
                 const userDocRef = doc(db, "users", user.uid);
-                // Save the token to the user's document
                 await updateDoc(userDocRef, { fcmToken: currentToken });
             } else {
                 console.log('No registration token available. Request permission to generate one.');
@@ -1264,7 +1267,8 @@ const App = () => {
     } else {
         console.log('Unable to get permission to notify.');
     }
-  };
+};
+
 
   useEffect(() => {
     // Check for special URL paths on initial load
