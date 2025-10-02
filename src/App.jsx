@@ -1238,6 +1238,8 @@ const App = () => {
   };
 
   const setupNotifications = async (user) => {
+    console.log("--- RUNNING LATEST NOTIFICATION CODE ---"); 
+
     // Check if the browser supports notifications
     if (!('Notification' in window)) {
         console.log("This browser does not support desktop notification.");
