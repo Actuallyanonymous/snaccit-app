@@ -1,12 +1,11 @@
-// src/firebase.js
+// src/firebase.js (New Compat Version)
 
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getFunctions } from "firebase/functions"; 
-import { getMessaging } from "firebase/messaging";
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+import 'firebase/compat/firestore';
+import 'firebase/compat/functions';
+import 'firebase/compat/messaging'; // <-- Important: use compat messaging
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDDFCPcfBKcvrkjqidsXstHqe8Og_3u36k",
   authDomain: "snaccit-7d853.firebaseapp.com",
@@ -15,11 +14,12 @@ const firebaseConfig = {
   messagingSenderId: "523142849231",
   appId: "1:523142849231:web:f10e23785d6451f510cdba"
 };
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 
-// Initialize and export Firebase services from one place
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const functions = getFunctions(app, 'us-central1'); 
-export const messaging = getMessaging(app); 
+// Initialize Firebase using the compat syntax
+const app = firebase.initializeApp(firebaseConfig);
+
+// Get services using the compat syntax
+export const auth = app.auth();
+export const db = app.firestore();
+export const functions = app.functions('us-central1');
+export const messaging = app.messaging(); // <-- Get the messaging instance here

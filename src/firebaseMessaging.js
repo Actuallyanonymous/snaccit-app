@@ -1,8 +1,8 @@
-// src/firebaseMessaging.js (Final Explicit Registration Version)
+// src/firebaseMessaging.js (New Compat Version)
 
-import { getMessaging, getToken } from "firebase/messaging";
 import { doc, updateDoc } from "firebase/firestore";
-import { db, auth } from './firebase'; 
+// Import the specific services directly from our new config file
+import { db, auth, messaging } from './firebase'; 
 
 export const requestCustomerNotificationPermission = async () => {
   const currentUser = auth.currentUser;
@@ -15,20 +15,12 @@ export const requestCustomerNotificationPermission = async () => {
     console.log("DEBUG: Browser permission status:", permission);
 
     if (permission === 'granted') {
-      const messaging = getMessaging();
-      console.log("DEBUG: Firebase Messaging object created.");
-
-      // --- THE CRITICAL FIX ---
-      // Explicitly register the service worker and wait for it to succeed.
-      // This removes any race conditions.
-      console.log("DEBUG: Attempting to register the service worker...");
-      const swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-      console.log("✅ SUCCESS: Service worker registered successfully.", swRegistration);
+      console.log("DEBUG: Attempting to get FCM token...");
       
-      // Now that we have a confirmed registration, we get the token.
-      const fcmToken = await getToken(messaging, {
-        vapidKey: 'BPnByAJWW3EznK9v5_A7ZjcK-OQexeE4ppGJ4QWjrYKCuoxeKznyiHpaz72Hg2LZLomooNGnmYb1MAEf4ScRjv4', 
-        serviceWorkerRegistration: swRegistration,
+      // The compat syntax for getToken is simpler and more robust.
+      // It automatically handles the service worker registration.
+      const fcmToken = await messaging.getToken({
+        vapidKey: 'BPnByAJWW3EznK9v5_A7ZjcK-OQexeE4ppGJ4QWjrYKCuoxeKznyiHpaz72Hg2LZLomooNGnmYb1MAEf4ScRjv4',
       });
       
       if (fcmToken) {
@@ -38,7 +30,7 @@ export const requestCustomerNotificationPermission = async () => {
         console.log("✅ SUCCESS: FCM Token saved to Firestore.");
         alert("Notifications have been enabled!");
       } else {
-        console.error("❌ ERROR: No FCM token received. This is unexpected.");
+        console.error("❌ ERROR: No FCM token received. Check service worker config.");
       }
     }
   } catch (error) {
