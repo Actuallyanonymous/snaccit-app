@@ -19,7 +19,7 @@ export const requestCustomerNotificationPermission = async () => {
       console.log("DEBUG: Firebase Messaging object created.");
 
       const fcmToken = await getToken(messaging, {
-        vapidKey: 'PASTE_YOUR_FUNCTIONS_PROJECT_VAPID_KEY_HERE', 
+        vapidKey: 'BPnByAJWW3EznK9v5_A7ZjcK-OQexeE4ppGJ4QWjrYKCuoxeKznyiHpaz72Hg2LZLomooNGnmYb1MAEf4ScRjv4', 
       });
       
       if (fcmToken) {
