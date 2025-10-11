@@ -1,4 +1,4 @@
-// src/firebaseMessaging.js (with debugging)
+// src/firebaseMessaging.js (Final Version with Service Worker Check)
 
 import { getMessaging, getToken } from "firebase/messaging";
 import { doc, updateDoc } from "firebase/firestore";
@@ -15,9 +15,14 @@ export const requestCustomerNotificationPermission = async () => {
     console.log("DEBUG: Browser permission status:", permission);
 
     if (permission === 'granted') {
-      const messaging = getMessaging();
-      console.log("DEBUG: Firebase Messaging object created.");
+      console.log("DEBUG: Waiting for service worker to be ready...");
 
+      // --- THIS IS THE CRITICAL FIX ---
+      // We wait for the browser to confirm the service worker is active.
+      await navigator.serviceWorker.ready;
+      console.log("DEBUG: Service worker is active.");
+
+      const messaging = getMessaging();
       const fcmToken = await getToken(messaging, {
         vapidKey: 'BPnByAJWW3EznK9v5_A7ZjcK-OQexeE4ppGJ4QWjrYKCuoxeKznyiHpaz72Hg2LZLomooNGnmYb1MAEf4ScRjv4', 
       });
@@ -29,10 +34,8 @@ export const requestCustomerNotificationPermission = async () => {
         console.log("✅ SUCCESS: FCM Token saved to Firestore.");
         alert("Notifications have been enabled!");
       } else {
-        console.error("❌ ERROR: No FCM token received. Check service worker and VAPID key.");
+        console.error("❌ ERROR: No FCM token received.");
       }
-    } else {
-      console.warn("WARN: User did not grant notification permission.");
     }
   } catch (error) {
     console.error('❌ FATAL ERROR during notification setup:', error);
