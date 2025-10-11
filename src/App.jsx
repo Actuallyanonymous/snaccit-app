@@ -1,6 +1,7 @@
 // App.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { requestCustomerNotificationPermission } from './firebaseMessaging'; // Adjust the path if your file is located elsewhere
 import { 
     ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, 
     Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, 
@@ -1268,6 +1269,9 @@ const App = () => {
     const unsubAuth = onAuthStateChanged(auth, (user) => {
         setCurrentUser(user);
         setIsAuthReady(true);
+        if (user) {
+          requestCustomerNotificationPermission();
+        }
     });
     return () => unsubAuth();
   }, []);
