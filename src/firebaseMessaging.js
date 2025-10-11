@@ -1,4 +1,4 @@
-// src/firebaseMessaging.js (Final Version with Service Worker Check)
+// src/firebaseMessaging.js (Final Robust Version)
 
 import { getMessaging, getToken } from "firebase/messaging";
 import { doc, updateDoc } from "firebase/firestore";
@@ -15,16 +15,24 @@ export const requestCustomerNotificationPermission = async () => {
     console.log("DEBUG: Browser permission status:", permission);
 
     if (permission === 'granted') {
-      console.log("DEBUG: Waiting for service worker to be ready...");
-
-      // --- THIS IS THE CRITICAL FIX ---
-      // We wait for the browser to confirm the service worker is active.
-      await navigator.serviceWorker.ready;
-      console.log("DEBUG: Service worker is active.");
-
       const messaging = getMessaging();
+      console.log("DEBUG: Firebase Messaging object created.");
+
+      // --- THE CRITICAL FIX ---
+      // Instead of just waiting, we get the service worker registration object.
+      // The file path must match what's in your /public folder.
+      const swRegistration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+      if (!swRegistration) {
+          console.error("❌ ERROR: Service worker registration not found. Ensure the file exists and the path is correct.");
+          return;
+      }
+      console.log("DEBUG: Found active service worker registration.");
+
+      // Now we pass the registration object directly to getToken.
+      // This forces Firebase to use the correct, active worker.
       const fcmToken = await getToken(messaging, {
         vapidKey: 'BPnByAJWW3EznK9v5_A7ZjcK-OQexeE4ppGJ4QWjrYKCuoxeKznyiHpaz72Hg2LZLomooNGnmYb1MAEf4ScRjv4', 
+        serviceWorkerRegistration: swRegistration,
       });
       
       if (fcmToken) {
@@ -34,7 +42,7 @@ export const requestCustomerNotificationPermission = async () => {
         console.log("✅ SUCCESS: FCM Token saved to Firestore.");
         alert("Notifications have been enabled!");
       } else {
-        console.error("❌ ERROR: No FCM token received.");
+        console.error("❌ ERROR: No FCM token received even with active service worker.");
       }
     }
   } catch (error) {
