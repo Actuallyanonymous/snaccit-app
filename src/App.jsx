@@ -580,70 +580,36 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout }) =>
 
 // --- Time Slot Picker Component ---
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
+    const timeSlots = useMemo(() => generateTimeSlots(restaurant?.openingTime, restaurant?.closingTime), [restaurant]);
+    if (!restaurant?.openingTime || !restaurant?.closingTime) {
+        return <div className="text-center p-4 bg-yellow-50 text-yellow-700 rounded-lg"><p className="font-semibold">This restaurant has not set its operating hours.</p><p className="text-sm">Pre-orders are currently unavailable.</p></div>;
+    }
+    if (timeSlots.length === 0) {
+        return <div className="text-center p-4 bg-red-50 text-red-700 rounded-lg"><p className="font-semibold">Sorry, this restaurant is currently closed for pre-orders.</p><p className="text-sm">Operating hours: {restaurant.openingTime} - {restaurant.closingTime}</p></div>;
+    }
     const generateTimeSlots = (openingTimeStr, closingTimeStr) => {
-        const slots = [];
-        const now = new Date();
-    
-        if (!openingTimeStr || !closingTimeStr) {
-            return [];
-        }
-        
+        const slots = [], now = new Date();
+        if (!openingTimeStr || !closingTimeStr) return [];
         const [openHours, openMinutes] = openingTimeStr.split(':').map(Number);
         const openingTime = new Date();
         openingTime.setHours(openHours, openMinutes, 0, 0);
-    
         const [closeHours, closeMinutes] = closingTimeStr.split(':').map(Number);
         const closingTime = new Date();
         closingTime.setHours(closeHours, closeMinutes, 0, 0);
-        
-        const minutes = now.getMinutes();
-        const remainder = minutes % 15;
+        const minutes = now.getMinutes(), remainder = minutes % 15;
         const roundedUpNow = new Date(now);
         roundedUpNow.setMinutes(minutes + (15 - remainder), 0, 0);
-    
         let startTime = roundedUpNow > openingTime ? roundedUpNow : openingTime;
-        
-        if (startTime >= closingTime) {
-            return [];
-        }
-    
+        if (startTime >= closingTime) return [];
         while (startTime < closingTime) {
             const slotTime = new Date(startTime);
-            
-            const displayFormat = slotTime.toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-            });
-            
+            const displayFormat = slotTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
             const valueFormat = slotTime.toTimeString().substring(0, 5);
             slots.push({ display: displayFormat, value: valueFormat });
-    
             startTime.setMinutes(startTime.getMinutes() + 15);
         }
-    
         return slots;
     };
-    const timeSlots = useMemo(() => generateTimeSlots(restaurant?.openingTime, restaurant?.closingTime), [restaurant]);
-    
-    if (!restaurant?.openingTime || !restaurant?.closingTime) {
-        return (
-            <div className="text-center p-4 bg-yellow-50 text-yellow-700 rounded-lg">
-                <p className="font-semibold">This restaurant has not set its operating hours.</p>
-                <p className="text-sm">Pre-orders are currently unavailable.</p>
-            </div>
-        );
-    }
-
-    if (timeSlots.length === 0) {
-        return (
-            <div className="text-center p-4 bg-red-50 text-red-700 rounded-lg">
-                <p className="font-semibold">Sorry, this restaurant is currently closed for pre-orders.</p>
-                <p className="text-sm">Operating hours: {restaurant.openingTime} - {restaurant.closingTime}</p>
-            </div>
-        );
-    }
-
     return (
         <div>
             <label className="block text-gray-700 text-sm font-bold mb-3"><Clock className="inline mr-2" size={16}/>Estimated Arrival Time</label>
@@ -1218,3 +1184,4 @@ const PaymentRedirectOverlay = ({ isOpen }) => {
 };
 
 export default App;
+
