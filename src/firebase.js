@@ -7,7 +7,7 @@ import 'firebase/compat/functions';
 import 'firebase/compat/messaging'; // <-- Important: use compat messaging
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAlQLSGguPfp7CbNjrPANssqx31s2X94w4",
+  apiKey: "AIzaSyDDFCPcfBKcvrkjqidsXstHqe8Og_3u36k",
   authDomain: "snaccit-7d853.firebaseapp.com",
   projectId: "snaccit-7d853",
   storageBucket: "snaccit-7d853.firebasestorage.app",

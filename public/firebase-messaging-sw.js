@@ -5,7 +5,7 @@ importScripts('https://www.gstatic.com/firebasejs/9.2.0/firebase-messaging-compa
 
 // This config is for your MAIN project: snaccit-7d853
 const firebaseConfig = {
-    apiKey: "AIzaSyAlQLSGguPfp7CbNjrPANssqx31s2X94w4",
+    apiKey: "AIzaSyDDFCPcfBKcvrkjqidsXstHqe8Og_3u36k",
     authDomain: "snaccit-7d853.firebaseapp.com",
     projectId: "snaccit-7d853",
     storageBucket: "snaccit-7d853.firebasestorage.app",
@@ -15,3 +15,5 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
+
+AIzaSyDDFCPcfBKcvrkjqidsXstHqe8Og_3u36k
