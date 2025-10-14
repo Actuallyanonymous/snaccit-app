@@ -54,7 +54,7 @@ exports.phonePePay = onCall({
     amount: Math.round(amountToPay * 100),
     redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderId}`,
     redirectMode: "REDIRECT",
-    callbackUrl: `https://us-central1-snaccit-7d853.cloudfunctions.net/phonePeCallback`,
+    callbackUrl: `https://asia-south2-snaccit-7d853.cloudfunctions.net/phonePeCallback`,
     mobileNumber: "9999999999",
     paymentInstrument: {
       type: "PAY_PAGE",
