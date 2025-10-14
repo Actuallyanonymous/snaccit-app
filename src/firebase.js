@@ -21,5 +21,5 @@ const app = firebase.initializeApp(firebaseConfig);
 // Get services using the compat syntax
 export const auth = app.auth();
 export const db = app.firestore();
-export const functions = app.functions('us-central1');
+export const functions = app.functions('asia-south2');
 export const messaging = app.messaging(); // <-- Get the messaging instance here
