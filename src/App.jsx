@@ -1,5 +1,5 @@
 // App.jsx (Fully Refactored to Compat SDK - Complete)
-
+import firebase from 'firebase/compat/app';
 import React, { useState, useEffect, useMemo } from 'react';
 import { requestCustomerNotificationPermission } from './firebaseMessaging';
 import { 
@@ -111,7 +111,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                     email: user.email,
                     username: '',
                     mobile: '',
-                    createdAt: db.FieldValue.serverTimestamp() // compat syntax
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp() // compat syntax
                 }, { merge: true });
             }
             onClose();
@@ -1027,7 +1027,8 @@ const App = () => {
             userId: currentUser.uid, userEmail: currentUser.email, restaurantId: selectedRestaurant.id, restaurantName: selectedRestaurant.name,
             items: cart.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.finalPrice, size: item.selectedSize.name, addons: item.selectedAddons.map(a => a.name) })),
             subtotal, discount, couponCode: couponCode || null, total: grandTotal, status: "awaiting_payment", arrivalTime,
-            createdAt: db.FieldValue.serverTimestamp(), hasReview: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            hasReview: false,
         };
         try {
             const orderRef = await db.collection("orders").add(orderData);
