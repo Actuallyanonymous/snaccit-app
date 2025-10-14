@@ -580,13 +580,7 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout }) =>
 
 // --- Time Slot Picker Component ---
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
-    const timeSlots = useMemo(() => generateTimeSlots(restaurant?.openingTime, restaurant?.closingTime), [restaurant]);
-    if (!restaurant?.openingTime || !restaurant?.closingTime) {
-        return <div className="text-center p-4 bg-yellow-50 text-yellow-700 rounded-lg"><p className="font-semibold">This restaurant has not set its operating hours.</p><p className="text-sm">Pre-orders are currently unavailable.</p></div>;
-    }
-    if (timeSlots.length === 0) {
-        return <div className="text-center p-4 bg-red-50 text-red-700 rounded-lg"><p className="font-semibold">Sorry, this restaurant is currently closed for pre-orders.</p><p className="text-sm">Operating hours: {restaurant.openingTime} - {restaurant.closingTime}</p></div>;
-    }
+    
     const generateTimeSlots = (openingTimeStr, closingTimeStr) => {
         const slots = [], now = new Date();
         if (!openingTimeStr || !closingTimeStr) return [];
@@ -610,6 +604,14 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
         }
         return slots;
     };
+
+    const timeSlots = useMemo(() => generateTimeSlots(restaurant?.openingTime, restaurant?.closingTime), [restaurant]);
+    if (!restaurant?.openingTime || !restaurant?.closingTime) {
+        return <div className="text-center p-4 bg-yellow-50 text-yellow-700 rounded-lg"><p className="font-semibold">This restaurant has not set its operating hours.</p><p className="text-sm">Pre-orders are currently unavailable.</p></div>;
+    }
+    if (timeSlots.length === 0) {
+        return <div className="text-center p-4 bg-red-50 text-red-700 rounded-lg"><p className="font-semibold">Sorry, this restaurant is currently closed for pre-orders.</p><p className="text-sm">Operating hours: {restaurant.openingTime} - {restaurant.closingTime}</p></div>;
+    }
     return (
         <div>
             <label className="block text-gray-700 text-sm font-bold mb-3"><Clock className="inline mr-2" size={16}/>Estimated Arrival Time</label>
