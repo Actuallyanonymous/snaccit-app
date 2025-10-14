@@ -15,7 +15,7 @@ const firebaseConfig = {
   appId: "1:523142849231:web:f10e23785d6451f510cdba"
 };
 
-// Initialize Firebase using the compat syntax
+// Initialize Firebase usig the compat syntax
 const app = firebase.initializeApp(firebaseConfig);
 
 // Get services using the compat syntax

@@ -19,7 +19,7 @@ export const requestCustomerNotificationPermission = async () => {
       
       // The compat syntax is robust and handles the service worker correctly.
       const fcmToken = await messaging.getToken({
-        vapidKey: 'BPnByAJWW3EznK9v5_A7ZjcK-OQexeE4ppGJ4QWjrYKCuoxeKznyiHpaz72Hg2LZLomooNGnmYb1MAEf4ScRjv4', // VAPID from snaccit-7d853
+        vapidKey: 'BKTiwvssOvfLVbYe3YcRS7jOfopS_gGcV_uO_mdCZ_52Fo91YG231RfU_7VOtPXiBnjw_0PgBVSefnN466cG2wg', // VAPID from snaccit-7d853
       });
       
       if (fcmToken) {
