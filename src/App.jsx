@@ -750,7 +750,7 @@ const PaymentStatusPage = ({ onGoHome }) => {
         }, 25000);
 
         return () => { unsubscribe(); clearTimeout(timer); };
-    }, [orderStatus]);
+    }, []);
 
     const renderContent = () => {
         switch (orderStatus) {

@@ -6,107 +6,97 @@ const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const crypto = require("crypto");
-const { defineString } = require('firebase-functions/params');
+const { defineString } = require('firebase-functions/params'); 
+const APP_BASE_URL = defineString("APP_BASE_URL");
+const cors = require('cors')({origin: true});
+
 
 admin.initializeApp();
 const db = admin.firestore();
 
-const APP_BASE_URL = defineString("APP_BASE_URL");
 const PHONEPE_PAY_API_URL = "https://api.phonepe.com/apis/hermes/pg/v1/pay";
 
-exports.phonePePay = onCall({ 
-  minInstances: 1,
-  secrets: ["PHONEPE_MERCHANT_ID", "PHONEPE_SALT_KEY", "PHONEPE_SALT_INDEX"] 
-}, async (request) => {
+exports.phonePePay = onRequest({
+  region: "asia-south2",
+  secrets: ["PHONEPE_MERCHANT_ID", "PHONEPE_SALT_KEY", "PHONEPE_SALT_INDEX"],
+  minInstances: 1, // You can keep this on the Blaze plan
+}, (req, res) => {
+  // This wraps your function in CORS handling
+  cors(req, res, async () => {
+      // 1. Manually verify the user is authenticated
+      if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+          logger.error("Unauthorized: No authorization token was passed.");
+          res.status(403).send('Unauthorized');
+          return;
+      }
 
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
-  }
-  
-  const { orderId } = request.data;
-  const userId = request.auth.uid;
+      try {
+          const idToken = req.headers.authorization.split('Bearer ')[1];
+          const decodedToken = await admin.auth().verifyIdToken(idToken);
+          const userId = decodedToken.uid;
+          
+          // 2. Manually get the orderId from the request body
+          const { orderId } = req.body.data;
+          if (!orderId) {
+              res.status(400).send({ error: "Missing orderId in request." });
+              return;
+          }
 
-  // --- SERVER-SIDE VALIDATION ---
-  const orderRef = db.collection("orders").doc(orderId);
-  const orderDoc = await orderRef.get();
+          // --- Your original function logic is identical from here ---
+          const orderRef = db.collection("orders").doc(orderId);
+          const orderDoc = await orderRef.get();
 
-  if (!orderDoc.exists) {
-    throw new HttpsError("not-found", "Order not found.");
-  }
+          if (!orderDoc.exists) { throw new Error("Order not found."); }
+          const orderData = orderDoc.data();
+          if (orderData.userId !== userId) { throw new Error("Permission denied."); }
+          
+          const amountToPay = orderData.total;
+          const merchantTransactionId = `SNCT_${orderId}`;
+          const merchantId = process.env.PHONEPE_MERCHANT_ID;
+          const saltKey = process.env.PHONEPE_SALT_KEY;
+          const saltIndex = process.env.PHONEPE_SALT_INDEX;
 
-  const orderData = orderDoc.data();
+          const payload = {
+              merchantId, merchantTransactionId, merchantUserId: userId,
+              amount: Math.round(amountToPay * 100),
+              redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderId}`,
+              redirectMode: "REDIRECT",
+              callbackUrl: `https://asia-south2-snaccit-7d853.cloudfunctions.net/phonePeCallback`,
+              mobileNumber: "9999999999",
+              paymentInstrument: { type: "PAY_PAGE" },
+          };
+          
+          const base64Payload = Buffer.from(JSON.stringify(payload)).toString("base64");
+          const stringToHash = base64Payload + "/pg/v1/pay" + saltKey;
+          const sha256Hash = require("crypto").createHash("sha256").update(stringToHash).digest("hex");
+          const xVerify = sha256Hash + "###" + saltIndex;
+          
+          const options = {
+              method: "POST",
+              url: "https://api.phonepe.com/apis/hermes/pg/v1/pay",
+              headers: { accept: "application/json", "Content-Type": "application/json", "X-VERIFY": xVerify },
+              data: { request: base64Payload },
+          };
 
-  if (orderData.userId !== userId) {
-    throw new HttpsError("permission-denied", "You do not have permission to pay for this order.");
-  }
-  
-  const amountToPay = orderData.total;
-  
-  const merchantTransactionId = `SNCT_${orderId}`;
-  const merchantId = process.env.PHONEPE_MERCHANT_ID;
-  const saltKey = process.env.PHONEPE_SALT_KEY;
-  const saltIndex = process.env.PHONEPE_SALT_INDEX;
-  
-  const payload = {
-    merchantId: merchantId,
-    merchantTransactionId: merchantTransactionId,
-    merchantUserId: userId,
-    amount: Math.round(amountToPay * 100),
-    redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderId}`,
-    redirectMode: "REDIRECT",
-    callbackUrl: `https://asia-south2-snaccit-7d853.cloudfunctions.net/phonePeCallback`,
-    mobileNumber: "9999999999",
-    paymentInstrument: {
-      type: "PAY_PAGE",
-    },
-  };
+          const response = await require("axios").request(options);
 
-  const base64Payload = Buffer.from(JSON.stringify(payload)).toString("base64");
-  const stringToHash = base64Payload + "/pg/v1/pay" + saltKey;
-  const sha256Hash = crypto.createHash("sha256").update(stringToHash).digest("hex");
-  const xVerify = sha256Hash + "###" + saltIndex;
-
-  const options = {
-    method: "POST",
-    url: PHONEPE_PAY_API_URL,
-    headers: {
-      accept: "application/json",
-      "Content-Type": "application/json",
-      "X-VERIFY": xVerify,
-    },
-    data: {
-      request: base64Payload,
-    },
-  };
-
-  try {
-    const response = await axios.request(options);
-
-    if (response.data.success) {
-      const redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
-      orderRef.update({ merchantTransactionId })
-        .catch(err => {
-          logger.error(`[Order ID: ${orderId}] CRITICAL: Failed to update order. Error:`, err);
-        });
-      return { redirectUrl };
-    } else {
-      throw new HttpsError("internal", `PhonePe Error: ${response.data.message || 'Unknown Error'}`);
-    }
-  } catch (error) {
-    logger.error(`[Order ID: ${orderId}] Error in phonePePay function:`, error);
-    if (error.response && error.response.data) {
-        const detailedMessage = error.response.data.message || JSON.stringify(error.response.data);
-        await orderRef.update({ status: 'payment_failed', errorDetails: detailedMessage });
-        throw new HttpsError("internal", `Payment API failed: ${detailedMessage}`);
-    }
-    if (error instanceof HttpsError) {
-        throw error;
-    }
-    throw new HttpsError("internal", "Failed to initiate payment.");
-  }
+          if (response.data.success) {
+              const redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
+              await orderRef.update({ merchantTransactionId });
+              // 3. Manually send the successful response back
+              res.status(200).send({ data: { redirectUrl } });
+          } else {
+              throw new Error(`PhonePe Error: ${response.data.message || 'Unknown Error'}`);
+          }
+      } catch (error) {
+          logger.error("Error in phonePePay onRequest:", error);
+          res.status(500).send({ error: { message: "An internal error occurred.", details: error.message } });
+      }
+  });
 });
 
 exports.phonePeCallback = onRequest({
+    region: "asia-south2",
     secrets: ["PHONEPE_SALT_KEY", "PHONEPE_SALT_INDEX"]
 }, async (req, res) => {
     if (req.method !== "POST") {

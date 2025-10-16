@@ -1,8 +1,8 @@
 // public/firebase-messaging-sw.js (Final Version)
 
 // Using a more recent, stable version of the Firebase SDK
-importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js');
 
 // This config MUST be for your MAIN project: snaccit-7d853
 const firebaseConfig = {
