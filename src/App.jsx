@@ -981,7 +981,7 @@ const App = () => {
         const unsubAuth = auth.onAuthStateChanged((user) => {
             setCurrentUser(user);
             setIsAuthReady(true);
-            if (user) { requestCustomerNotificationPermission(); }
+            if (user) { requestCustomerNotificationPermission(user); }
         });
         return () => unsubAuth();
     }, []);
