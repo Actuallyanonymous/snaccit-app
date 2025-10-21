@@ -11,10 +11,15 @@ export const requestCustomerNotificationPermission = async (user) => {
       // 1. Check if a token already exists in Firestore first.
       const userDocRef = db.collection("users").doc(user.uid);
       const userDoc = await userDocRef.get();
+      const existingToken = userDoc.data()?.fcmToken;
       
       // 2. If a token exists, do nothing and exit the function.
-      if (userDoc.exists && userDoc.data().fcmToken) {
+      if (existingToken) {
           console.log("DEBUG: FCM token already exists for this user. Skipping permission request.");
+          // Optional: Re-save the token if the browser token might have changed (e.g., after an update)
+          // You can skip this step to reduce unnecessary database writes:
+          // const currentToken = await messaging.getToken({ vapidKey: '...' });
+          // if (currentToken !== existingToken) { await userDocRef.update({ fcmToken: currentToken }); }
           return; 
       }
   
@@ -26,21 +31,24 @@ export const requestCustomerNotificationPermission = async (user) => {
       if (permission === 'granted') {
         console.log("DEBUG: Attempting to get FCM token...");
       
+        // CRITICAL: Must use the VAPID key from the snaccit-7d853 project settings
         const fcmToken = await messaging.getToken({
-          vapidKey: 'BPnByAJWW3EznK9v5_A7ZjcK-OQexeE4ppGJ4QWjrYKCuoxeKznyiHpaz72Hg2LZLomooNGnmYb1MAEf4ScRjv4', // VAPID from snaccit-7d853
+          vapidKey: 'BPnByAJWW3EznK9v5_A7ZjcK-OQexeE4ppGJ4QWjrYKCuoxeKznyiHpaz72Hg2LZLomooNGnmYb1MAEf4ScRjv4', 
         });
       
         if (fcmToken) {
           console.log("DEBUG: FCM Token received successfully:", fcmToken);
           await userDocRef.update({ fcmToken: fcmToken }); 
           console.log("✅ SUCCESS: FCM Token saved to Firestore.");
-          alert("Notifications have been enabled!"); // This will now only show once.
+          // Notify the user, but only on the first time they grant permission
+          alert("Notifications have been enabled for Snaccit!"); 
         } else {
           console.error("❌ ERROR: No FCM token received. Check service worker config and VAPID key.");
         }
+      } else {
+        console.warn("User denied or dismissed notification permission request.");
       }
     } catch (error) {
       console.error('❌ FATAL ERROR during notification setup:', error);
     }
   };
-  

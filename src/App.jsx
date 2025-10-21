@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 // --- IMPORTANT: auth, db, and functions are now the COMPAT instances from your firebase.js ---
-import { auth, db, functions } from './firebase'; 
+import { auth, db, functionsAsia } from './firebase'; 
 
 // --- Notification Component ---
 const Notification = ({ message, type, onDismiss }) => {
@@ -1032,7 +1032,7 @@ const App = () => {
         };
         try {
             const orderRef = await db.collection("orders").add(orderData);
-            const phonePePay = functions.httpsCallable('phonePePay');
+            const phonePePay = functionsAsia.httpsCallable('phonePePay');
             const response = await phonePePay({ orderId: orderRef.id }); 
             const { redirectUrl } = response.data;
             if (redirectUrl) { window.location.href = redirectUrl; }
