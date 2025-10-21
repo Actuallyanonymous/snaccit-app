@@ -982,7 +982,6 @@ const App = () => {
           setCurrentUser(user);
           setIsAuthReady(true);
           
-          // CRITICAL CHECK: Call the function when the user is authenticated
           if (user) { 
               console.log("User logged in. Requesting notification permission.");
               requestCustomerNotificationPermission(user); 
