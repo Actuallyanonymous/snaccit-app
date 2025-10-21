@@ -979,12 +979,17 @@ const App = () => {
         fetchRestaurantsAndMenus();
 
         const unsubAuth = auth.onAuthStateChanged((user) => {
-            setCurrentUser(user);
-            setIsAuthReady(true);
-            if (user) { requestCustomerNotificationPermission(user); }
-        });
-        return () => unsubAuth();
-    }, []);
+          setCurrentUser(user);
+          setIsAuthReady(true);
+          
+          // CRITICAL CHECK: Call the function when the user is authenticated
+          if (user) { 
+              console.log("User logged in. Requesting notification permission.");
+              requestCustomerNotificationPermission(user); 
+          }
+      });
+      return () => unsubAuth();
+  }, []);
 
     useEffect(() => {
         if (view === 'home' && scrollToSection) {

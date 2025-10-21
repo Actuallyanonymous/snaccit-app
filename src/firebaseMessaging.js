@@ -1,49 +1,47 @@
-// src/firebaseMessaging.js (Final Corrected Version)
+// src/firebaseMessaging.js (CONFIRMED)
 
-import { doc, updateDoc } from "firebase/firestore";
 // Import services directly from our corrected config file
-import { db, auth, messaging } from './firebase.js'; 
+import { db, messaging } from './firebase.js'; 
 
 export const requestCustomerNotificationPermission = async (user) => {
     if (!user) return;
   
+    // Check if the browser supports notifications first
+    if (!("Notification" in window)) {
+        console.warn("Browser does not support desktop notifications.");
+        return;
+    }
+
     try {
-      // 1. Check if a token already exists in Firestore first.
       const userDocRef = db.collection("users").doc(user.uid);
       const userDoc = await userDocRef.get();
       const existingToken = userDoc.data()?.fcmToken;
       
-      // 2. If a token exists, do nothing and exit the function.
+      // If a token exists, skip the request
       if (existingToken) {
-          console.log("DEBUG: FCM token already exists for this user. Skipping permission request.");
-          // Optional: Re-save the token if the browser token might have changed (e.g., after an update)
-          // You can skip this step to reduce unnecessary database writes:
-          // const currentToken = await messaging.getToken({ vapidKey: '...' });
-          // if (currentToken !== existingToken) { await userDocRef.update({ fcmToken: currentToken }); }
+          console.log("DEBUG: FCM token already exists for this user.");
           return; 
       }
   
-      // 3. If no token exists, proceed with the permission request.
-      console.log("DEBUG: No FCM token found. Starting notification permission request...");
-      const permission = await Notification.requestPermission();
-      console.log("DEBUG: Browser permission status:", permission);
+      console.log("DEBUG: No FCM token found. Starting permission request...");
+      
+      // CRITICAL: This line triggers the browser prompt.
+      const permission = await Notification.requestPermission(); 
   
       if (permission === 'granted') {
         console.log("DEBUG: Attempting to get FCM token...");
       
-        // CRITICAL: Must use the VAPID key from the snaccit-7d853 project settings
         const fcmToken = await messaging.getToken({
-          vapidKey: 'BPnByAJWW3EznK9v5_A7ZjcK-OQexeE4ppGJ4QWjrYKCuoxeKznyiHpaz72Hg2LZLomooNGnmYb1MAEf4ScRjv4', 
-        });
+            vapidKey: 'BPnByAJWW3EznK9v5_A7ZjcK-OQexeE4ppGJ4QWjrYKCuoxeKznyiHpaz72Hg2LZomooNGnmYb1MAEf4ScRjv4',
+            serviceWorkerRegistration: 
+              await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+          });
       
         if (fcmToken) {
-          console.log("DEBUG: FCM Token received successfully:", fcmToken);
+          console.log("✅ SUCCESS: FCM Token received and will be saved.");
           await userDocRef.update({ fcmToken: fcmToken }); 
-          console.log("✅ SUCCESS: FCM Token saved to Firestore.");
-          // Notify the user, but only on the first time they grant permission
-          alert("Notifications have been enabled for Snaccit!"); 
         } else {
-          console.error("❌ ERROR: No FCM token received. Check service worker config and VAPID key.");
+          console.error("❌ ERROR: No FCM token received.");
         }
       } else {
         console.warn("User denied or dismissed notification permission request.");
@@ -51,4 +49,4 @@ export const requestCustomerNotificationPermission = async (user) => {
     } catch (error) {
       console.error('❌ FATAL ERROR during notification setup:', error);
     }
-  };
+};

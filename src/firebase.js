@@ -1,10 +1,10 @@
-// src/firebase.js (New Compat Version)
+// src/firebase.js (CORRECTED)
 
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
 import 'firebase/compat/functions';
-import 'firebase/compat/messaging'; // <-- Important: use compat messaging
+import 'firebase/compat/messaging'; 
 
 const firebaseConfig = {
   apiKey: "AIzaSyDDFCPcfBKcvrkjqidsXstHqe8Og_3u36k",
@@ -15,12 +15,16 @@ const firebaseConfig = {
   appId: "1:523142849231:web:f10e23785d6451f510cdba"
 };
 
-// Initialize Firebase usig the compat syntax
+// Initialize Firebase using the compat syntax
 const app = firebase.initializeApp(firebaseConfig);
 
 // Get services using the compat syntax
 export const auth = app.auth();
 export const db = app.firestore();
-export const functionsUs = app.functions('us-central1');
-export const functionsAsia = app.functions('asia-south2');
-export const messaging = app.messaging(); // <-- Get the messaging instance here
+
+// Note: functions are defined here by region for your calls
+export const functionsAsia = app.functions('asia-south2'); 
+export const functionsUs = app.functions('us-central1'); 
+
+// CRITICAL FIX: Ensure messaging is initialized immediately for the client
+export const messaging = app.messaging();
