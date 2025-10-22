@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 // --- IMPORTANT: auth, db, and functions are now the COMPAT instances from your firebase.js ---
-import { auth, db, functionsAsia } from './firebase'; 
+import { auth, db, functionsAsia, messaging } from './firebase'; 
 
 // --- Notification Component ---
 const Notification = ({ message, type, onDismiss }) => {
@@ -987,6 +987,17 @@ const App = () => {
               requestCustomerNotificationPermission(user); 
           }
       });
+
+      if (messaging) {
+        messaging.onMessage((payload) => {
+            console.log('Foreground message received: ', payload);
+    
+            // Use your existing notification component to show the message
+            const notificationTitle = payload.notification.title;
+            const notificationBody = payload.notification.body;
+            showNotification(`${notificationTitle}: ${notificationBody}`, 'success');
+        });
+    }
       return () => unsubAuth();
   }, []);
 
