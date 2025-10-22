@@ -26,6 +26,9 @@ messaging.onBackgroundMessage((payload) => {
     '[firebase-messaging-sw.js] Received background message ',
     payload
   );
-  // If you wanted to show a notification when the app is in the background,
-  // you would add the code to do so here.
+
+  const notificationTitle = payload.notification.title;
+  const notificationOptions = {
+    body: payload.notification.body,
+  };
 });
