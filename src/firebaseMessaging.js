@@ -32,7 +32,7 @@ export const initializeNotifications = async (user) => {
             console.log("DEBUG: Permission granted. Getting FCM token...");
         
             const fcmToken = await messaging.getToken({
-                vapidKey: 'BPnByAJWW3EznK9v5_A7ZjcK-OQexeE4ppGJ4QWjrYKCuoxeKznyiHpaz72Hg2LZLomooNGnmYb1MAEf4ScRjv4',
+                vapidKey: 'BKTiwvssOvfLVbYe3YcRS7jOfopS_gGcV_uO_mdCZ_52Fo91YG231RfU_7VOtPXiBnjw_0PgBVSefnN466cG2wg',
             });
         
             if (fcmToken) {
