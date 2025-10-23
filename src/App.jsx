@@ -95,65 +95,73 @@ const AuthModal = ({ isOpen, onClose }) => {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState(null);
 
-  const setupRecaptcha = () => {
-      // *** NEW DEBUG LOG ***
-      console.log("Attempting to set up reCAPTCHA...");
-      // Check if the reCAPTCHA library script has loaded
-      if (typeof window.grecaptcha === 'undefined' || typeof firebase.auth.RecaptchaVerifier === 'undefined') {
-           console.error("!!! reCAPTCHA library (grecaptcha or RecaptchaVerifier) not loaded!");
-           setError("Authentication service failed to load. Please refresh and try again.");
-           setIsProcessing(false); // Ensure button is enabled if setup fails
-           return; // Stop setup if library isn't ready
-      }
+  const setupRecaptcha = (retryCount = 0) => { // Added retryCount
+    console.log(`Attempting to set up reCAPTCHA... (Attempt ${retryCount + 1})`);
+
+    // Check if the reCAPTCHA library script has loaded
+    if (typeof window.grecaptcha === 'undefined' || typeof firebase.auth.RecaptchaVerifier === 'undefined') {
+        console.warn("reCAPTCHA library (grecaptcha or RecaptchaVerifier) not ready yet.");
+
+        // *** NEW: Retry logic ***
+        if (retryCount < 5) { // Try up to 5 times (total ~500ms)
+            console.log("Retrying setup in 100ms...");
+            setTimeout(() => setupRecaptcha(retryCount + 1), 100); // Retry after 100ms
+            return; // Exit current attempt
+        } else {
+            console.error("!!! reCAPTCHA library failed to load after multiple retries!");
+            setError("Authentication service failed to load. Please refresh and try again.");
+            setIsProcessing(false);
+            return; // Stop setup
+        }
+        // *** END: Retry logic ***
+    }
       // Ensure the container exists
-       const container = document.getElementById('recaptcha-container');
-       if (!container) {
-           console.error("!!! reCAPTCHA container element not found in DOM!");
-           setError("UI Error: reCAPTCHA container missing. Please refresh.");
-           setIsProcessing(false);
-           return;
-       }
+     const container = document.getElementById('recaptcha-container');
+     if (!container) {
+         console.error("!!! reCAPTCHA container element not found in DOM!");
+         setError("UI Error: reCAPTCHA container missing. Please refresh.");
+         setIsProcessing(false);
+         return;
+     }
 
-      try {
-          if (window.recaptchaVerifier) {
-              console.log("Clearing previous reCAPTCHA verifier.");
-              window.recaptchaVerifier.clear();
-          }
+     try {
+         if (window.recaptchaVerifier) {
+             console.log("Clearing previous reCAPTCHA verifier.");
+             window.recaptchaVerifier.clear();
+         }
 
-           console.log("Creating new RecaptchaVerifier instance...");
-          window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-              'size': 'invisible',
-              'callback': (response) => {
-                  console.log("reCAPTCHA solved (invisible callback)");
-                  // This might be called automatically before handleAuthAction in some cases
-              },
-              'expired-callback': () => {
-                  console.warn("reCAPTCHA expired.");
-                  setError("reCAPTCHA expired. Please try sending OTP again.");
-                  setIsProcessing(false);
-                  // Attempt to reset/recreate
-                  if(window.recaptchaVerifier) window.recaptchaVerifier.clear();
-                  setupRecaptcha(); // Try setting up again
-              }
-          });
+         console.log("Creating new RecaptchaVerifier instance...");
+         window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+             'size': 'invisible',
+             'callback': (response) => {
+                 console.log("reCAPTCHA solved (invisible callback)");
+             },
+             'expired-callback': () => {
+                 console.warn("reCAPTCHA expired.");
+                 setError("reCAPTCHA expired. Please try sending OTP again.");
+                 setIsProcessing(false);
+                 if(window.recaptchaVerifier) window.recaptchaVerifier.clear();
+                 setupRecaptcha(); // Try setting up again without incrementing retry, maybe just expired
+             }
+         });
 
-           // Render the verifier immediately to ensure it's ready
-           window.recaptchaVerifier.render().then((widgetId) => {
-               window.recaptchaWidgetId = widgetId; // Store widget ID if needed
-               console.log("reCAPTCHA rendered successfully with widget ID:", widgetId);
-               setRecaptchaVerifier(window.recaptchaVerifier); // Store in state ONLY after successful render
-           }).catch(err => {
-               console.error("!!! Error rendering reCAPTCHA:", err);
-               setError("Failed to initialize reCAPTCHA. Check console for details.");
-               setIsProcessing(false);
-           });
+         // Render the verifier immediately
+         window.recaptchaVerifier.render().then((widgetId) => {
+             window.recaptchaWidgetId = widgetId;
+             console.log("reCAPTCHA rendered successfully with widget ID:", widgetId);
+             setRecaptchaVerifier(window.recaptchaVerifier);
+         }).catch(err => {
+             console.error("!!! Error rendering reCAPTCHA:", err);
+             setError("Failed to initialize reCAPTCHA. Check console for details.");
+             setIsProcessing(false);
+         });
 
-      } catch (err) {
-           console.error("!!! Error creating RecaptchaVerifier instance:", err);
-           setError("Failed to create reCAPTCHA verifier. Check console.");
-           setIsProcessing(false);
-      }
-  };
+     } catch (err) {
+         console.error("!!! Error creating RecaptchaVerifier instance:", err);
+         setError("Failed to create reCAPTCHA verifier. Check console.");
+         setIsProcessing(false);
+     }
+ };
 
   // Effect to set up reCAPTCHA
   useEffect(() => {
