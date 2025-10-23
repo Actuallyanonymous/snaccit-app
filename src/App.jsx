@@ -2,14 +2,14 @@
 import firebase from 'firebase/compat/app';
 import React, { useState, useEffect, useMemo } from 'react';
 import { requestCustomerNotificationPermission } from './firebaseMessaging';
-import { 
-    ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, 
-    Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, 
-    Search, Star, Award, User, Info, Bell, Loader2, Frown 
+import {
+    ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft,
+    Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper,
+    Search, Star, Award, User, Info, Bell, Loader2, Frown
 } from 'lucide-react';
 
 // --- IMPORTANT: auth, db, and functions are now the COMPAT instances from your firebase.js ---
-import { auth, db, functionsAsia, messaging } from './firebase'; 
+import { auth, db, functionsAsia, messaging } from './firebase';
 
 // --- Notification Component ---
 const Notification = ({ message, type, onDismiss }) => {
@@ -21,7 +21,7 @@ const Notification = ({ message, type, onDismiss }) => {
     };
 
     useEffect(() => {
-        const timer = setTimeout(() => onDismiss(), 8000); 
+        const timer = setTimeout(() => onDismiss(), 8000);
         return () => clearTimeout(timer);
     }, [message, onDismiss]);
 
@@ -37,8 +37,8 @@ const Notification = ({ message, type, onDismiss }) => {
 
 // --- Brand Logo Component ---
 const BrandLogo = () => (
-    <img 
-        src="https://placehold.co/250x80/059669/FFFFFF?text=Snaccit&font=poppins" 
+    <img
+        src="https://placehold.co/250x80/059669/FFFFFF?text=Snaccit&font=poppins"
         alt="Snaccit Logo"
         className="mx-auto"
     />
@@ -930,8 +930,134 @@ const ReviewModal = ({ isOpen, onClose, order, onSubmitReview }) => {
 
 // --- Privacy Policy & Terms Pages ---
 // These are static and don't need changes. Minified for brevity.
-const PrivacyPolicyPage = () => { return (<div className="bg-white py-16 sm:py-24"><div className="container mx-auto px-6"><article className="prose lg:prose-lg max-w-4xl mx-auto"><h1>Privacy Policy</h1><p>...</p></article></div></div>); };
-const TermsOfServicePage = () => { return (<div className="bg-white py-16 sm:py-24"><div className="container mx-auto px-6"><article className="prose lg:prose-lg max-w-4xl mx-auto"><h1>Terms of Service</h1><p>...</p></article></div></div>); };
+// const PrivacyPolicyPage = () => { return (<div className="bg-white py-16 sm:py-24"><div className="container mx-auto px-6"><article className="prose lg:prose-lg max-w-4xl mx-auto"><h1>Privacy Policy</h1><p>...</p></article></div></div>); };
+// const TermsOfServicePage = () => { return (<div className="bg-white py-16 sm:py-24"><div className="container mx-auto px-6"><article className="prose lg:prose-lg max-w-4xl mx-auto"><h1>Terms of Service</h1><p>...</p></article></div></div>); };
+
+
+// --- [NEW] Privacy Policy Page ---
+const PrivacyPolicyPage = () => {
+    return (
+        <div className="bg-white py-16 sm:py-24">
+            <div className="container mx-auto px-6">
+                <article className="prose lg:prose-lg max-w-4xl mx-auto">
+                    <h1>Privacy Policy for Snaccit</h1>
+                    <p><strong>Last Updated:</strong> [Date]</p>
+                    
+                    <p>Snaccit ("us", "we", or "our") operates the Snaccit web application (the "Service"). This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service and the choices you have associated with that data.</p>
+                    
+                    <h2>1. Information Collection and Use</h2>
+                    <p>We collect several different types of information for various purposes to provide and improve our Service to you.</p>
+                    <h3>Types of Data Collected:</h3>
+                    <ul>
+                        <li><strong>Personal Data:</strong> While using our Service, we may ask you to provide us with certain personally identifiable information that can be used to contact or identify you ("Personal Data"). This may include, but is not limited to:
+                            <ul>
+                                <li>Email address</li>
+                                <li>First name and last name (as 'username')</li>
+                                <li>Phone number ('mobile')</li>
+                                <li>Order history</li>
+                                <li>Usage Data</li>
+                            </ul>
+                        </li>
+                        <li><strong>Usage Data:</strong> We may also collect information on how the Service is accessed and used ("Usage Data"). This Usage Data may include information such as your computer's Internet Protocol address (e.g. IP address), browser type, browser version, the pages of our Service that you visit, the time and date of your visit, the time spent on those pages, unique device identifiers and other diagnostic data.</li>
+                    </ul>
+
+                    <h2>2. Use of Data</h2>
+                    <p>Snaccit uses the collected data for various purposes:</p>
+                    <ul>
+                        <li>To provide and maintain our Service</li>
+                        <li>To notify you about changes to our Service</li>
+                        <li>To process your orders and manage your account</li>
+                        <li>To send notifications related to your order status (e.g., "accepted", "ready")</li>
+                        <li>To provide customer support</li>
+                        <li>To gather analysis or valuable information so that we can improve our Service</li>
+                        <li>To monitor the usage of our Service</li>
+                        <li>To detect, prevent and address technical issues</li>
+                    </ul>
+
+                    <h2>3. Data Sharing and Disclosure</h2>
+                    <p>We do not sell your Personal Data. We only share information as described below:</p>
+                    <ul>
+                        <li><strong>With Restaurants:</strong> To fulfill your order, we provide necessary details (such as your name, order items, and arrival time) to the restaurant you are ordering from.</li>
+                        <li><strong>Service Providers:</strong> We employ third-party companies to facilitate our Service (e.g., payment processors, notification services). These third parties have access to your Personal Data only to perform these tasks on our behalf and are obligated not to disclose or use it for any other purpose. (e.g., Firebase, PhonePe).</li>
+                        <li><strong>Legal Requirements:</strong> We may disclose your Personal Data in the good faith belief that such action is necessary to comply with a legal obligation, protect and defend the rights or property of Snaccit, or protect the personal safety of users.</li>
+                    </ul>
+
+                    <h2>4. Data Security</h2>
+                    <p>The security of your data is important to us. We use industry-standard methods (like Firebase Authentication and Firestore Security Rules) to protect your data. However, remember that no method of transmission over the Internet or method of electronic storage is 100% secure. While we strive to use commercially acceptable means to protect your Personal Data, we cannot guarantee its absolute security.</p>
+
+                    <h2>5. Your Data Rights</h2>
+                    <p>You have the right to access, update, or delete the information we have on you. You can do this directly within your profile settings section. If you are unable to perform these actions yourself, please contact us to assist you.</p>
+
+                    <h2>6. Children's Privacy</h2>
+                    <p>Our Service does not address anyone under the age of 13 ("Children"). We do not knowingly collect personally identifiable information from anyone under the age of 13. If you are a parent or guardian and you are aware that your Children has provided us with Personal Data, please contact us.</p>
+                    
+                    <h2>7. Changes to This Privacy Policy</h2>
+                    <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page. You are advised to review this Privacy Policy periodically for any changes. Changes to this Privacy Policy are effective when they are posted on this page.</p>
+                    
+                    <h2>8. Contact Us</h2>
+                    <p>If you have any questions about this Privacy Policy, please contact us at: [Your Support Email Address]</p>
+                </article>
+            </div>
+        </div>
+    );
+};
+
+// --- [NEW] Terms of Service Page ---
+const TermsOfServicePage = () => {
+    return (
+        <div className="bg-white py-16 sm:py-24">
+            <div className="container mx-auto px-6">
+                <article className="prose lg:prose-lg max-w-4xl mx-auto">
+                    <h1>Terms of Service for Snaccit</h1>
+                    <p><strong>Last Updated:</strong> [Date]</p>
+                    
+                    <p>Welcome to Snaccit! These Terms of Service ("Terms") govern your use of our web application (the "Service") operated by [Your Company Name] ("us", "we", or "our").</p>
+                    <p>Please read these Terms carefully before using our Service. By accessing or using the Service, you agree to be bound by these Terms. If you disagree with any part of the terms, then you may not access the Service.</p>
+
+                    <h2>1. Accounts</h2>
+                    <p>When you create an account with us, you must provide us with information that is accurate, complete, and current at all times. Failure to do so constitutes a breach of the Terms, which may result in immediate termination of your account on our Service.</p>
+                    <p>You are responsible for safeguarding the password that you use to access the Service and for any activities or actions under your password. You agree not to disclose your password to any third party. You must notify us immediately upon becoming aware of any breach of security or unauthorized use of your account.</p>
+
+                    <h2>2. The Service</h2>
+                    <p>Snaccit provides a platform to connect users with restaurants ("Restaurants") to pre-order food and beverages. When you place an order, you are entering into a contract directly with the Restaurant.</p>
+                    <p>We are not responsible for the preparation, quality, or delivery of the food. All food-related fulfillment is the sole responsibility of the Restaurant. We are responsible for transmitting your order and payment to the Restaurant.</p>
+
+                    <h2>3. Orders and Payment</h2>
+                    <p>By placing an order, you agree to pay the full price for all items in your order. All payments are processed through our third-party payment gateway (PhonePe). We do not store your full credit card or bank account details.</p>
+                    <p>Once an order is placed and its status becomes "Accepted" by the restaurant, it generally cannot be canceled. Refunds for declined orders or payment failures will be processed according to our refund policy and the policies of our payment gateway.</p>
+
+                    <h2>4. User Conduct</h2>
+                    <p>You agree not to use the Service:</p>
+                    <ul>
+                        <li>In any way that violates any applicable local, national, or international law.</li>
+                        <li>To exploit, harm, or attempt to exploit or harm minors in any way.</li>
+                        <li>To impersonate or attempt to impersonate Snaccit, a Snaccit employee, another user, or any other person or entity.</li>
+                        <li>To engage in any other conduct that restricts or inhibits anyone's use or enjoyment of the Service.</li>
+                    </ul>
+
+                    <h2>5. Intellectual Property</h2>
+                    <p>The Service and its original content (excluding content provided by users or restaurants), features, and functionality are and will remain the exclusive property of [Your Company Name] and its licensors. The Service is protected by copyright, trademark, and other laws of both [Your Country] and foreign countries.</p>
+
+                    <h2>6. Termination</h2>
+                    <p>We may terminate or suspend your account immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms.</p>
+                    <p>Upon termination, your right to use the Service will immediately cease.</p>
+
+                    <h2>7. Limitation of Liability</h2>
+                    <p>In no event shall Snaccit, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from (i) your access to or use of or inability to access or use the Service; (ii) any conduct or content of any third party on the Service (including Restaurants); (iii) any content obtained from the Service; and (iv) unauthorized access, use or alteration of your transmissions or content.</p>
+
+                    <h2>8. Governing Law</h2>
+                    <p>These Terms shall be governed and construed in accordance with the laws of [Your Country/State], without regard to its conflict of law provisions.</p>
+                    
+                    <h2>9. Changes</h2>
+                    <p>We reserve the right, at our sole discretion, to modify or replace these Terms at any time. We will provide notice of any changes by posting the new Terms on this page. By continuing to access or use our Service after those revisions become effective, you agree to be bound by the revised terms.</p>
+
+                    <h2>10. Contact Us</h2>
+                    <p>If you have any questions about these Terms, please contact us at: [Your Support Email Address]</p>
+                </article>
+            </div>
+        </div>
+    );
+};
 
 
 // --- Main App Component (The Router - Refactored) ---
@@ -979,27 +1105,27 @@ const App = () => {
         fetchRestaurantsAndMenus();
 
         const unsubAuth = auth.onAuthStateChanged((user) => {
-          setCurrentUser(user);
-          setIsAuthReady(true);
-          
-          if (user) { 
-              console.log("User logged in. Requesting notification permission.");
-              requestCustomerNotificationPermission(user); 
-          }
-      });
-
-      if (messaging) {
-        messaging.onMessage((payload) => {
-            console.log('Foreground message received: ', payload);
-    
-            // Use your existing notification component to show the message
-            const notificationTitle = payload.notification.title;
-            const notificationBody = payload.notification.body;
-            showNotification(`${notificationTitle}: ${notificationBody}`, 'success');
+            setCurrentUser(user);
+            setIsAuthReady(true);
+            
+            if (user) { 
+                console.log("User logged in. Requesting notification permission.");
+                requestCustomerNotificationPermission(user); 
+            }
         });
-    }
-      return () => unsubAuth();
-  }, []);
+
+        if (messaging) {
+            messaging.onMessage((payload) => {
+                console.log('Foreground message received: ', payload);
+        
+                // Use your existing notification component to show the message
+                const notificationTitle = payload.notification.title;
+                const notificationBody = payload.notification.body;
+                showNotification(`${notificationTitle}: ${notificationBody}`, 'success');
+            });
+        }
+        return () => unsubAuth();
+    }, []);
 
     useEffect(() => {
         if (view === 'home' && scrollToSection) {
@@ -1202,4 +1328,3 @@ const PaymentRedirectOverlay = ({ isOpen }) => {
 };
 
 export default App;
-
