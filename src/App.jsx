@@ -86,11 +86,8 @@ const AnimatedHeroText = () => (
 );
 
 
-
 // --- Authentication Modal Component (Detects New User) ---
-// Add the new prop 'onNewUserVerified'
 const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
-  // ... (keep existing state variables: phoneNumber, otp, error, step, etc.) ...
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
@@ -99,101 +96,122 @@ const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState(null); // Keep using window.recaptchaVerifier mainly
 
-  // ... (keep setupRecaptcha, clearRecaptcha, useEffect hooks as they are) ...
-   const clearRecaptcha = () => {
-       if (window.recaptchaVerifier) {
-           try {
-               console.log("Clearing reCAPTCHA verifier.");
-               window.recaptchaVerifier.clear();
-               const container = document.getElementById('recaptcha-container');
-                if(container) container.innerHTML = '';
-           } catch (error) {
-               console.error("Error clearing reCAPTCHA:", error);
-           } finally {
-               window.recaptchaVerifier = null;
-               setRecaptchaVerifier(null);
-                window.recaptchaWidgetId = undefined;
-           }
-       }
-   }
+  // Function to cleanly destroy the reCAPTCHA instance
+  const clearRecaptcha = () => {
+      if (window.recaptchaVerifier) {
+          try {
+              console.log("Clearing reCAPTCHA verifier.");
+              window.recaptchaVerifier.clear(); // Call the clear method
+              const container = document.getElementById('recaptcha-container');
+               if(container) container.innerHTML = ''; // Clear the container div content
+          } catch (error) {
+              console.error("Error clearing reCAPTCHA:", error);
+          } finally {
+              window.recaptchaVerifier = null; // Nullify the global reference
+              setRecaptchaVerifier(null); // Nullify state
+               window.recaptchaWidgetId = undefined; // Clear widget ID
+          }
+      }
+  }
 
-   const setupRecaptcha = (retryCount = 0) => {
-       console.log(`Attempting to set up reCAPTCHA... (Attempt ${retryCount + 1})`);
+  const setupRecaptcha = (retryCount = 0) => {
+      console.log(`Attempting to set up reCAPTCHA... (Attempt ${retryCount + 1})`);
 
-       if (typeof window.grecaptcha === 'undefined' || typeof firebase.auth.RecaptchaVerifier === 'undefined') {
-           console.warn("reCAPTCHA library not ready yet.");
-           if (retryCount < 5) {
-               console.log("Retrying setup in 100ms...");
-               setTimeout(() => setupRecaptcha(retryCount + 1), 100);
+      // Check if the reCAPTCHA library script has loaded
+      if (typeof window.grecaptcha === 'undefined' || typeof firebase.auth.RecaptchaVerifier === 'undefined') {
+          console.warn("reCAPTCHA library (grecaptcha or RecaptchaVerifier) not ready yet.");
+          // Retry logic
+          if (retryCount < 5) { // Try up to 5 times (total ~500ms)
+              console.log("Retrying setup in 100ms...");
+              setTimeout(() => setupRecaptcha(retryCount + 1), 100); // Retry after 100ms
+              return; // Exit current attempt
+          } else {
+              console.error("!!! reCAPTCHA library failed to load after multiple retries!");
+              setError("Authentication service failed to load. Please refresh and try again.");
+              setIsProcessing(false); // Make sure button isn't stuck disabled
+              return; // Stop setup
+          }
+      }
+
+      // Ensure the container exists
+      const container = document.getElementById('recaptcha-container');
+      if (!container) {
+           // Delay slightly and check again, in case React hasn't rendered it yet
+           if (retryCount < 3) { // Try a few times
+               console.warn("reCAPTCHA container not found, retrying...");
+               setTimeout(() => setupRecaptcha(retryCount + 1), 150);
                return;
-           } else {
-               console.error("!!! reCAPTCHA library failed to load after multiple retries!");
-               setError("Authentication service failed to load. Please refresh and try again.");
-               setIsProcessing(false);
-               return;
            }
-       }
+          console.error("!!! reCAPTCHA container element not found in DOM!");
+          setError("UI Error: reCAPTCHA container missing. Please refresh.");
+          setIsProcessing(false); // Make sure button isn't stuck disabled
+          return;
+      }
+      container.innerHTML = ''; // Ensure container is empty before rendering
 
-       const container = document.getElementById('recaptcha-container');
-       if (!container) {
-           console.error("!!! reCAPTCHA container element not found in DOM!");
-           setError("UI Error: reCAPTCHA container missing. Please refresh.");
-           setIsProcessing(false);
-           return;
-       }
-       container.innerHTML = '';
+      try {
+          console.log("Creating new RecaptchaVerifier instance...");
+          // Assign directly to window property
+          window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+              'size': 'invisible',
+              'callback': (response) => {
+                  console.log("reCAPTCHA solved (invisible callback)");
+              },
+              'expired-callback': () => {
+                  console.warn("reCAPTCHA expired.");
+                  setError("reCAPTCHA expired. Please try sending OTP again.");
+                  setIsProcessing(false);
+                  // Expired - try to reset and setup again cleanly
+                  clearRecaptcha(); // Clean up expired instance
+                  setupRecaptcha(); // Re-initialize
+              }
+          });
 
-       try {
-           console.log("Creating new RecaptchaVerifier instance...");
-           window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { /* ... options ... */
-               'size': 'invisible',
-               'callback': (response) => console.log("reCAPTCHA solved (invisible callback)"),
-               'expired-callback': () => {
-                   console.warn("reCAPTCHA expired.");
-                   setError("reCAPTCHA expired. Please try sending OTP again.");
-                   setIsProcessing(false);
-                   clearRecaptcha();
-                   setupRecaptcha();
-               }
-           });
-           setRecaptchaVerifier(window.recaptchaVerifier);
+          // Set the state *after* creating the instance on window
+          setRecaptchaVerifier(window.recaptchaVerifier);
 
-           window.recaptchaVerifier.render().then((widgetId) => {
-               window.recaptchaWidgetId = widgetId;
-               console.log("reCAPTCHA rendered successfully with widget ID:", widgetId);
-           }).catch(err => { /* ... error handling ... */
-               console.error("!!! Error rendering reCAPTCHA:", err);
-               setError("Failed to initialize reCAPTCHA. Check console for details.");
-               setIsProcessing(false);
-               clearRecaptcha();
-           });
+          // Render immediately
+          window.recaptchaVerifier.render().then((widgetId) => {
+              window.recaptchaWidgetId = widgetId;
+              console.log("reCAPTCHA rendered successfully with widget ID:", widgetId);
+              // No need to setRecaptchaVerifier again here
+          }).catch(err => {
+              console.error("!!! Error rendering reCAPTCHA:", err);
+              setError("Failed to initialize reCAPTCHA. Check console for details.");
+              setIsProcessing(false);
+              clearRecaptcha(); // Clean up failed instance
+          });
 
-       } catch (err) { /* ... error handling ... */
-            console.error("!!! Error creating RecaptchaVerifier instance:", err);
-            setError("Failed to create reCAPTCHA verifier. Check console.");
-            setIsProcessing(false);
-            clearRecaptcha();
-       }
-   };
+      } catch (err) {
+          console.error("!!! Error creating RecaptchaVerifier instance:", err);
+          setError("Failed to create reCAPTCHA verifier. Check console.");
+          setIsProcessing(false);
+          clearRecaptcha(); // Clean up potentially broken instance
+      }
+  };
 
-   useEffect(() => { /* ... keep the setup useEffect ... */
-       let isMounted = true;
-       let timeoutId;
-       if (isOpen && step === 1 && !window.recaptchaVerifier) {
-            console.log("Effect running: Modal open, step 1, verifier missing. Setting up reCAPTCHA.");
-            timeoutId = setTimeout(() => { if(isMounted) setupRecaptcha(); }, 150);
-       } else {
-            console.log("Effect running: Skipping reCAPTCHA setup (isOpen:", isOpen, "step:", step, "verifier exists:", !!window.recaptchaVerifier,")");
-       }
-       return () => {
-            console.log("Effect cleanup running for [isOpen, step] effect.");
-            isMounted = false;
-            clearTimeout(timeoutId);
-            // REMOVED clearRecaptcha() - Handled by button/close effect
-       };
-   }, [isOpen, step]);
+  // Effect for setup on open/step change
+  useEffect(() => {
+      let isMounted = true;
+      let timeoutId;
+      // Only setup if open, on step 1, AND if no verifier exists yet
+      if (isOpen && step === 1 && !window.recaptchaVerifier) {
+           console.log("Effect running: Modal open, step 1, verifier missing. Setting up reCAPTCHA.");
+           // Use timeout to ensure DOM element exists after modal transition
+           timeoutId = setTimeout(() => { if(isMounted) setupRecaptcha(); }, 150);
+      } else {
+           console.log("Effect running: Skipping reCAPTCHA setup (isOpen:", isOpen, "step:", step, "verifier exists:", !!window.recaptchaVerifier,")");
+      }
+      // Cleanup function for when component unmounts, modal closes, OR step changes away from 1
+      return () => {
+           console.log("Effect cleanup running for [isOpen, step] effect.");
+           isMounted = false;
+           clearTimeout(timeoutId);
+           // Cleanup handled by explicit actions (button click, modal close effect)
+      };
+  }, [isOpen, step]);
 
-  // MODIFIED: handleAuthAction to check for new user
+  // Handler for submitting phone or OTP
   const handleAuthAction = async (e) => {
       e.preventDefault();
       setError('');
@@ -204,46 +222,56 @@ const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
           // --- Step 1: Request OTP ---
           const verifier = window.recaptchaVerifier; // Use window ref
           if (!verifier) {
-              // ... (error handling for missing verifier) ...
-               console.error("!!! Attempted to send OTP, but window.recaptchaVerifier is null/undefined!");
-               setError("reCAPTCHA is not ready. Please wait a moment or refresh.");
-               setupRecaptcha(); // Attempt setup again
-               setIsProcessing(false);
-               return;
+              console.error("!!! Attempted to send OTP, but window.recaptchaVerifier is null/undefined!");
+              setError("reCAPTCHA is not ready. Please wait a moment or refresh.");
+              setupRecaptcha(); // Attempt setup again
+              setIsProcessing(false);
+              return;
           }
           console.log("Proceeding with signInWithPhoneNumber...");
           try {
-              // ... (phone number formatting) ...
-               const formattedPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber.replace(/\D/g, '')}`;
-               if (formattedPhoneNumber.length < 10) throw { code: 'auth/invalid-phone-number', message: 'Phone number too short.' };
+              // More robust phone number formatting needed for production
+              const formattedPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber.replace(/\D/g, '')}`; // Remove non-digits just in case
+              if (!/^\+[1-9]\d{1,14}$/.test(formattedPhoneNumber)) { // E.164 basic validation
+                   throw { code: 'auth/invalid-phone-number', message: 'Invalid format.' };
+              }
 
               const confirmation = await auth.signInWithPhoneNumber(formattedPhoneNumber, verifier);
               console.log("signInWithPhoneNumber successful, confirmation result received.");
               setConfirmationResult(confirmation);
               setStep(2);
               setError('');
+              // Note: Do NOT clear reCAPTCHA here, needed for potential resends implicitly handled by Firebase
           } catch (err) {
-              // ... (keep existing error handling for OTP send) ...
-               console.error("Error sending OTP:", err);
-               if (err.code === 'auth/invalid-phone-number') setError(`Invalid phone number format (${err.message}). Include country code (e.g., +91).`);
-               else if (err.code === 'auth/too-many-requests') setError('Too many requests. Please try again later.');
-               else if (err.code === 'auth/internal-error') setError('Internal auth error during OTP request. Check authorized domains and API key restrictions.');
-               else setError(`Failed to send OTP (${err.code || 'Unknown'}). Check number and try again.`);
-               // Attempt widget reset
-                try {
-                    const widgetId = window.recaptchaWidgetId;
-                    if (typeof window.grecaptcha !== 'undefined' && widgetId !== undefined) window.grecaptcha.reset(widgetId);
-                    else console.warn("Could not reset reCAPTCHA widget state");
-                } catch (resetError) { console.error("Error resetting reCAPTCHA state:", resetError); }
-          }
+              console.error("Error sending OTP:", err);
+              // Handle different errors
+              if (err.code === 'auth/invalid-phone-number') setError(`Invalid phone number format (${err.message}). Include country code (e.g., +91).`);
+              else if (err.code === 'auth/too-many-requests') setError('Too many requests. Please try again later.');
+              else if (err.code === 'auth/internal-error') setError('Internal auth error during OTP request. Check authorized domains and API key restrictions.');
+              else setError(`Failed to send OTP (${err.code || 'Unknown'}). Check number and try again.`);
 
+               // Attempt to reset the reCAPTCHA widget state without destroying the verifier instance
+               try {
+                   const widgetId = window.recaptchaWidgetId; // Use stored ID
+                   if (typeof window.grecaptcha !== 'undefined' && widgetId !== undefined) {
+                       console.log("Resetting reCAPTCHA widget state:", widgetId);
+                       window.grecaptcha.reset(widgetId);
+                   } else {
+                        console.warn("Could not reset reCAPTCHA widget state (grecaptcha or widgetId undefined)");
+                        // If reset fails, maybe full clear/setup is needed?
+                        // clearRecaptcha();
+                        // setupRecaptcha(); // Be careful of loops here
+                   }
+               } catch (resetError) {
+                    console.error("Error resetting reCAPTCHA state:", resetError);
+               }
+          }
       } else if (step === 2) {
           // --- Step 2: Verify OTP ---
           if (!confirmationResult) {
-              // ... (error handling for missing confirmationResult) ...
-               setError("Verification session expired or invalid. Please request OTP again.");
-               setIsProcessing(false);
-               return;
+              setError("Verification session expired or invalid. Please request OTP again.");
+              setIsProcessing(false);
+              return;
           }
           try {
               console.log("Attempting to confirm OTP:", otp);
@@ -251,93 +279,128 @@ const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
               const user = userCredential.user;
               console.log("User signed in successfully via OTP:", user.uid, user.phoneNumber);
 
-              // *** NEW: Check if user is new ***
               const metadata = user.metadata;
-              const isNewUser = metadata.creationTime === metadata.lastSignInTime;
-              console.log("Is new user?", isNewUser);
-
-              setError(''); // Clear errors before deciding next step
+              // Check creationTime against lastSignInTime (within a small tolerance for clock skew)
+              const isNewUser = Math.abs(new Date(metadata.creationTime).getTime() - new Date(metadata.lastSignInTime).getTime()) < 1000 * 2; // 2 seconds tolerance
+              console.log("Is new user?", isNewUser, "Creation:", metadata.creationTime, "Last Sign In:", metadata.lastSignInTime);
+              setError('');
 
               if (isNewUser) {
-                  // It's a brand new user, trigger the next step via prop
-                  // Do NOT create the Firestore doc here yet
                   console.log("Calling onNewUserVerified for new user.");
-                  onNewUserVerified(user); // Pass user object to parent
-                  // Keep the modal open for now, parent will close/replace it
+                  onNewUserVerified(user); // Keep modal open, let parent handle transition
               } else {
-                  // Existing user, just close the modal
                   console.log("Existing user logged in. Closing modal.");
-                  onClose();
+                  onClose(); // Close modal for existing user
               }
-              // *** END NEW ***
-
           } catch (err) {
-              // ... (keep existing error handling for OTP verify) ...
-               console.error("Error verifying OTP:", err);
-               if (err.code === 'auth/invalid-verification-code') setError('Invalid OTP code. Please try again.');
-               else if (err.code === 'auth/code-expired') {
-                   setError('Verification code expired. Please request a new OTP.');
-                   setStep(1); // Go back to step 1
-                   setOtp('');
-                   setConfirmationResult(null);
-                   // useEffect will handle reCAPTCHA cleanup/setup
-               } else setError(`Failed to verify OTP (${err.code || 'Unknown'}). Please try again.`);
+              console.error("Error verifying OTP:", err);
+               // Handle specific OTP errors
+              if (err.code === 'auth/invalid-verification-code') {
+                  setError('Invalid OTP code. Please try again.');
+              } else if (err.code === 'auth/code-expired') {
+                  setError('Verification code expired. Please request a new OTP.');
+                    // Force user back to step 1 cleanly
+                    setStep(1);
+                    setOtp(''); // Clear OTP field
+                    setConfirmationResult(null); // Invalidate confirmation
+                    clearRecaptcha(); // Clean up before useEffect runs again for step 1
+               } else {
+                   setError(`Failed to verify OTP (${err.code || 'Unknown'}). Please try again.`);
+               }
           }
       }
 
       setIsProcessing(false);
   };
 
- // ... (keep the useEffect for modal closing/cleanup) ...
-  useEffect(() => {
-      if (!isOpen) {
-          console.log("Modal closed. Running state reset and cleanup effect.");
-          setPhoneNumber(''); setOtp(''); setError(''); setStep(1);
-          setIsProcessing(false); setConfirmationResult(null);
-          clearRecaptcha(); // Ensure cleanup on close
-      }
-  }, [isOpen]);
-
+ // Effect to handle modal closing - ensure cleanup happens
+ useEffect(() => {
+     if (!isOpen) {
+         console.log("AuthModal closed. Running state reset and cleanup effect.");
+         // Reset internal state
+         setPhoneNumber(''); setOtp(''); setError(''); setStep(1);
+         setIsProcessing(false); setConfirmationResult(null);
+         clearRecaptcha(); // Ensure cleanup on close
+     }
+ }, [isOpen]);
 
  // --- JSX ---
  if (!isOpen) return null;
+
  return (
-      // ... (keep the existing JSX structure for the modal) ...
-       <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
-           <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md m-4 relative">
-               {/* ... (X button, headings, form, inputs, recaptcha div, error message, submit button) ... */}
-                <button onClick={onClose} /* ... */><X size={24} /></button>
-                <h2 /* ... */ >{step === 1 ? 'Enter Phone Number' : 'Enter OTP'}</h2>
-                <p /* ... */ >{step === 1 ? 'We\'ll send...' : `Enter code sent to ${phoneNumber}.`}</p>
-                <form onSubmit={handleAuthAction}>
-                    {step === 1 && ( <div /* ... Phone Input ... */ /> )}
-                    {step === 2 && ( <div /* ... OTP Input ... */ /> )}
-                    <div id="recaptcha-container" className="my-4 h-[1px] overflow-hidden"></div>
-                    {error && <p /* ... Error message ... */>{error}</p>}
-                    <button type="submit" disabled={isProcessing} /* ... Submit Button ... */ >
-                       {isProcessing ? <Loader2/> : (step === 1 ? 'Send OTP' : 'Verify OTP & Log In')}
-                    </button>
-                </form>
-               {step === 2 && (
-                    <p className="text-center text-sm text-gray-500 mt-4">
-                       <button
-                           type="button"
-                           onClick={() => {
-                               console.log("Change/Resend button clicked. Clearing reCAPTCHA first.");
-                               clearRecaptcha(); // Explicit cleanup
-                               setStep(1); setError(''); setOtp(''); setConfirmationResult(null);
-                           }}
-                           className="font-bold text-green-600 hover:text-green-700"
-                           disabled={isProcessing}
-                       >
-                          Change Phone Number or Resend OTP
-                       </button>
-                   </p>
-               )}
-           </div>
-       </div>
+     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
+         <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md m-4 relative">
+             <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
+             <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
+                 {step === 1 ? 'Enter Phone Number' : 'Enter OTP'}
+             </h2>
+             <p className="text-center text-gray-500 mb-6">
+                 {step === 1 ? 'We\'ll send a verification code.' : `Enter the code sent to ${phoneNumber}.`}
+             </p>
+             <form onSubmit={handleAuthAction}>
+                 {/* Phone Input */}
+                 {step === 1 && (
+                     <div className="mb-4">
+                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="phoneNumber">Phone Number</label>
+                         <input
+                             type="tel" id="phoneNumber" value={phoneNumber}
+                             onChange={(e) => setPhoneNumber(e.target.value)}
+                             className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500"
+                             placeholder="+91 XXXXXXXXXX" required autoComplete="tel"
+                         />
+                     </div>
+                 )}
+                 {/* OTP Input */}
+                 {step === 2 && (
+                     <div className="mb-6">
+                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="otp">Verification Code</label>
+                         <input
+                             type="text" id="otp" value={otp} // Use text for better autofill support
+                             onChange={(e) => setOtp(e.target.value)}
+                             className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500"
+                             placeholder="Enter 6-digit code" required maxLength="6"
+                             inputMode="numeric" pattern="[0-9]*" autoComplete="one-time-code"
+                         />
+                     </div>
+                 )}
+
+                 {/* reCAPTCHA container - must always be in DOM when verifier might exist */}
+                 <div id="recaptcha-container" className="my-4 h-[1px] overflow-hidden"></div> {/* Keep in DOM but visually hidden */}
+
+                 {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
+
+                 {/* Submit Button */}
+                 <button type="submit" disabled={isProcessing} className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`} >
+                      {isProcessing ? <Loader2 className="animate-spin mx-auto" size={24}/> : (step === 1 ? 'Send OTP' : 'Verify OTP & Log In')}
+                 </button>
+             </form>
+
+             {/* Change/Resend Button */}
+             {step === 2 && (
+                  <p className="text-center text-sm text-gray-500 mt-4">
+                     <button
+                         type="button" // Important: Prevent form submission
+                         onClick={() => {
+                             console.log("Change/Resend button clicked. Clearing reCAPTCHA first.");
+                             clearRecaptcha(); // Explicit cleanup first
+                             // Now update state which will trigger useEffect later
+                             setStep(1);
+                             setError('');
+                             setOtp('');
+                             setConfirmationResult(null);
+                         }}
+                         className="font-bold text-green-600 hover:text-green-700"
+                         disabled={isProcessing} // Disable if already processing something
+                     >
+                        Change Phone Number or Resend OTP
+                     </button>
+                 </p>
+             )}
+         </div>
+     </div>
  );
 };
+
 // --- HomePage Component ---
 const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
     // This component does not use Firebase, so no changes are needed.
@@ -1459,14 +1522,15 @@ const TermsOfServicePage = () => {
 };
 
 
+
 // --- Main App Component (Integrates New Modals) ---
 const App = () => {
-  // --- Existing State ---
+  // --- State ---
   const [view, setView] = useState('home');
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [restaurants, setRestaurants] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // Loading restaurants state
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -1475,135 +1539,358 @@ const App = () => {
   const [scrollToSection, setScrollToSection] = useState(null);
   const [orderToReview, setOrderToReview] = useState(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [isAuthReady, setIsAuthReady] = useState(false);
-
-  // --- New/Modified State for Auth Flow ---
+  const [isAuthReady, setIsAuthReady] = useState(false); // Auth loading state
   const [isAuthModalOpen, setAuthModalOpen] = useState(false); // Used for OTP sign-up/login
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); // New: For choosing login method
   const [isSetCredentialsModalOpen, setIsSetCredentialsModalOpen] = useState(false); // New: After first sign-up
-  const [newUserObject, setNewUserObject] = useState(null); // Stores user after OTP verify, before setting credentials
+  const [newUserObject, setNewUserObject] = useState(null); // Temp store user after OTP verify
 
   const showNotification = (message, type) => setNotification({ message, type });
 
-  // --- Effects (keep existing ones) ---
-  useEffect(() => { /* ... existing useEffect for routing, fetching, auth state, messaging ... */
-       const path = window.location.pathname;
-       if (path === '/payment-status') setView('paymentStatus');
-       else if (path === '/privacy-policy') setView('privacy');
-       else if (path === '/terms-of-service') setView('terms');
+  // --- Effects ---
+  useEffect(() => {
+      // Handle routing based on path
+      const path = window.location.pathname;
+      console.log("Initial path:", path); // Debug path
+      if (path === '/payment-status') setView('paymentStatus');
+      else if (path === '/privacy-policy') setView('privacy');
+      else if (path === '/terms-of-service') setView('terms');
+      else setView('home'); // Default to home if no match
 
-       const fetchRestaurantsAndMenus = async () => { /* ... */ };
-       fetchRestaurantsAndMenus();
-
-       const unsubAuth = auth.onAuthStateChanged((user) => {
-           setCurrentUser(user);
-           setIsAuthReady(true);
-           if (user) {
-               console.log("User logged in. Requesting notification permission.");
-               requestCustomerNotificationPermission(user);
+      // Fetch initial restaurant data
+      const fetchRestaurantsAndMenus = async () => {
+           setIsLoading(true); // Start loading
+           try {
+               console.log("Fetching restaurants...");
+               const restaurantsCollection = db.collection("restaurants");
+               const restaurantSnapshot = await restaurantsCollection.get();
+               console.log(`Fetched ${restaurantSnapshot.docs.length} restaurants.`);
+               const restaurantListPromises = restaurantSnapshot.docs.map(async (doc) => {
+                   const restaurantData = { id: doc.id, ...doc.data() };
+                   try { // Fetch menu for each restaurant individually
+                       const menuCollectionRef = db.collection("restaurants").doc(doc.id).collection("menu");
+                       const menuSnapshot = await menuCollectionRef.get();
+                       restaurantData.menu = menuSnapshot.docs.map(menuDoc => ({ id: menuDoc.id, ...menuDoc.data() }));
+                   } catch (menuError) {
+                        console.error(`Error fetching menu for restaurant ${doc.id}:`, menuError);
+                        restaurantData.menu = []; // Assign empty menu on error
+                   }
+                   return restaurantData;
+               });
+               const restaurantList = await Promise.all(restaurantListPromises);
+               setRestaurants(restaurantList);
+               console.log("Finished fetching restaurants and menus.");
+           } catch (error) {
+               console.error("Error fetching restaurants: ", error);
+               showNotification("Could not load restaurants.", "error"); // Show error to user
+           } finally {
+               setIsLoading(false); // Stop loading
            }
-       });
+       };
+      fetchRestaurantsAndMenus();
 
-       if (messaging) { /* ... onMessage handler ... */ }
-       return () => unsubAuth();
-  }, []);
+      // Firebase Auth state listener
+      console.log("Setting up auth state listener...");
+      const unsubAuth = auth.onAuthStateChanged((user) => {
+          console.log("Auth state changed. User:", user ? user.uid : 'null');
+          setCurrentUser(user);
+          setIsAuthReady(true); // Auth state is now known
+          if (user) {
+              // Request notification permission only if user is logged in
+              requestCustomerNotificationPermission(user);
+          } else {
+              // Reset user-specific state on logout
+              console.log("User logged out, resetting cart and selection.");
+              setCart([]);
+              setSelectedRestaurant(null);
+              // Close modals that require login
+              setIsCartOpen(false);
+              setIsCheckoutOpen(false);
+              setOrderToReview(null);
+              setIsSetCredentialsModalOpen(false); // Close credential modal if open
+              setNewUserObject(null); // Clear new user object
+          }
+      });
 
-  useEffect(() => { /* ... existing useEffect for scrolling ... */ }, [view, scrollToSection]);
-
-  useEffect(() => { /* ... existing useEffect for body overflow ... */
-      if (isCartOpen || isCheckoutOpen || itemToCustomize || isAuthModalOpen || isLoginModalOpen || isSetCredentialsModalOpen) {
-          document.body.style.overflow = 'hidden';
-      } else {
-          document.body.style.overflow = 'auto';
+      // Firebase Messaging foreground listener
+      let unsubscribeMessaging = null;
+      if (messaging) {
+          try {
+              console.log("Setting up foreground messaging listener...");
+              unsubscribeMessaging = messaging.onMessage((payload) => {
+                  console.log('Foreground message received: ', payload);
+                  const notificationTitle = payload.notification?.title; // Use optional chaining
+                  const notificationBody = payload.notification?.body;
+                   if(notificationTitle && notificationBody) {
+                      showNotification(`${notificationTitle}: ${notificationBody}`, 'success');
+                   } else {
+                       console.warn("Foreground message received without title/body:", payload);
+                   }
+              });
+          } catch (error) {
+               console.error("Error setting up foreground message handler:", error);
+          }
       }
+      // Cleanup function for auth and messaging listeners
+      return () => {
+           console.log("Cleaning up App listeners.");
+           unsubAuth();
+           if (unsubscribeMessaging) {
+               console.log("Cleaning up messaging listener.");
+               unsubscribeMessaging();
+           }
+      };
+  }, []); // Run only once on initial mount
+
+  // Effect for scrolling to section after view changes to 'home'
+  useEffect(() => {
+      if (view === 'home' && scrollToSection) {
+          const timer = setTimeout(() => { // Timeout ensures DOM update before scroll attempt
+              const element = document.getElementById(scrollToSection);
+              if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  console.log("Scrolled to section:", scrollToSection);
+               } else {
+                   console.warn("Element not found for scrolling:", scrollToSection);
+               }
+              setScrollToSection(null); // Clear target after attempting
+          }, 100);
+           return () => clearTimeout(timer); // Cleanup timeout
+      }
+  }, [view, scrollToSection]);
+
+  // Effect for managing body scroll based on modal visibility
+  useEffect(() => {
+      const anyModalOpen = isCartOpen || isCheckoutOpen || !!itemToCustomize || isAuthModalOpen || isLoginModalOpen || isSetCredentialsModalOpen;
+      // console.log("Modal state changed, anyModalOpen:", anyModalOpen); // Can be noisy
+      document.body.style.overflow = anyModalOpen ? 'hidden' : 'auto';
+      // Cleanup function resets on unmount
       return () => { document.body.style.overflow = 'auto'; };
-  // Add new modal states to dependency array
   }, [isCartOpen, isCheckoutOpen, itemToCustomize, isAuthModalOpen, isLoginModalOpen, isSetCredentialsModalOpen]);
 
-  // --- Existing Handlers (keep them) ---
+  // --- Core App Handlers ---
   const handleSelectItemForCustomization = (item) => setItemToCustomize(item);
-  const handleConfirmAddToCart = (customizedItem) => { /* ... */ };
-  const handleUpdateQuantity = (cartItemId, newQuantity) => { /* ... */ };
-  const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode) => { /* ... */ };
-  const handleSubmitReview = async (order, reviewData) => { /* ... */ };
-  const handleReorder = async (order) => { /* ... */ };
-  const cartItemCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
-  const handleLogout = async () => { /* ... */ };
-  const handleRestaurantClick = (restaurant) => { /* ... */ };
-  const handleBackClick = () => { /* ... */ };
-  const handleGoHome = (sectionId = null) => { /* ... */ };
 
-  // --- New Handlers for Auth Flow ---
+  const handleConfirmAddToCart = (customizedItem) => {
+      setCart(prevCart => {
+          const existingItemIndex = prevCart.findIndex(item => item.cartItemId === customizedItem.cartItemId);
+          if (existingItemIndex > -1) {
+               const updatedCart = [...prevCart];
+               updatedCart[existingItemIndex] = { ...updatedCart[existingItemIndex], quantity: updatedCart[existingItemIndex].quantity + 1 };
+               return updatedCart;
+          } else {
+              return [...prevCart, { ...customizedItem, quantity: 1 }];
+          }
+      });
+      setItemToCustomize(null);
+      showNotification(`${customizedItem.name} added to cart!`, "success");
+  };
+
+  const handleUpdateQuantity = (cartItemId, newQuantity) => {
+      if (newQuantity <= 0) {
+          setCart(prevCart => prevCart.filter(item => item.cartItemId !== cartItemId));
+      } else {
+          setCart(prevCart => prevCart.map(item => item.cartItemId === cartItemId ? { ...item, quantity: newQuantity } : item));
+      }
+  };
+
+  const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode) => {
+      if (!currentUser) { showNotification("Please log in to place an order.", "error"); return; }
+      setIsRedirecting(true); setIsCheckoutOpen(false);
+      const grandTotal = subtotal - discount;
+      const orderData = {
+          userId: currentUser.uid, userEmail: currentUser.email || null,
+          restaurantId: selectedRestaurant.id, restaurantName: selectedRestaurant.name,
+          items: cart.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.finalPrice, size: item.selectedSize.name, addons: item.selectedAddons.map(a => a.name) })),
+          subtotal, discount, couponCode: couponCode || null, total: grandTotal, status: "awaiting_payment", arrivalTime,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(), hasReview: false,
+      };
+      try {
+          console.log("Creating order document...");
+          const orderRef = await db.collection("orders").add(orderData);
+          console.log("Order document created:", orderRef.id);
+          if (!functionsAsia) throw new Error("Asia functions instance not available.");
+          const phonePePay = functionsAsia.httpsCallable('phonePePay');
+          console.log("Calling phonePePay function for order:", orderRef.id);
+          const response = await phonePePay({ orderId: orderRef.id });
+          console.log("phonePePay response:", response);
+          const { redirectUrl } = response.data.data || {};
+          if (redirectUrl) { console.log("Redirecting to payment URL..."); window.location.href = redirectUrl; }
+          else { throw new Error("Could not get payment redirect URL from function response."); }
+      } catch (error) {
+          console.error("Error during payment process:", error);
+          let errorMessage = "Failed to initiate payment. Please try again.";
+          if (error.code === 'functions/unauthenticated') errorMessage = "Payment failed. Try disabling browser extensions or using a private window.";
+          else if (error.message) errorMessage = error.message;
+          else if (error.details) errorMessage = error.details;
+          showNotification(errorMessage, "error");
+          setIsRedirecting(false);
+      }
+  };
+
+  const handleSubmitReview = async (order, reviewData) => {
+       if (!currentUser) return;
+       console.log("Submitting review for order:", order.id);
+       const review = {
+           ...reviewData, userId: currentUser.uid, userEmail: currentUser.email || currentUser.phoneNumber,
+           restaurantId: order.restaurantId, orderId: order.id, createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+       };
+       try {
+           await db.collection("reviews").add(review);
+           const orderDocRef = db.collection("orders").doc(order.id);
+           await orderDocRef.update({ hasReview: true });
+           const restaurantDocRef = db.collection("restaurants").doc(order.restaurantId);
+           await db.runTransaction(async (transaction) => { /* ... Recalculate rating logic ... */ });
+           showNotification("Thank you for your review!", "success");
+           setOrderToReview(null);
+       } catch (error) { console.error("Error submitting review:", error); showNotification("Could not submit review.", "error"); }
+   };
+
+   const handleReorder = async (order) => {
+       console.log("Attempting to reorder:", order.id);
+       const restaurant = restaurants.find(r => r.id === order.restaurantId);
+       if (!restaurant) { showNotification("Restaurant not found.", "error"); return; }
+       setIsLoading(true);
+       let currentMenu = [];
+       try {
+          const menuCollectionRef = db.collection("restaurants").doc(restaurant.id).collection("menu");
+          const menuSnapshot = await menuCollectionRef.get();
+          currentMenu = menuSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+       } catch (error) { console.error("Error fetching menu for reorder:", error); showNotification("Could not fetch menu.", "error"); setIsLoading(false); return; }
+       finally { setIsLoading(false); }
+       setSelectedRestaurant(restaurant);
+       const newCart = []; let allItemsFound = true; let itemsChanged = false;
+       for (const orderedItem of order.items) { /* ... Logic to build newCart, check availability/price changes ... */ }
+       if (!allItemsFound) showNotification("Some items unavailable.", "error");
+       else if (itemsChanged) showNotification("Items/prices may have changed.", "success");
+       else showNotification("Order added to cart!", "success");
+       setCart(newCart); setView('menu'); setTimeout(() => setIsCartOpen(true), 100);
+   };
+
+  const cartItemCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
+
+  const handleLogout = async () => {
+       console.log("Logging out...");
+       try {
+           await auth.signOut();
+           // State resets (cart, etc.) are handled by the onAuthStateChanged listener
+            showNotification("Logged out successfully.", "success");
+            setView('home'); // Explicitly go to home view on logout
+            window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
+       } catch (error) { console.error("Error signing out: ", error); showNotification("Logout failed.", "error"); }
+   };
+
+  const handleRestaurantClick = (restaurant) => {
+       setSelectedRestaurant(restaurant);
+       setView('menu');
+       setCart([]); // Clear cart
+   };
+
+  const handleBackClick = () => {
+       setSelectedRestaurant(null);
+       setView('home');
+   };
+
+  const handleGoHome = (sectionId = null) => {
+       if (view === 'home') {
+          if (sectionId) {
+               const element = document.getElementById(sectionId);
+               if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+       } else {
+          setView('home');
+          if (sectionId) setScrollToSection(sectionId);
+          else setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+       }
+   };
+
+   // --- Auth Flow Handlers ---
   const handleNewUserVerified = (user) => {
       console.log("App received new user from AuthModal:", user.uid);
-      setNewUserObject(user); // Store user for SetCredentialsModal
-      setAuthModalOpen(false); // Close OTP modal
-      setIsSetCredentialsModalOpen(true); // Open Set Credentials modal
+      setNewUserObject(user);
+      setAuthModalOpen(false);
+      setIsSetCredentialsModalOpen(true);
   };
 
   const handleSelectOtpLogin = () => {
        console.log("User selected OTP login.");
-       setIsLoginModalOpen(false); // Close choice modal
-       setAuthModalOpen(true); // Open OTP modal
+       setIsLoginModalOpen(false);
+       setAuthModalOpen(true);
   };
-  
-  // --- Render Logic ---
-  const renderView = () => { /* ... keep existing switch statement ... */ };
 
+  // --- Render View Logic ---
+  const renderView = () => {
+      if (!isAuthReady || (view !== 'home' && view !== 'privacy' && view !== 'terms' && isLoading)) { // Show loader if not auth ready OR if loading data for non-home views
+          return <div className="min-h-[calc(100vh-200px)] flex items-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
+      }
+      switch(view) {
+          case 'home': return <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} />;
+          case 'menu': return selectedRestaurant ? <MenuPage restaurant={selectedRestaurant} onBackClick={handleBackClick} onSelectItem={handleSelectItemForCustomization} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} />;
+          case 'confirmation': return <OrderConfirmation onGoHome={() => handleGoHome()} />;
+          case 'paymentStatus': return <PaymentStatusPage onGoHome={() => handleGoHome()} />;
+          case 'privacy': return <PrivacyPolicyPage />;
+          case 'terms': return <TermsOfServicePage />;
+          case 'profile': return currentUser ? <ProfilePage currentUser={currentUser} showNotification={showNotification} onReorder={handleReorder} onRateOrder={setOrderToReview} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} />;
+          default: return <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} />;
+      }
+  };
+
+  // --- Main JSX Return ---
   return (
       <>
-          {/* --- Render Existing Modals --- */}
           <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: ''})} />
-          <ItemCustomizationModal isOpen={!!itemToCustomize} onClose={() => setItemToCustomize(null)} item={itemToCustomize} onConfirmAddToCart={handleConfirmAddToCart} />
-          <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} onUpdateQuantity={handleUpdateQuantity} onCheckout={() => setIsCheckoutOpen(true)} />
-          <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} onPlaceOrder={handlePlaceOrder} cart={cart} restaurant={selectedRestaurant} />
-          <ReviewModal isOpen={!!orderToReview} onClose={() => setOrderToReview(null)} order={orderToReview} onSubmitReview={handleSubmitReview} />
-          <PaymentRedirectOverlay isOpen={isRedirecting} />
+           <AuthModal isOpen={isAuthModalOpen} onClose={() => setAuthModalOpen(false)} onNewUserVerified={handleNewUserVerified} />
+           <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} onSelectOtpLogin={handleSelectOtpLogin} showNotification={showNotification} />
+           <SetCredentialsModal isOpen={isSetCredentialsModalOpen} onClose={() => setIsSetCredentialsModalOpen(false)} newUser={newUserObject} showNotification={showNotification} />
+           <ItemCustomizationModal isOpen={!!itemToCustomize} onClose={() => setItemToCustomize(null)} item={itemToCustomize} onConfirmAddToCart={handleConfirmAddToCart} />
+           <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} onUpdateQuantity={handleUpdateQuantity} onCheckout={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }} />
+           <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} onPlaceOrder={handlePlaceOrder} cart={cart} restaurant={selectedRestaurant} />
+           <ReviewModal isOpen={!!orderToReview} onClose={() => setOrderToReview(null)} order={orderToReview} onSubmitReview={handleSubmitReview} />
+           <PaymentRedirectOverlay isOpen={isRedirecting} />
 
-          {/* --- Render Auth Modals --- */}
-          {/* Modal for Phone OTP (Sign Up OR Log In) */}
-           <AuthModal
-              isOpen={isAuthModalOpen}
-              onClose={() => setAuthModalOpen(false)}
-              onNewUserVerified={handleNewUserVerified} // Pass handler for new users
-          />
-           {/* Modal for Choosing Login Method (Opens on "Log In" click) */}
-          <LoginModal
-              isOpen={isLoginModalOpen}
-              onClose={() => setIsLoginModalOpen(false)}
-              onSelectOtpLogin={handleSelectOtpLogin} // Pass handler to open OTP modal
-              showNotification={showNotification} // Pass showNotification for login success/errors
-           />
-           {/* Modal for Setting Credentials (Opens after first OTP sign-up) */}
-           <SetCredentialsModal
-              isOpen={isSetCredentialsModalOpen}
-              onClose={() => setIsSetCredentialsModalOpen(false)}
-              newUser={newUserObject} // Pass the newly verified user object
-              showNotification={showNotification} // Pass for success/error messages
-          />
-
-          {/* --- Main App Layout --- */}
-          <div className="bg-cream-50 font-sans text-slate-800">
+          <div className="bg-cream-50 font-sans text-slate-800 min-h-screen flex flex-col">
               <header className="bg-white/80 backdrop-blur-xl sticky top-0 z-30 border-b border-gray-200/80">
                   <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-                      <h1 onClick={() => handleGoHome()} /* ... */ >Snaccit</h1>
+                      <h1 onClick={() => handleGoHome()} className="text-3xl font-bold text-green-700 tracking-tight cursor-pointer">Snaccit</h1>
                       <div className="flex items-center space-x-4">
-                          <button onClick={() => handleGoHome('restaurants')} /* ... */ ><Search size={22} /></button>
-                          {currentUser ? (
-                              <> {/* ... Logged In buttons: Cart, Profile, Log Out ... */} </>
+                          <button onClick={() => handleGoHome('restaurants')} className="text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100"><Search size={22} /></button>
+                          {!isAuthReady ? (
+                               <Loader2 className="animate-spin text-gray-500" size={22} />
+                          ) : currentUser ? (
+                              <>
+                                  <button onClick={() => setIsCartOpen(true)} className="relative text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100">
+                                      <ShoppingCart size={22} />
+                                      {cartItemCount > 0 && <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">{cartItemCount}</span>}
+                                  </button>
+                                  <button onClick={() => setView('profile')} className="text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100"><User size={22} /></button>
+                                  <button onClick={handleLogout} className="hidden sm:inline-flex items-center text-sm font-semibold text-gray-600 hover:text-red-600 py-2 px-3 rounded-md hover:bg-gray-100">Log Out</button>
+                              </>
                           ) : (
                               <>
-                                  {/* MODIFIED: Log In button opens LoginModal */}
-                                  <button onClick={() => setIsLoginModalOpen(true)} className="hidden sm:block text-gray-600 font-semibold hover:text-green-600 py-2 px-4">Log In</button>
-                                  {/* MODIFIED: Sign Up button opens AuthModal (OTP flow) */}
-                                  <button onClick={() => setAuthModalOpen(true)} className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-2.5 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40">Sign Up</button>
+                                  <button onClick={() => setIsLoginModalOpen(true)} className="hidden sm:inline-flex items-center text-sm font-semibold text-gray-600 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-100">Log In</button>
+                                  <button onClick={() => setAuthModalOpen(true)} className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-2 px-5 rounded-full text-sm hover:shadow-lg hover:shadow-green-500/40 transition-shadow">Sign Up</button>
                               </>
                           )}
                       </div>
                   </div>
               </header>
-              {renderView()}
-              <footer /* ... */ > {/* ... Footer content ... */} </footer>
+
+              <main className="flex-grow">
+                  {renderView()}
+              </main>
+
+              <footer className="bg-white border-t border-gray-200">
+                  <div className="container mx-auto px-6 py-12 text-center">
+                      <BrandLogo />
+                      <p className="text-gray-500 mt-4">Skip the wait. Savor the moment.</p>
+                      <div className="mt-6 flex justify-center space-x-6">
+                          <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); setView('terms'); window.history.pushState({}, '', '/terms-of-service'); }} className="text-sm text-gray-500 hover:text-green-600">Terms of Service</a>
+                          <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); setView('privacy'); window.history.pushState({}, '', '/privacy-policy'); }} className="text-sm text-gray-500 hover:text-green-600">Privacy Policy</a>
+                          <a href="#" className="text-sm text-gray-500 hover:text-green-600">Contact</a>
+                      </div>
+                      <p className="text-gray-400 mt-8 text-xs">© 2024 Snaccit Inc. All rights reserved.</p>
+                  </div>
+              </footer>
           </div>
       </>
   );
