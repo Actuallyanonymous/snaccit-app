@@ -85,136 +85,115 @@ const AnimatedHeroText = () => (
     </>
 );
 
-// --- Authentication Modal Component (Revised for reCAPTCHA Reset) ---
-const AuthModal = ({ isOpen, onClose }) => {
+
+
+// --- Authentication Modal Component (Detects New User) ---
+// Add the new prop 'onNewUserVerified'
+const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
+  // ... (keep existing state variables: phoneNumber, otp, error, step, etc.) ...
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState(null);
-  // Note: We don't really need recaptchaVerifier in state if we always access it via window
-  // but keeping it for now as it doesn't hurt. Consider removing if simplifying later.
-  const [recaptchaVerifier, setRecaptchaVerifier] = useState(null);
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState(null); // Keep using window.recaptchaVerifier mainly
 
-  // Function to cleanly destroy the reCAPTCHA instance
-  const clearRecaptcha = () => {
-      if (window.recaptchaVerifier) {
-          try {
-              console.log("Clearing reCAPTCHA verifier.");
-              window.recaptchaVerifier.clear(); // Call the clear method
-              const container = document.getElementById('recaptcha-container');
-               if(container) container.innerHTML = ''; // Clear the container div content
-          } catch (error) {
-              console.error("Error clearing reCAPTCHA:", error);
-          } finally {
-              window.recaptchaVerifier = null; // Nullify the global reference
-              setRecaptchaVerifier(null); // Nullify state
-               window.recaptchaWidgetId = undefined; // Clear widget ID
-          }
-      }
-  }
-
-  const setupRecaptcha = (retryCount = 0) => {
-      console.log(`Attempting to set up reCAPTCHA... (Attempt ${retryCount + 1})`);
-
-      if (typeof window.grecaptcha === 'undefined' || typeof firebase.auth.RecaptchaVerifier === 'undefined') {
-          console.warn("reCAPTCHA library not ready yet.");
-          if (retryCount < 5) {
-              console.log("Retrying setup in 100ms...");
-              setTimeout(() => setupRecaptcha(retryCount + 1), 100);
-              return;
-          } else {
-              console.error("!!! reCAPTCHA library failed to load after multiple retries!");
-              setError("Authentication service failed to load. Please refresh and try again.");
-              setIsProcessing(false); // Make sure button isn't stuck disabled
-              return;
-          }
-      }
-
-      const container = document.getElementById('recaptcha-container');
-      if (!container) {
-          console.error("!!! reCAPTCHA container element not found in DOM!");
-          setError("UI Error: reCAPTCHA container missing. Please refresh.");
-          setIsProcessing(false); // Make sure button isn't stuck disabled
-          return;
-      }
-      // Ensure container is empty before creating a new one
-      container.innerHTML = '';
-
-      try {
-          // Ensure previous instance is fully cleared before creating a new one
-          // Note: clearRecaptcha() is now called reliably by useEffect cleanup
-          // if (window.recaptchaVerifier) { clearRecaptcha(); }
-
-
-          console.log("Creating new RecaptchaVerifier instance...");
-          // Assign directly to window property
-          window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-              'size': 'invisible',
-              'callback': (response) => {
-                  console.log("reCAPTCHA solved (invisible callback)");
-              },
-              'expired-callback': () => {
-                  console.warn("reCAPTCHA expired.");
-                  setError("reCAPTCHA expired. Please try sending OTP again.");
-                  setIsProcessing(false);
-                  // Expired - try to reset and setup again cleanly
-                  clearRecaptcha(); // Clean up expired instance
-                  setupRecaptcha(); // Re-initialize
-              }
-          });
-
-          // Set the state *after* creating the instance on window
-          setRecaptchaVerifier(window.recaptchaVerifier);
-
-          // Render immediately
-          window.recaptchaVerifier.render().then((widgetId) => {
-              window.recaptchaWidgetId = widgetId;
-              console.log("reCAPTCHA rendered successfully with widget ID:", widgetId);
-              // No need to setRecaptchaVerifier again here
-          }).catch(err => {
-              console.error("!!! Error rendering reCAPTCHA:", err);
-              setError("Failed to initialize reCAPTCHA. Check console for details.");
-              setIsProcessing(false);
-              clearRecaptcha(); // Clean up failed instance
-          });
-
-      } catch (err) {
-          console.error("!!! Error creating RecaptchaVerifier instance:", err);
-          setError("Failed to create reCAPTCHA verifier. Check console.");
-          setIsProcessing(false);
-          clearRecaptcha(); // Clean up potentially broken instance
-      }
-  };
-
-// Effect for setup on open/step change
-useEffect(() => {
-  let isMounted = true;
-  let timeoutId;
-
-  // Only setup if open, on step 1, AND if no verifier exists yet
-  if (isOpen && step === 1 && !window.recaptchaVerifier) {
-       console.log("Effect running: Modal open, step 1, verifier missing. Setting up reCAPTCHA.");
-       timeoutId = setTimeout(() => {
-           if(isMounted) {
-              setupRecaptcha();
+  // ... (keep setupRecaptcha, clearRecaptcha, useEffect hooks as they are) ...
+   const clearRecaptcha = () => {
+       if (window.recaptchaVerifier) {
+           try {
+               console.log("Clearing reCAPTCHA verifier.");
+               window.recaptchaVerifier.clear();
+               const container = document.getElementById('recaptcha-container');
+                if(container) container.innerHTML = '';
+           } catch (error) {
+               console.error("Error clearing reCAPTCHA:", error);
+           } finally {
+               window.recaptchaVerifier = null;
+               setRecaptchaVerifier(null);
+                window.recaptchaWidgetId = undefined;
            }
-       }, 150);
-  } else {
-       console.log("Effect running: Skipping reCAPTCHA setup (isOpen:", isOpen, "step:", step, "verifier exists:", !!window.recaptchaVerifier,")");
-  }
+       }
+   }
 
-  // --- SIMPLIFIED CLEANUP ---
-  // Cleanup only needs to clear the timeout and set mount flag
-  return () => {
-       console.log("Effect cleanup running for [isOpen, step] effect.");
-       isMounted = false;
-       clearTimeout(timeoutId);
-       // REMOVE clearRecaptcha() from here - let button clicks / modal close handle it
-  };
-}, [isOpen, step]); // Keep dependencies
+   const setupRecaptcha = (retryCount = 0) => {
+       console.log(`Attempting to set up reCAPTCHA... (Attempt ${retryCount + 1})`);
 
+       if (typeof window.grecaptcha === 'undefined' || typeof firebase.auth.RecaptchaVerifier === 'undefined') {
+           console.warn("reCAPTCHA library not ready yet.");
+           if (retryCount < 5) {
+               console.log("Retrying setup in 100ms...");
+               setTimeout(() => setupRecaptcha(retryCount + 1), 100);
+               return;
+           } else {
+               console.error("!!! reCAPTCHA library failed to load after multiple retries!");
+               setError("Authentication service failed to load. Please refresh and try again.");
+               setIsProcessing(false);
+               return;
+           }
+       }
+
+       const container = document.getElementById('recaptcha-container');
+       if (!container) {
+           console.error("!!! reCAPTCHA container element not found in DOM!");
+           setError("UI Error: reCAPTCHA container missing. Please refresh.");
+           setIsProcessing(false);
+           return;
+       }
+       container.innerHTML = '';
+
+       try {
+           console.log("Creating new RecaptchaVerifier instance...");
+           window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { /* ... options ... */
+               'size': 'invisible',
+               'callback': (response) => console.log("reCAPTCHA solved (invisible callback)"),
+               'expired-callback': () => {
+                   console.warn("reCAPTCHA expired.");
+                   setError("reCAPTCHA expired. Please try sending OTP again.");
+                   setIsProcessing(false);
+                   clearRecaptcha();
+                   setupRecaptcha();
+               }
+           });
+           setRecaptchaVerifier(window.recaptchaVerifier);
+
+           window.recaptchaVerifier.render().then((widgetId) => {
+               window.recaptchaWidgetId = widgetId;
+               console.log("reCAPTCHA rendered successfully with widget ID:", widgetId);
+           }).catch(err => { /* ... error handling ... */
+               console.error("!!! Error rendering reCAPTCHA:", err);
+               setError("Failed to initialize reCAPTCHA. Check console for details.");
+               setIsProcessing(false);
+               clearRecaptcha();
+           });
+
+       } catch (err) { /* ... error handling ... */
+            console.error("!!! Error creating RecaptchaVerifier instance:", err);
+            setError("Failed to create reCAPTCHA verifier. Check console.");
+            setIsProcessing(false);
+            clearRecaptcha();
+       }
+   };
+
+   useEffect(() => { /* ... keep the setup useEffect ... */
+       let isMounted = true;
+       let timeoutId;
+       if (isOpen && step === 1 && !window.recaptchaVerifier) {
+            console.log("Effect running: Modal open, step 1, verifier missing. Setting up reCAPTCHA.");
+            timeoutId = setTimeout(() => { if(isMounted) setupRecaptcha(); }, 150);
+       } else {
+            console.log("Effect running: Skipping reCAPTCHA setup (isOpen:", isOpen, "step:", step, "verifier exists:", !!window.recaptchaVerifier,")");
+       }
+       return () => {
+            console.log("Effect cleanup running for [isOpen, step] effect.");
+            isMounted = false;
+            clearTimeout(timeoutId);
+            // REMOVED clearRecaptcha() - Handled by button/close effect
+       };
+   }, [isOpen, step]);
+
+  // MODIFIED: handleAuthAction to check for new user
   const handleAuthAction = async (e) => {
       e.preventDefault();
       setError('');
@@ -222,65 +201,49 @@ useEffect(() => {
       console.log("handleAuthAction triggered for step:", step);
 
       if (step === 1) {
-          // Use the instance directly from the window object for robustness
-          const verifier = window.recaptchaVerifier;
+          // --- Step 1: Request OTP ---
+          const verifier = window.recaptchaVerifier; // Use window ref
           if (!verifier) {
-              console.error("!!! Attempted to send OTP, but window.recaptchaVerifier is null/undefined!");
-              setError("reCAPTCHA is not ready. Please wait a moment or refresh.");
-              // Attempt setup again just in case initialization failed silently
-              setupRecaptcha();
-              setIsProcessing(false);
-              return;
+              // ... (error handling for missing verifier) ...
+               console.error("!!! Attempted to send OTP, but window.recaptchaVerifier is null/undefined!");
+               setError("reCAPTCHA is not ready. Please wait a moment or refresh.");
+               setupRecaptcha(); // Attempt setup again
+               setIsProcessing(false);
+               return;
           }
-           console.log("Proceeding with signInWithPhoneNumber...");
+          console.log("Proceeding with signInWithPhoneNumber...");
           try {
-              // More robust phone number formatting needed for production
-              const formattedPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber.replace(/\D/g, '')}`; // Remove non-digits just in case
-              if (formattedPhoneNumber.length < 10) { // Basic length check
-                   throw { code: 'auth/invalid-phone-number', message: 'Phone number too short.' };
-              }
+              // ... (phone number formatting) ...
+               const formattedPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber.replace(/\D/g, '')}`;
+               if (formattedPhoneNumber.length < 10) throw { code: 'auth/invalid-phone-number', message: 'Phone number too short.' };
 
               const confirmation = await auth.signInWithPhoneNumber(formattedPhoneNumber, verifier);
               console.log("signInWithPhoneNumber successful, confirmation result received.");
               setConfirmationResult(confirmation);
               setStep(2);
               setError('');
-              // Note: Do NOT clear reCAPTCHA here, needed for potential resends implicitly handled by Firebase
           } catch (err) {
-              console.error("Error sending OTP:", err);
-               // ... (keep existing error handling for invalid number, too many requests etc.) ...
-              if (err.code === 'auth/invalid-phone-number') {
-                   setError(`Invalid phone number format (${err.message}). Include country code (e.g., +91).`);
-               } else if (err.code === 'auth/too-many-requests') {
-                   setError('Too many requests. Please try again later.');
-               } else if (err.code === 'auth/internal-error'){
-                    setError('Internal auth error during OTP request. Check authorized domains and API key restrictions.');
-               }
-                else {
-                   setError(`Failed to send OTP (${err.code || 'Unknown'}). Check number and try again.`);
-               }
-
-               // Attempt to reset the reCAPTCHA widget state without destroying the verifier instance
-               try {
-                   const widgetId = window.recaptchaWidgetId;
-                   if (typeof window.grecaptcha !== 'undefined' && widgetId !== undefined) {
-                       console.log("Resetting reCAPTCHA widget state:", widgetId);
-                       window.grecaptcha.reset(widgetId);
-                   } else {
-                        console.warn("Could not reset reCAPTCHA widget state (grecaptcha or widgetId undefined)");
-                        // If reset fails, maybe full clear/setup is needed?
-                        // clearRecaptcha();
-                        // setupRecaptcha(); // Be careful of loops here
-                   }
-               } catch (resetError) {
-                    console.error("Error resetting reCAPTCHA state:", resetError);
-               }
+              // ... (keep existing error handling for OTP send) ...
+               console.error("Error sending OTP:", err);
+               if (err.code === 'auth/invalid-phone-number') setError(`Invalid phone number format (${err.message}). Include country code (e.g., +91).`);
+               else if (err.code === 'auth/too-many-requests') setError('Too many requests. Please try again later.');
+               else if (err.code === 'auth/internal-error') setError('Internal auth error during OTP request. Check authorized domains and API key restrictions.');
+               else setError(`Failed to send OTP (${err.code || 'Unknown'}). Check number and try again.`);
+               // Attempt widget reset
+                try {
+                    const widgetId = window.recaptchaWidgetId;
+                    if (typeof window.grecaptcha !== 'undefined' && widgetId !== undefined) window.grecaptcha.reset(widgetId);
+                    else console.warn("Could not reset reCAPTCHA widget state");
+                } catch (resetError) { console.error("Error resetting reCAPTCHA state:", resetError); }
           }
+
       } else if (step === 2) {
+          // --- Step 2: Verify OTP ---
           if (!confirmationResult) {
-              setError("Verification session expired or invalid. Please request OTP again.");
-              setIsProcessing(false);
-              return;
+              // ... (error handling for missing confirmationResult) ...
+               setError("Verification session expired or invalid. Please request OTP again.");
+               setIsProcessing(false);
+               return;
           }
           try {
               console.log("Attempting to confirm OTP:", otp);
@@ -288,131 +251,91 @@ useEffect(() => {
               const user = userCredential.user;
               console.log("User signed in successfully via OTP:", user.uid, user.phoneNumber);
 
-              const userDocRef = db.collection("users").doc(user.uid);
-              const userDoc = await userDocRef.get();
-              if (!userDoc.exists) {
-                   console.log("New user detected. Creating Firestore document.");
-                  await userDocRef.set({
-                      phoneNumber: user.phoneNumber, // Store the verified phone number
-                      username: '', // Initialize other fields
-                      mobile: user.phoneNumber, // Redundant but matches your old structure
-                      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                  }, { merge: false }); // Use merge:false for new doc creation clarity
+              // *** NEW: Check if user is new ***
+              const metadata = user.metadata;
+              const isNewUser = metadata.creationTime === metadata.lastSignInTime;
+              console.log("Is new user?", isNewUser);
+
+              setError(''); // Clear errors before deciding next step
+
+              if (isNewUser) {
+                  // It's a brand new user, trigger the next step via prop
+                  // Do NOT create the Firestore doc here yet
+                  console.log("Calling onNewUserVerified for new user.");
+                  onNewUserVerified(user); // Pass user object to parent
+                  // Keep the modal open for now, parent will close/replace it
               } else {
-                   console.log("Existing user logged in:", user.uid);
-                   // Optional: Update phone number if it's different (unlikely here)
-                   // if (userDoc.data().phoneNumber !== user.phoneNumber) {
-                   //     await userDocRef.update({ phoneNumber: user.phoneNumber, mobile: user.phoneNumber });
-                   // }
+                  // Existing user, just close the modal
+                  console.log("Existing user logged in. Closing modal.");
+                  onClose();
               }
-              setError('');
-              onClose(); // Close modal on success
+              // *** END NEW ***
+
           } catch (err) {
-              console.error("Error verifying OTP:", err);
-               // ... (keep existing error handling for invalid/expired code) ...
-              if (err.code === 'auth/invalid-verification-code') {
-                   setError('Invalid OTP code. Please try again.');
-               } else if (err.code === 'auth/code-expired') {
+              // ... (keep existing error handling for OTP verify) ...
+               console.error("Error verifying OTP:", err);
+               if (err.code === 'auth/invalid-verification-code') setError('Invalid OTP code. Please try again.');
+               else if (err.code === 'auth/code-expired') {
                    setError('Verification code expired. Please request a new OTP.');
-                    // Force user back to step 1 cleanly
-                    setStep(1);
-                    setOtp(''); // Clear OTP field
-                    setConfirmationResult(null); // Invalidate confirmation
-                    // useEffect will handle reCAPTCHA cleanup/setup
-               } else {
-                   setError(`Failed to verify OTP (${err.code || 'Unknown'}). Please try again.`);
-               }
+                   setStep(1); // Go back to step 1
+                   setOtp('');
+                   setConfirmationResult(null);
+                   // useEffect will handle reCAPTCHA cleanup/setup
+               } else setError(`Failed to verify OTP (${err.code || 'Unknown'}). Please try again.`);
           }
       }
 
       setIsProcessing(false);
   };
 
- // Effect to handle modal closing - ensure cleanup happens
- useEffect(() => {
-     if (!isOpen) {
-         console.log("Modal closed. Running state reset and cleanup effect.");
-         // Reset internal state
-         setPhoneNumber('');
-         setOtp('');
-         setError('');
-         setStep(1);
-         setIsProcessing(false);
-         setConfirmationResult(null);
-         // Explicitly clear reCAPTCHA here as well, ensuring cleanup if effect didn't run properly
-         clearRecaptcha();
-     }
- }, [isOpen]);
+ // ... (keep the useEffect for modal closing/cleanup) ...
+  useEffect(() => {
+      if (!isOpen) {
+          console.log("Modal closed. Running state reset and cleanup effect.");
+          setPhoneNumber(''); setOtp(''); setError(''); setStep(1);
+          setIsProcessing(false); setConfirmationResult(null);
+          clearRecaptcha(); // Ensure cleanup on close
+      }
+  }, [isOpen]);
 
- // JSX
+
+ // --- JSX ---
  if (!isOpen) return null;
-
  return (
-     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
-         <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md m-4 relative">
-             <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
-             <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
-                 {step === 1 ? 'Enter Phone Number' : 'Enter OTP'}
-             </h2>
-             <p className="text-center text-gray-500 mb-6">
-                 {step === 1 ? 'We\'ll send a verification code.' : `Enter the code sent to ${phoneNumber}.`}
-             </p>
-             <form onSubmit={handleAuthAction}>
-                 {step === 1 && (
-                     <div className="mb-4">
-                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="phoneNumber">Phone Number</label>
-                         <input
-                             type="tel" id="phoneNumber" value={phoneNumber}
-                             onChange={(e) => setPhoneNumber(e.target.value)}
-                             className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500"
-                             placeholder="+91 XXXXXXXXXX" required autoComplete="tel" // Add autocomplete hint
-                         />
-                     </div>
-                 )}
-                 {step === 2 && (
-                     <div className="mb-6">
-                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="otp">Verification Code</label>
-                         <input
-                             type="text" id="otp" value={otp} // Changed type to text + inputMode="numeric" for better mobile UX
-                             onChange={(e) => setOtp(e.target.value)}
-                             className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500"
-                             placeholder="Enter 6-digit code" required maxLength="6"
-                             inputMode="numeric" pattern="[0-9]*" autoComplete="one-time-code" // Add autocomplete hints
-                         />
-                     </div>
-                 )}
-                 {/* reCAPTCHA container - must always be in DOM when verifier might exist */}
-                 <div id="recaptcha-container" className="my-4 h-[1px] overflow-hidden"></div> {/* Keep in DOM but visually hidden if empty */}
-
-                 {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
-
-                 <button type="submit" disabled={isProcessing} /* ... className ... */ >
-                      {isProcessing ? <Loader2 className="animate-spin mx-auto" /> : (step === 1 ? 'Send OTP' : 'Verify OTP & Log In')}
-                 </button>
-             </form>
-             {step === 2 && (
-      <p className="text-center text-sm text-gray-500 mt-4">
-         <button
-             type="button"
-             onClick={() => {
-                 console.log("Change/Resend button clicked. Clearing reCAPTCHA first.");
-                 clearRecaptcha(); // <<< CALL CLEANUP EXPLICITLY HERE
-
-                 // Now update state which will trigger useEffect later
-                 setStep(1);
-                 setError('');
-                 setOtp('');
-                 setConfirmationResult(null);
-             }}
-             className="font-bold text-green-600 hover:text-green-700"
-             disabled={isProcessing}
-         >
-            Change Phone Number or Resend OTP
-         </button>
-     </p>
- )}
-         </div>
-     </div>
+      // ... (keep the existing JSX structure for the modal) ...
+       <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
+           <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md m-4 relative">
+               {/* ... (X button, headings, form, inputs, recaptcha div, error message, submit button) ... */}
+                <button onClick={onClose} /* ... */><X size={24} /></button>
+                <h2 /* ... */ >{step === 1 ? 'Enter Phone Number' : 'Enter OTP'}</h2>
+                <p /* ... */ >{step === 1 ? 'We\'ll send...' : `Enter code sent to ${phoneNumber}.`}</p>
+                <form onSubmit={handleAuthAction}>
+                    {step === 1 && ( <div /* ... Phone Input ... */ /> )}
+                    {step === 2 && ( <div /* ... OTP Input ... */ /> )}
+                    <div id="recaptcha-container" className="my-4 h-[1px] overflow-hidden"></div>
+                    {error && <p /* ... Error message ... */>{error}</p>}
+                    <button type="submit" disabled={isProcessing} /* ... Submit Button ... */ >
+                       {isProcessing ? <Loader2/> : (step === 1 ? 'Send OTP' : 'Verify OTP & Log In')}
+                    </button>
+                </form>
+               {step === 2 && (
+                    <p className="text-center text-sm text-gray-500 mt-4">
+                       <button
+                           type="button"
+                           onClick={() => {
+                               console.log("Change/Resend button clicked. Clearing reCAPTCHA first.");
+                               clearRecaptcha(); // Explicit cleanup
+                               setStep(1); setError(''); setOtp(''); setConfirmationResult(null);
+                           }}
+                           className="font-bold text-green-600 hover:text-green-700"
+                           disabled={isProcessing}
+                       >
+                          Change Phone Number or Resend OTP
+                       </button>
+                   </p>
+               )}
+           </div>
+       </div>
  );
 };
 // --- HomePage Component ---
@@ -1190,7 +1113,225 @@ const ReviewModal = ({ isOpen, onClose, order, onSubmitReview }) => {
 // These are static and don't need changes. Minified for brevity.
 // const PrivacyPolicyPage = () => { return (<div className="bg-white py-16 sm:py-24"><div className="container mx-auto px-6"><article className="prose lg:prose-lg max-w-4xl mx-auto"><h1>Privacy Policy</h1><p>...</p></article></div></div>); };
 // const TermsOfServicePage = () => { return (<div className="bg-white py-16 sm:py-24"><div className="container mx-auto px-6"><article className="prose lg:prose-lg max-w-4xl mx-auto"><h1>Terms of Service</h1><p>...</p></article></div></div>); };
+// --- [NEW] Login Modal (Offers OTP or Email/Password) ---
+const LoginModal = ({ isOpen, onClose, onSelectOtpLogin, showNotification }) => {
+  const [showEmailPassword, setShowEmailPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
+  useEffect(() => {
+      // Reset state when modal opens
+      if (isOpen) {
+          setShowEmailPassword(false);
+          setEmail('');
+          setPassword('');
+          setError('');
+          setIsProcessing(false);
+      }
+  }, [isOpen]);
+
+   const handleEmailPasswordLogin = async (e) => {
+      e.preventDefault();
+      setError('');
+      setIsProcessing(true);
+      try {
+          await auth.signInWithEmailAndPassword(email, password);
+          showNotification("Logged in successfully!", "success");
+          onClose(); // Close modal on success
+      } catch (err) {
+          console.error("Error signing in with email/password:", err);
+          switch (err.code) {
+              case 'auth/invalid-email': setError('Please enter a valid email address.'); break;
+              case 'auth/user-not-found':
+              case 'auth/wrong-password':
+              case 'auth/invalid-credential': setError('Invalid email or password.'); break;
+               case 'auth/user-disabled': setError('This account has been disabled.'); break;
+              default: setError('Login failed. Please try again.'); break;
+          }
+      } finally {
+          setIsProcessing(false);
+      }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md m-4 relative">
+              <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
+
+              {!showEmailPassword ? (
+                  // --- Step 1: Choose Login Method ---
+                  <>
+                      <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Log In</h2>
+                      <div className="space-y-4">
+                           <button
+                               onClick={() => {
+                                   onSelectOtpLogin(); // Call parent handler to open OTP modal
+                                   // onClose(); // Parent handler should close this modal
+                               }}
+                               className="bg-gradient-to-br from-blue-500 to-blue-600 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg transition-all duration-300 w-full"
+                           >
+                              Log In with Phone OTP
+                           </button>
+                            <button
+                               onClick={() => setShowEmailPassword(true)} // Show email/password form
+                               className="bg-gradient-to-br from-gray-700 to-gray-800 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg transition-all duration-300 w-full"
+                           >
+                              Log In with Email/Password
+                           </button>
+                      </div>
+                  </>
+              ) : (
+                  // --- Step 2: Email/Password Form ---
+                  <>
+                      <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Log In</h2>
+                      <p className="text-center text-gray-500 mb-6">Enter your email and password.</p>
+                      <form onSubmit={handleEmailPasswordLogin}>
+                          <div className="mb-4">
+                              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="login-email">Email</label>
+                              <input type="email" id="login-email" value={email} onChange={(e) => setEmail(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="you@example.com" required autoComplete="email" />
+                          </div>
+                          <div className="mb-6">
+                              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="login-password">Password</label>
+                              <input type="password" id="login-password" value={password} onChange={(e) => setPassword(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="••••••••••" required autoComplete="current-password" />
+                              {/* Optional: Add Forgot Password link */}
+                          </div>
+                          {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
+                          <button type="submit" disabled={isProcessing} className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                              {isProcessing ? <Loader2 className="animate-spin mx-auto" /> : 'Log In'}
+                          </button>
+                      </form>
+                       <p className="text-center text-sm text-gray-500 mt-4">
+                          <button onClick={() => setShowEmailPassword(false)} className="font-bold text-blue-600 hover:text-blue-700">
+                              « Back to login options
+                          </button>
+                      </p>
+                  </>
+              )}
+          </div>
+      </div>
+  );
+};
+
+
+// --- [NEW] Set Credentials Modal (After First Phone Sign-Up) ---
+const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
+  const [error, setError] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Import EmailAuthProvider if not already available globally via firebase import
+  const { EmailAuthProvider } = firebase.auth;
+
+  useEffect(() => {
+      // Reset form when modal opens
+      if (isOpen) {
+          setEmail('');
+          setPassword('');
+          setUsername('');
+          setError('');
+          setIsProcessing(false);
+      }
+  }, [isOpen]);
+
+  const handleSetCredentials = async (e) => {
+      e.preventDefault();
+      setError('');
+      setIsProcessing(true);
+
+      if (!newUser) {
+          setError("User session is invalid. Please try signing up again.");
+          setIsProcessing(false);
+          return;
+      }
+
+      if (password.length < 6) {
+           setError('Password should be at least 6 characters long.');
+           setIsProcessing(false);
+           return;
+      }
+       if (!username.trim()) {
+           setError('Please enter a username.');
+           setIsProcessing(false);
+           return;
+       }
+
+      try {
+          // 1. Create email/password credential
+          const credential = EmailAuthProvider.credential(email, password);
+
+          // 2. Link credential to the currently signed-in user (newUser)
+          console.log("Attempting to link email/password credential...");
+          await newUser.linkWithCredential(credential);
+          console.log("Email/Password linked successfully.");
+
+          // 3. Update Firestore document with username and email
+          const userDocRef = db.collection("users").doc(newUser.uid);
+          console.log("Updating Firestore document with username and email...");
+          await userDocRef.set({
+              // Ensure existing fields from phone auth are kept/merged if necessary
+              // Although linkWithCredential doesn't create the doc, it's good practice
+              username: username.trim(),
+              email: email, // Store email
+              phoneNumber: newUser.phoneNumber, // Keep phone number
+              mobile: newUser.phoneNumber,      // Keep mobile
+              createdAt: firebase.firestore.FieldValue.serverTimestamp() // Add timestamp if new
+          }, { merge: true }); // Use merge to add/update fields
+          console.log("Firestore document updated.");
+
+          showNotification("Account setup complete!", "success");
+          onClose(); // Close the modal on success
+
+      } catch (err) {
+          console.error("Error setting credentials:", err);
+          switch (err.code) {
+              case 'auth/invalid-email': setError('Please enter a valid email address.'); break;
+              case 'auth/email-already-in-use': setError('This email is already associated with another account.'); break;
+              case 'auth/credential-already-in-use': setError('This email/credential is already linked to a user.'); break; // Important for linking
+              case 'auth/weak-password': setError('Password should be at least 6 characters long.'); break;
+              case 'auth/requires-recent-login': setError('Security check required. Please log in again before linking.'); break; // Might happen if process takes too long
+              default: setError('An unexpected error occurred. Please try again.'); break;
+          }
+      } finally {
+          setIsProcessing(false);
+      }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md m-4 relative">
+              {/* No close button? Or add one if needed: <button onClick={onClose} ...>X</button> */}
+              <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Complete Your Account</h2>
+              <p className="text-center text-gray-500 mb-6">Set your email, password, and username.</p>
+              <form onSubmit={handleSetCredentials}>
+                  <div className="mb-4">
+                      <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-email">Email</label>
+                      <input type="email" id="setup-email" value={email} onChange={(e) => setEmail(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="you@example.com" required autoComplete="email" />
+                  </div>
+                   <div className="mb-4">
+                      <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-password">Password</label>
+                      <input type="password" id="setup-password" value={password} onChange={(e) => setPassword(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="•••••••••• (min. 6 characters)" required autoComplete="new-password" />
+                  </div>
+                   <div className="mb-6">
+                      <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-username">Username</label>
+                      <input type="text" id="setup-username" value={username} onChange={(e) => setUsername(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Choose a username" required autoComplete="username" />
+                  </div>
+                  {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
+                  <button type="submit" disabled={isProcessing} className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                       {isProcessing ? <Loader2 className="animate-spin mx-auto" /> : 'Save & Continue'}
+                  </button>
+              </form>
+          </div>
+      </div>
+  );
+};
 
 // --- [NEW] Privacy Policy Page ---
 const PrivacyPolicyPage = () => {
@@ -1318,257 +1459,154 @@ const TermsOfServicePage = () => {
 };
 
 
-// --- Main App Component (The Router - Refactored) ---
+// --- Main App Component (Integrates New Modals) ---
 const App = () => {
-    const [view, setView] = useState('home');
-    const [selectedRestaurant, setSelectedRestaurant] = useState(null);
-    const [isAuthModalOpen, setAuthModalOpen] = useState(false);
-    const [currentUser, setCurrentUser] = useState(null);
-    const [restaurants, setRestaurants] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [cart, setCart] = useState([]);
-    const [isCartOpen, setIsCartOpen] = useState(false);
-    const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-    const [itemToCustomize, setItemToCustomize] = useState(null);
-    const [notification, setNotification] = useState({ message: '', type: '' });
-    const [scrollToSection, setScrollToSection] = useState(null);
-    const [orderToReview, setOrderToReview] = useState(null);
-    const [isRedirecting, setIsRedirecting] = useState(false);
-    const [isAuthReady, setIsAuthReady] = useState(false);
+  // --- Existing State ---
+  const [view, setView] = useState('home');
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [restaurants, setRestaurants] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [cart, setCart] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [itemToCustomize, setItemToCustomize] = useState(null);
+  const [notification, setNotification] = useState({ message: '', type: '' });
+  const [scrollToSection, setScrollToSection] = useState(null);
+  const [orderToReview, setOrderToReview] = useState(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
-    const showNotification = (message, type) => setNotification({ message, type });
+  // --- New/Modified State for Auth Flow ---
+  const [isAuthModalOpen, setAuthModalOpen] = useState(false); // Used for OTP sign-up/login
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); // New: For choosing login method
+  const [isSetCredentialsModalOpen, setIsSetCredentialsModalOpen] = useState(false); // New: After first sign-up
+  const [newUserObject, setNewUserObject] = useState(null); // Stores user after OTP verify, before setting credentials
 
-    useEffect(() => {
-        const path = window.location.pathname;
-        if (path === '/payment-status') { setView('paymentStatus'); }
-        else if (path === '/privacy-policy') { setView('privacy'); }
-        else if (path === '/terms-of-service') { setView('terms'); }
+  const showNotification = (message, type) => setNotification({ message, type });
 
-        const fetchRestaurantsAndMenus = async () => {
-            try {
-                const restaurantsCollection = db.collection("restaurants");
-                const restaurantSnapshot = await restaurantsCollection.get();
-                const restaurantListPromises = restaurantSnapshot.docs.map(async (doc) => {
-                    const restaurantData = { id: doc.id, ...doc.data() };
-                    const menuCollectionRef = db.collection("restaurants").doc(doc.id).collection("menu");
-                    const menuSnapshot = await menuCollectionRef.get();
-                    restaurantData.menu = menuSnapshot.docs.map(menuDoc => ({ id: menuDoc.id, ...menuDoc.data() }));
-                    return restaurantData;
-                });
-                const restaurantList = await Promise.all(restaurantListPromises);
-                setRestaurants(restaurantList);
-            } catch (error) { console.error("Error fetching restaurants: ", error); }
-            finally { setIsLoading(false); }
-        };
-        fetchRestaurantsAndMenus();
+  // --- Effects (keep existing ones) ---
+  useEffect(() => { /* ... existing useEffect for routing, fetching, auth state, messaging ... */
+       const path = window.location.pathname;
+       if (path === '/payment-status') setView('paymentStatus');
+       else if (path === '/privacy-policy') setView('privacy');
+       else if (path === '/terms-of-service') setView('terms');
 
-        const unsubAuth = auth.onAuthStateChanged((user) => {
-            setCurrentUser(user);
-            setIsAuthReady(true);
-            
-            if (user) { 
-                console.log("User logged in. Requesting notification permission.");
-                requestCustomerNotificationPermission(user); 
-            }
-        });
+       const fetchRestaurantsAndMenus = async () => { /* ... */ };
+       fetchRestaurantsAndMenus();
 
-        if (messaging) {
-            messaging.onMessage((payload) => {
-                console.log('Foreground message received: ', payload);
-        
-                // Use your existing notification component to show the message
-                const notificationTitle = payload.notification.title;
-                const notificationBody = payload.notification.body;
-                showNotification(`${notificationTitle}: ${notificationBody}`, 'success');
-            });
-        }
-        return () => unsubAuth();
-    }, []);
+       const unsubAuth = auth.onAuthStateChanged((user) => {
+           setCurrentUser(user);
+           setIsAuthReady(true);
+           if (user) {
+               console.log("User logged in. Requesting notification permission.");
+               requestCustomerNotificationPermission(user);
+           }
+       });
 
-    useEffect(() => {
-        if (view === 'home' && scrollToSection) {
-            setTimeout(() => {
-                const element = document.getElementById(scrollToSection);
-                if (element) { element.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-                setScrollToSection(null);
-            }, 100);
-        }
-    }, [view, scrollToSection]);
+       if (messaging) { /* ... onMessage handler ... */ }
+       return () => unsubAuth();
+  }, []);
 
-    useEffect(() => {
-        if (isCartOpen || isCheckoutOpen || itemToCustomize || isAuthModalOpen) { document.body.style.overflow = 'hidden'; }
-        else { document.body.style.overflow = 'auto'; }
-        return () => { document.body.style.overflow = 'auto'; };
-    }, [isCartOpen, isCheckoutOpen, itemToCustomize, isAuthModalOpen]);
+  useEffect(() => { /* ... existing useEffect for scrolling ... */ }, [view, scrollToSection]);
 
-    const handleSelectItemForCustomization = (item) => setItemToCustomize(item);
+  useEffect(() => { /* ... existing useEffect for body overflow ... */
+      if (isCartOpen || isCheckoutOpen || itemToCustomize || isAuthModalOpen || isLoginModalOpen || isSetCredentialsModalOpen) {
+          document.body.style.overflow = 'hidden';
+      } else {
+          document.body.style.overflow = 'auto';
+      }
+      return () => { document.body.style.overflow = 'auto'; };
+  // Add new modal states to dependency array
+  }, [isCartOpen, isCheckoutOpen, itemToCustomize, isAuthModalOpen, isLoginModalOpen, isSetCredentialsModalOpen]);
 
-    const handleConfirmAddToCart = (customizedItem) => {
-        setCart(prevCart => {
-            const existingItem = prevCart.find(item => item.cartItemId === customizedItem.cartItemId);
-            if (existingItem) { return prevCart.map(item => item.cartItemId === customizedItem.cartItemId ? { ...item, quantity: item.quantity + 1 } : item); }
-            return [...prevCart, { ...customizedItem, quantity: 1 }];
-        });
-        setItemToCustomize(null);
-    };
+  // --- Existing Handlers (keep them) ---
+  const handleSelectItemForCustomization = (item) => setItemToCustomize(item);
+  const handleConfirmAddToCart = (customizedItem) => { /* ... */ };
+  const handleUpdateQuantity = (cartItemId, newQuantity) => { /* ... */ };
+  const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode) => { /* ... */ };
+  const handleSubmitReview = async (order, reviewData) => { /* ... */ };
+  const handleReorder = async (order) => { /* ... */ };
+  const cartItemCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
+  const handleLogout = async () => { /* ... */ };
+  const handleRestaurantClick = (restaurant) => { /* ... */ };
+  const handleBackClick = () => { /* ... */ };
+  const handleGoHome = (sectionId = null) => { /* ... */ };
 
-    const handleUpdateQuantity = (cartItemId, newQuantity) => {
-        if (newQuantity <= 0) { setCart(prevCart => prevCart.filter(item => item.cartItemId !== cartItemId)); }
-        else { setCart(prevCart => prevCart.map(item => item.cartItemId === cartItemId ? { ...item, quantity: newQuantity } : item)); }
-    };
+  // --- New Handlers for Auth Flow ---
+  const handleNewUserVerified = (user) => {
+      console.log("App received new user from AuthModal:", user.uid);
+      setNewUserObject(user); // Store user for SetCredentialsModal
+      setAuthModalOpen(false); // Close OTP modal
+      setIsSetCredentialsModalOpen(true); // Open Set Credentials modal
+  };
 
-    const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode) => {
-        setIsRedirecting(true);
-        if (!isAuthReady || !currentUser) { showNotification("Please log in to place an order.", "error"); setIsRedirecting(false); return; }
-        setIsCheckoutOpen(false);
-        const grandTotal = subtotal - discount;
-        const orderData = {
-            userId: currentUser.uid, userEmail: currentUser.email, restaurantId: selectedRestaurant.id, restaurantName: selectedRestaurant.name,
-            items: cart.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.finalPrice, size: item.selectedSize.name, addons: item.selectedAddons.map(a => a.name) })),
-            subtotal, discount, couponCode: couponCode || null, total: grandTotal, status: "awaiting_payment", arrivalTime,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            hasReview: false,
-        };
-        try {
-            const orderRef = await db.collection("orders").add(orderData);
-            const phonePePay = functionsAsia.httpsCallable('phonePePay');
-            const response = await phonePePay({ orderId: orderRef.id }); 
-            const { redirectUrl } = response.data;
-            if (redirectUrl) { window.location.href = redirectUrl; }
-            else { throw new Error("Could not get payment redirect URL."); }
-        } catch (error) {
-            console.error("Error during payment process:", error);
-            let errorMessage = "Failed to initiate payment. Please try again.";
-            if (error.code === 'functions/unauthenticated') { errorMessage = "Payment failed. This can be caused by browser extensions. Please try disabling them or using a private window."; }
-            else if (error.message) { errorMessage = error.message; }
-            showNotification(errorMessage, "error");
-            setIsRedirecting(false);
-        }
-    };
-    
-    const handleSubmitReview = async (order, reviewData) => {
-        const review = {
-            ...reviewData, userId: currentUser.uid, userEmail: currentUser.email,
-            restaurantId: order.restaurantId, orderId: order.id,
-            createdAt: db.FieldValue.serverTimestamp(),
-        };
-        try {
-            await db.collection("reviews").add(review);
-            const orderDocRef = db.collection("orders").doc(order.id);
-            await orderDocRef.update({ hasReview: true });
-            
-            const q = db.collection("reviews").where("restaurantId", "==", order.restaurantId);
-            const querySnapshot = await q.get();
-            const reviews = querySnapshot.docs.map(doc => doc.data());
-            const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
-            const avgRating = totalRating / reviews.length;
-            
-            const restaurantDocRef = db.collection("restaurants").doc(order.restaurantId);
-            await restaurantDocRef.update({ rating: avgRating, reviewCount: reviews.length });
-            showNotification("Thank you for your review!", "success");
-            setOrderToReview(null);
-        } catch (error) {
-            console.error("Error submitting review: ", error);
-            showNotification("Could not submit review.", "error");
-        }
-    };
+  const handleSelectOtpLogin = () => {
+       console.log("User selected OTP login.");
+       setIsLoginModalOpen(false); // Close choice modal
+       setAuthModalOpen(true); // Open OTP modal
+  };
+  
+  // --- Render Logic ---
+  const renderView = () => { /* ... keep existing switch statement ... */ };
 
-    const handleReorder = async (order) => {
-        const restaurant = restaurants.find(r => r.id === order.restaurantId);
-        if (!restaurant) { showNotification("Sorry, this restaurant is no longer available.", "error"); return; }
-        setSelectedRestaurant(restaurant);
-        setCart([]);
-        const menuCollectionRef = db.collection("restaurants").doc(restaurant.id).collection("menu");
-        const menuSnapshot = await menuCollectionRef.get();
-        const currentMenu = menuSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const newCart = [];
-        let allItemsFound = true;
-        for (const orderedItem of order.items) {
-            const menuItem = currentMenu.find(item => item.id === orderedItem.id);
-            if (menuItem) {
-                const selectedSize = menuItem.sizes.find(s => s.name === orderedItem.size);
-                const selectedAddons = menuItem.addons ? menuItem.addons.filter(addon => (orderedItem.addons || []).includes(addon.name)) : [];
-                if (selectedSize) {
-                    const finalPrice = selectedSize.price + selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
-                    newCart.push({ ...menuItem, cartItemId: `${menuItem.id}-${selectedSize.name}-${selectedAddons.map(a => a.name).join('-')}`, selectedSize, selectedAddons, finalPrice, quantity: orderedItem.quantity });
-                } else { allItemsFound = false; }
-            } else { allItemsFound = false; }
-        }
-        if (!allItemsFound) { showNotification("Some items from your past order have changed. Please review your cart.", "error"); }
-        else { showNotification("Order added to your cart!", "success"); }
-        setCart(newCart);
-        setView('menu');
-        setIsCartOpen(true);
-    };
+  return (
+      <>
+          {/* --- Render Existing Modals --- */}
+          <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: ''})} />
+          <ItemCustomizationModal isOpen={!!itemToCustomize} onClose={() => setItemToCustomize(null)} item={itemToCustomize} onConfirmAddToCart={handleConfirmAddToCart} />
+          <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} onUpdateQuantity={handleUpdateQuantity} onCheckout={() => setIsCheckoutOpen(true)} />
+          <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} onPlaceOrder={handlePlaceOrder} cart={cart} restaurant={selectedRestaurant} />
+          <ReviewModal isOpen={!!orderToReview} onClose={() => setOrderToReview(null)} order={orderToReview} onSubmitReview={handleSubmitReview} />
+          <PaymentRedirectOverlay isOpen={isRedirecting} />
 
-    const cartItemCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
-    const handleLogout = async () => { setView('home'); try { await auth.signOut(); } catch (error) { console.error("Error signing out: ", error); } };
-    const handleRestaurantClick = (restaurant) => { setSelectedRestaurant(restaurant); setView('menu'); setCart([]); };
-    const handleBackClick = () => { setSelectedRestaurant(null); setView('home'); };
-    const handleGoHome = (sectionId = null) => { setView('home'); if (sectionId) { setScrollToSection(sectionId); } };
+          {/* --- Render Auth Modals --- */}
+          {/* Modal for Phone OTP (Sign Up OR Log In) */}
+           <AuthModal
+              isOpen={isAuthModalOpen}
+              onClose={() => setAuthModalOpen(false)}
+              onNewUserVerified={handleNewUserVerified} // Pass handler for new users
+          />
+           {/* Modal for Choosing Login Method (Opens on "Log In" click) */}
+          <LoginModal
+              isOpen={isLoginModalOpen}
+              onClose={() => setIsLoginModalOpen(false)}
+              onSelectOtpLogin={handleSelectOtpLogin} // Pass handler to open OTP modal
+              showNotification={showNotification} // Pass showNotification for login success/errors
+           />
+           {/* Modal for Setting Credentials (Opens after first OTP sign-up) */}
+           <SetCredentialsModal
+              isOpen={isSetCredentialsModalOpen}
+              onClose={() => setIsSetCredentialsModalOpen(false)}
+              newUser={newUserObject} // Pass the newly verified user object
+              showNotification={showNotification} // Pass for success/error messages
+          />
 
-    const renderView = () => {
-        switch(view) {
-            case 'home': return <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} />;
-            case 'menu': return <MenuPage restaurant={selectedRestaurant} onBackClick={handleBackClick} onSelectItem={handleSelectItemForCustomization} />;
-            case 'confirmation': return <OrderConfirmation onGoHome={() => handleGoHome()} />;
-            case 'paymentStatus': return <PaymentStatusPage onGoHome={() => handleGoHome()} />;
-            case 'privacy': return <PrivacyPolicyPage />;
-            case 'terms': return <TermsOfServicePage />;
-            case 'profile': return <ProfilePage currentUser={currentUser} showNotification={showNotification} onReorder={handleReorder} onRateOrder={setOrderToReview} />;
-            default: return <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} />;
-        }
-    };
-
-    return (
-        <>
-            <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: ''})} />
-            <AuthModal isOpen={isAuthModalOpen} onClose={() => setAuthModalOpen(false)} />
-            <ItemCustomizationModal isOpen={!!itemToCustomize} onClose={() => setItemToCustomize(null)} item={itemToCustomize} onConfirmAddToCart={handleConfirmAddToCart} />
-            <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} onUpdateQuantity={handleUpdateQuantity} onCheckout={() => setIsCheckoutOpen(true)} />
-            <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} onPlaceOrder={handlePlaceOrder} cart={cart} restaurant={selectedRestaurant} />
-            <ReviewModal isOpen={!!orderToReview} onClose={() => setOrderToReview(null)} order={orderToReview} onSubmitReview={handleSubmitReview} />
-            <PaymentRedirectOverlay isOpen={isRedirecting} />
-            <div className="bg-cream-50 font-sans text-slate-800">
-                <header className="bg-white/80 backdrop-blur-xl sticky top-0 z-30 border-b border-gray-200/80">
-                    <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-                        <h1 onClick={() => handleGoHome()} className="text-3xl font-bold text-green-700 tracking-tight cursor-pointer">Snaccit</h1>
-                        <div className="flex items-center space-x-4">
-                            <button onClick={() => handleGoHome('restaurants')} className="text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100"><Search size={22} /></button>
-                            {currentUser ? (
-                                <>
-                                    <button onClick={() => setIsCartOpen(true)} className="relative text-gray-600 hover:text-green-600">
-                                        <ShoppingCart size={24} />
-                                        {cartItemCount > 0 && <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">{cartItemCount}</span>}
-                                    </button>
-                                    <button onClick={() => setView('profile')} className="text-gray-600 hover:text-green-600"><User size={22} /></button>
-                                    <button onClick={handleLogout} className="hidden sm:block text-gray-600 font-semibold hover:text-green-600 py-2 px-4">Log Out</button>
-                                </>
-                            ) : (
-                                <>
-                                    <button onClick={() => setAuthModalOpen(true)} className="hidden sm:block text-gray-600 font-semibold hover:text-green-600 py-2 px-4">Log In</button>
-                                    <button onClick={() => setAuthModalOpen(true)} className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-2.5 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40">Sign Up</button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </header>
-                {renderView()}
-                <footer className="bg-white border-t border-gray-200">
-                    <div className="container mx-auto px-6 py-12 text-center">
-                        <BrandLogo />
-                        <p className="text-gray-500 mt-4">Skip the wait. Savor the moment.</p>
-                        <div className="mt-6 flex justify-center space-x-6">
-                            <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); setView('terms'); window.history.pushState({}, '', '/terms-of-service'); }} className="text-gray-500 hover:text-green-600">Terms of Service</a>
-                            <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); setView('privacy'); window.history.pushState({}, '', '/privacy-policy'); }} className="text-gray-500 hover:text-green-600">Privacy Policy</a>
-                            <a href="#" className="text-gray-500 hover:text-green-600">Contact</a>
-                        </div>
-                        <p className="text-gray-400 mt-8 text-sm">© 2024 Snaccit Inc. All rights reserved.</p>
-                    </div>
-                </footer>
-            </div>
-        </>
-    );
+          {/* --- Main App Layout --- */}
+          <div className="bg-cream-50 font-sans text-slate-800">
+              <header className="bg-white/80 backdrop-blur-xl sticky top-0 z-30 border-b border-gray-200/80">
+                  <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+                      <h1 onClick={() => handleGoHome()} /* ... */ >Snaccit</h1>
+                      <div className="flex items-center space-x-4">
+                          <button onClick={() => handleGoHome('restaurants')} /* ... */ ><Search size={22} /></button>
+                          {currentUser ? (
+                              <> {/* ... Logged In buttons: Cart, Profile, Log Out ... */} </>
+                          ) : (
+                              <>
+                                  {/* MODIFIED: Log In button opens LoginModal */}
+                                  <button onClick={() => setIsLoginModalOpen(true)} className="hidden sm:block text-gray-600 font-semibold hover:text-green-600 py-2 px-4">Log In</button>
+                                  {/* MODIFIED: Sign Up button opens AuthModal (OTP flow) */}
+                                  <button onClick={() => setAuthModalOpen(true)} className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-2.5 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40">Sign Up</button>
+                              </>
+                          )}
+                      </div>
+                  </div>
+              </header>
+              {renderView()}
+              <footer /* ... */ > {/* ... Footer content ... */} </footer>
+          </div>
+      </>
+  );
 };
 
 // --- Payment Redirect Overlay Component ---
