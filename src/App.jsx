@@ -188,29 +188,32 @@ const AuthModal = ({ isOpen, onClose }) => {
       }
   };
 
-  // Effect for setup on open/step change
-  useEffect(() => {
-      let isMounted = true; // Prevent state updates if unmounted during async ops
-      let timeoutId;
+// Effect for setup on open/step change
+useEffect(() => {
+  let isMounted = true;
+  let timeoutId;
 
-      if (isOpen && step === 1) {
-           console.log("Effect running: Modal open, step 1. Setting up reCAPTCHA.");
-           // Add a small delay to ensure the div is definitely in the DOM and cleaned up
-           timeoutId = setTimeout(() => {
-               if(isMounted) { // Check if still mounted
-                  setupRecaptcha();
-               }
-           }, 150); // Slightly increased delay just in case
-      }
+  // Only setup if open, on step 1, AND if no verifier exists yet
+  if (isOpen && step === 1 && !window.recaptchaVerifier) {
+       console.log("Effect running: Modal open, step 1, verifier missing. Setting up reCAPTCHA.");
+       timeoutId = setTimeout(() => {
+           if(isMounted) {
+              setupRecaptcha();
+           }
+       }, 150);
+  } else {
+       console.log("Effect running: Skipping reCAPTCHA setup (isOpen:", isOpen, "step:", step, "verifier exists:", !!window.recaptchaVerifier,")");
+  }
 
-      // Cleanup function for when component unmounts, modal closes, OR step changes away from 1
-      return () => {
-           console.log("Effect cleanup running (isOpen:", isOpen, "step:", step, ")");
-           isMounted = false; // Mark as unmounted
-           clearTimeout(timeoutId); // Clear pending setup timeout
-           clearRecaptcha(); // Always clean up reCAPTCHA on effect cleanup
-      };
-  }, [isOpen, step]); // Run when isOpen or step changes
+  // --- SIMPLIFIED CLEANUP ---
+  // Cleanup only needs to clear the timeout and set mount flag
+  return () => {
+       console.log("Effect cleanup running for [isOpen, step] effect.");
+       isMounted = false;
+       clearTimeout(timeoutId);
+       // REMOVE clearRecaptcha() from here - let button clicks / modal close handle it
+  };
+}, [isOpen, step]); // Keep dependencies
 
   const handleAuthAction = async (e) => {
       e.preventDefault();
@@ -388,24 +391,26 @@ const AuthModal = ({ isOpen, onClose }) => {
                  </button>
              </form>
              {step === 2 && (
-                  <p className="text-center text-sm text-gray-500 mt-4">
-                     <button
-                         type="button" // Important: Prevent form submission
-                         onClick={() => {
-                             console.log("Change/Resend button clicked.");
-                             // Simply change step, let useEffect handle cleanup/setup
-                             setStep(1);
-                             setError(''); // Clear errors like 'Invalid code'
-                             setOtp('');   // Clear entered OTP
-                             setConfirmationResult(null); // Invalidate old confirmation
-                         }}
-                         className="font-bold text-green-600 hover:text-green-700"
-                         disabled={isProcessing} // Disable if already processing something
-                     >
-                        Change Phone Number or Resend OTP
-                     </button>
-                 </p>
-             )}
+      <p className="text-center text-sm text-gray-500 mt-4">
+         <button
+             type="button"
+             onClick={() => {
+                 console.log("Change/Resend button clicked. Clearing reCAPTCHA first.");
+                 clearRecaptcha(); // <<< CALL CLEANUP EXPLICITLY HERE
+
+                 // Now update state which will trigger useEffect later
+                 setStep(1);
+                 setError('');
+                 setOtp('');
+                 setConfirmationResult(null);
+             }}
+             className="font-bold text-green-600 hover:text-green-700"
+             disabled={isProcessing}
+         >
+            Change Phone Number or Resend OTP
+         </button>
+     </p>
+ )}
          </div>
      </div>
  );
