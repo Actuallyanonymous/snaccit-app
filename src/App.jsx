@@ -85,7 +85,7 @@ const AnimatedHeroText = () => (
     </>
 );
 
-// --- Authentication Modal Component (Added reCAPTCHA Debug Logging) ---
+// --- Authentication Modal Component (Revised for reCAPTCHA Reset) ---
 const AuthModal = ({ isOpen, onClose }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
@@ -93,294 +93,322 @@ const AuthModal = ({ isOpen, onClose }) => {
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState(null);
+  // Note: We don't really need recaptchaVerifier in state if we always access it via window
+  // but keeping it for now as it doesn't hurt. Consider removing if simplifying later.
   const [recaptchaVerifier, setRecaptchaVerifier] = useState(null);
 
-  const setupRecaptcha = (retryCount = 0) => { // Added retryCount
-    console.log(`Attempting to set up reCAPTCHA... (Attempt ${retryCount + 1})`);
-
-    // Check if the reCAPTCHA library script has loaded
-    if (typeof window.grecaptcha === 'undefined' || typeof firebase.auth.RecaptchaVerifier === 'undefined') {
-        console.warn("reCAPTCHA library (grecaptcha or RecaptchaVerifier) not ready yet.");
-
-        // *** NEW: Retry logic ***
-        if (retryCount < 5) { // Try up to 5 times (total ~500ms)
-            console.log("Retrying setup in 100ms...");
-            setTimeout(() => setupRecaptcha(retryCount + 1), 100); // Retry after 100ms
-            return; // Exit current attempt
-        } else {
-            console.error("!!! reCAPTCHA library failed to load after multiple retries!");
-            setError("Authentication service failed to load. Please refresh and try again.");
-            setIsProcessing(false);
-            return; // Stop setup
-        }
-        // *** END: Retry logic ***
-    }
-      // Ensure the container exists
-     const container = document.getElementById('recaptcha-container');
-     if (!container) {
-         console.error("!!! reCAPTCHA container element not found in DOM!");
-         setError("UI Error: reCAPTCHA container missing. Please refresh.");
-         setIsProcessing(false);
-         return;
-     }
-
-     try {
-         if (window.recaptchaVerifier) {
-             console.log("Clearing previous reCAPTCHA verifier.");
-             window.recaptchaVerifier.clear();
-         }
-
-         console.log("Creating new RecaptchaVerifier instance...");
-         window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-             'size': 'invisible',
-             'callback': (response) => {
-                 console.log("reCAPTCHA solved (invisible callback)");
-             },
-             'expired-callback': () => {
-                 console.warn("reCAPTCHA expired.");
-                 setError("reCAPTCHA expired. Please try sending OTP again.");
-                 setIsProcessing(false);
-                 if(window.recaptchaVerifier) window.recaptchaVerifier.clear();
-                 setupRecaptcha(); // Try setting up again without incrementing retry, maybe just expired
-             }
-         });
-
-         // Render the verifier immediately
-         window.recaptchaVerifier.render().then((widgetId) => {
-             window.recaptchaWidgetId = widgetId;
-             console.log("reCAPTCHA rendered successfully with widget ID:", widgetId);
-             setRecaptchaVerifier(window.recaptchaVerifier);
-         }).catch(err => {
-             console.error("!!! Error rendering reCAPTCHA:", err);
-             setError("Failed to initialize reCAPTCHA. Check console for details.");
-             setIsProcessing(false);
-         });
-
-     } catch (err) {
-         console.error("!!! Error creating RecaptchaVerifier instance:", err);
-         setError("Failed to create reCAPTCHA verifier. Check console.");
-         setIsProcessing(false);
-     }
- };
-
-  // Effect to set up reCAPTCHA
-  useEffect(() => {
-      let didSetup = false; // Flag to prevent setup running twice on strict mode mount/unmount/mount
-      if (isOpen && step === 1 && !recaptchaVerifier && !didSetup) {
-           didSetup = true;
-           // Add a small delay to ensure the div is definitely in the DOM
-           const timerId = setTimeout(() => {
-               setupRecaptcha();
-           }, 100); // 100ms delay
-            return () => clearTimeout(timerId); // Clear timeout if component unmounts quickly
-      }
-      // Cleanup
-      return () => {
-          if (window.recaptchaVerifier) {
-              console.log("Cleaning up reCAPTCHA verifier on effect cleanup.");
-              window.recaptchaVerifier.clear();
-              setRecaptchaVerifier(null);
+  // Function to cleanly destroy the reCAPTCHA instance
+  const clearRecaptcha = () => {
+      if (window.recaptchaVerifier) {
+          try {
+              console.log("Clearing reCAPTCHA verifier.");
+              window.recaptchaVerifier.clear(); // Call the clear method
+              const container = document.getElementById('recaptcha-container');
+               if(container) container.innerHTML = ''; // Clear the container div content
+          } catch (error) {
+              console.error("Error clearing reCAPTCHA:", error);
+          } finally {
+              window.recaptchaVerifier = null; // Nullify the global reference
+              setRecaptchaVerifier(null); // Nullify state
+               window.recaptchaWidgetId = undefined; // Clear widget ID
           }
+      }
+  }
+
+  const setupRecaptcha = (retryCount = 0) => {
+      console.log(`Attempting to set up reCAPTCHA... (Attempt ${retryCount + 1})`);
+
+      if (typeof window.grecaptcha === 'undefined' || typeof firebase.auth.RecaptchaVerifier === 'undefined') {
+          console.warn("reCAPTCHA library not ready yet.");
+          if (retryCount < 5) {
+              console.log("Retrying setup in 100ms...");
+              setTimeout(() => setupRecaptcha(retryCount + 1), 100);
+              return;
+          } else {
+              console.error("!!! reCAPTCHA library failed to load after multiple retries!");
+              setError("Authentication service failed to load. Please refresh and try again.");
+              setIsProcessing(false); // Make sure button isn't stuck disabled
+              return;
+          }
+      }
+
+      const container = document.getElementById('recaptcha-container');
+      if (!container) {
+          console.error("!!! reCAPTCHA container element not found in DOM!");
+          setError("UI Error: reCAPTCHA container missing. Please refresh.");
+          setIsProcessing(false); // Make sure button isn't stuck disabled
+          return;
+      }
+      // Ensure container is empty before creating a new one
+      container.innerHTML = '';
+
+      try {
+          // Ensure previous instance is fully cleared before creating a new one
+          // Note: clearRecaptcha() is now called reliably by useEffect cleanup
+          // if (window.recaptchaVerifier) { clearRecaptcha(); }
+
+
+          console.log("Creating new RecaptchaVerifier instance...");
+          // Assign directly to window property
+          window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+              'size': 'invisible',
+              'callback': (response) => {
+                  console.log("reCAPTCHA solved (invisible callback)");
+              },
+              'expired-callback': () => {
+                  console.warn("reCAPTCHA expired.");
+                  setError("reCAPTCHA expired. Please try sending OTP again.");
+                  setIsProcessing(false);
+                  // Expired - try to reset and setup again cleanly
+                  clearRecaptcha(); // Clean up expired instance
+                  setupRecaptcha(); // Re-initialize
+              }
+          });
+
+          // Set the state *after* creating the instance on window
+          setRecaptchaVerifier(window.recaptchaVerifier);
+
+          // Render immediately
+          window.recaptchaVerifier.render().then((widgetId) => {
+              window.recaptchaWidgetId = widgetId;
+              console.log("reCAPTCHA rendered successfully with widget ID:", widgetId);
+              // No need to setRecaptchaVerifier again here
+          }).catch(err => {
+              console.error("!!! Error rendering reCAPTCHA:", err);
+              setError("Failed to initialize reCAPTCHA. Check console for details.");
+              setIsProcessing(false);
+              clearRecaptcha(); // Clean up failed instance
+          });
+
+      } catch (err) {
+          console.error("!!! Error creating RecaptchaVerifier instance:", err);
+          setError("Failed to create reCAPTCHA verifier. Check console.");
+          setIsProcessing(false);
+          clearRecaptcha(); // Clean up potentially broken instance
+      }
+  };
+
+  // Effect for setup on open/step change
+  useEffect(() => {
+      let isMounted = true; // Prevent state updates if unmounted during async ops
+      let timeoutId;
+
+      if (isOpen && step === 1) {
+           console.log("Effect running: Modal open, step 1. Setting up reCAPTCHA.");
+           // Add a small delay to ensure the div is definitely in the DOM and cleaned up
+           timeoutId = setTimeout(() => {
+               if(isMounted) { // Check if still mounted
+                  setupRecaptcha();
+               }
+           }, 150); // Slightly increased delay just in case
+      }
+
+      // Cleanup function for when component unmounts, modal closes, OR step changes away from 1
+      return () => {
+           console.log("Effect cleanup running (isOpen:", isOpen, "step:", step, ")");
+           isMounted = false; // Mark as unmounted
+           clearTimeout(timeoutId); // Clear pending setup timeout
+           clearRecaptcha(); // Always clean up reCAPTCHA on effect cleanup
       };
-  // Removed recaptchaVerifier from dependency array to prevent potential loops on error/reset
-  }, [isOpen, step]);
+  }, [isOpen, step]); // Run when isOpen or step changes
 
   const handleAuthAction = async (e) => {
       e.preventDefault();
       setError('');
       setIsProcessing(true);
-
-      // *** NEW DEBUG LOG ***
       console.log("handleAuthAction triggered for step:", step);
 
       if (step === 1) {
-          // *** NEW DEBUG CHECK ***
-          if (!recaptchaVerifier) {
-              console.error("!!! Attempted to send OTP, but recaptchaVerifier state is null!");
-              setError("reCAPTCHA is not ready. Please wait or refresh.");
+          // Use the instance directly from the window object for robustness
+          const verifier = window.recaptchaVerifier;
+          if (!verifier) {
+              console.error("!!! Attempted to send OTP, but window.recaptchaVerifier is null/undefined!");
+              setError("reCAPTCHA is not ready. Please wait a moment or refresh.");
+              // Attempt setup again just in case initialization failed silently
+              setupRecaptcha();
               setIsProcessing(false);
               return;
           }
            console.log("Proceeding with signInWithPhoneNumber...");
           try {
-              const formattedPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
-              const confirmation = await auth.signInWithPhoneNumber(formattedPhoneNumber, recaptchaVerifier);
-              console.log("signInWithPhoneNumber successful, confirmation result received."); // *** NEW DEBUG LOG ***
+              // More robust phone number formatting needed for production
+              const formattedPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber.replace(/\D/g, '')}`; // Remove non-digits just in case
+              if (formattedPhoneNumber.length < 10) { // Basic length check
+                   throw { code: 'auth/invalid-phone-number', message: 'Phone number too short.' };
+              }
+
+              const confirmation = await auth.signInWithPhoneNumber(formattedPhoneNumber, verifier);
+              console.log("signInWithPhoneNumber successful, confirmation result received.");
               setConfirmationResult(confirmation);
               setStep(2);
               setError('');
+              // Note: Do NOT clear reCAPTCHA here, needed for potential resends implicitly handled by Firebase
           } catch (err) {
-              // Keep existing error handling...
               console.error("Error sending OTP:", err);
+               // ... (keep existing error handling for invalid number, too many requests etc.) ...
               if (err.code === 'auth/invalid-phone-number') {
-                  setError('Invalid phone number format. Please include country code (e.g., +91).');
-              } else if (err.code === 'auth/too-many-requests') {
-                  setError('Too many requests. Please try again later.');
-              } else if (err.code === 'auth/internal-error'){
-                   // Give a more specific hint for internal error during OTP send
-                   setError('Internal auth error during OTP request. Check authorized domains and API key restrictions.');
-              }
-               else {
-                  setError('Failed to send OTP. Please check the number and try again.');
-              }
-               // Try resetting reCAPTCHA on error
+                   setError(`Invalid phone number format (${err.message}). Include country code (e.g., +91).`);
+               } else if (err.code === 'auth/too-many-requests') {
+                   setError('Too many requests. Please try again later.');
+               } else if (err.code === 'auth/internal-error'){
+                    setError('Internal auth error during OTP request. Check authorized domains and API key restrictions.');
+               }
+                else {
+                   setError(`Failed to send OTP (${err.code || 'Unknown'}). Check number and try again.`);
+               }
+
+               // Attempt to reset the reCAPTCHA widget state without destroying the verifier instance
                try {
-                   const widgetId = window.recaptchaWidgetId; // Use stored ID
+                   const widgetId = window.recaptchaWidgetId;
                    if (typeof window.grecaptcha !== 'undefined' && widgetId !== undefined) {
-                       console.log("Resetting reCAPTCHA widget:", widgetId);
+                       console.log("Resetting reCAPTCHA widget state:", widgetId);
                        window.grecaptcha.reset(widgetId);
                    } else {
-                        console.log("Could not reset reCAPTCHA (grecaptcha or widgetId undefined)");
-                        // Maybe need to fully re-init?
-                        if(recaptchaVerifier) recaptchaVerifier.clear();
-                        setupRecaptcha();
+                        console.warn("Could not reset reCAPTCHA widget state (grecaptcha or widgetId undefined)");
+                        // If reset fails, maybe full clear/setup is needed?
+                        // clearRecaptcha();
+                        // setupRecaptcha(); // Be careful of loops here
                    }
                } catch (resetError) {
-                    console.error("Error resetting reCAPTCHA:", resetError);
+                    console.error("Error resetting reCAPTCHA state:", resetError);
                }
           }
       } else if (step === 2) {
-          // Step 2 logic remains the same...
           if (!confirmationResult) {
-              setError("Verification session expired. Please go back and request OTP again.");
+              setError("Verification session expired or invalid. Please request OTP again.");
               setIsProcessing(false);
               return;
           }
           try {
+              console.log("Attempting to confirm OTP:", otp);
               const userCredential = await confirmationResult.confirm(otp);
               const user = userCredential.user;
-              console.log("User signed in successfully:", user);
+              console.log("User signed in successfully via OTP:", user.uid, user.phoneNumber);
+
               const userDocRef = db.collection("users").doc(user.uid);
               const userDoc = await userDocRef.get();
               if (!userDoc.exists) {
+                   console.log("New user detected. Creating Firestore document.");
                   await userDocRef.set({
-                      phoneNumber: user.phoneNumber,
-                      username: '',
-                      mobile: user.phoneNumber,
+                      phoneNumber: user.phoneNumber, // Store the verified phone number
+                      username: '', // Initialize other fields
+                      mobile: user.phoneNumber, // Redundant but matches your old structure
                       createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                  }, { merge: true });
-                  console.log("New user document created in Firestore for:", user.uid);
+                  }, { merge: false }); // Use merge:false for new doc creation clarity
               } else {
-                  console.log("Existing user logged in:", user.uid);
+                   console.log("Existing user logged in:", user.uid);
+                   // Optional: Update phone number if it's different (unlikely here)
+                   // if (userDoc.data().phoneNumber !== user.phoneNumber) {
+                   //     await userDocRef.update({ phoneNumber: user.phoneNumber, mobile: user.phoneNumber });
+                   // }
               }
               setError('');
-              onClose();
+              onClose(); // Close modal on success
           } catch (err) {
-              // Keep existing error handling...
-               console.error("Error verifying OTP:", err);
+              console.error("Error verifying OTP:", err);
+               // ... (keep existing error handling for invalid/expired code) ...
               if (err.code === 'auth/invalid-verification-code') {
-                  setError('Invalid OTP code. Please try again.');
-              } else if (err.code === 'auth/code-expired') {
-                  setError('Verification code expired. Please request a new one.');
-              } else {
-                  setError('Failed to verify OTP. Please try again.');
-              }
+                   setError('Invalid OTP code. Please try again.');
+               } else if (err.code === 'auth/code-expired') {
+                   setError('Verification code expired. Please request a new OTP.');
+                    // Force user back to step 1 cleanly
+                    setStep(1);
+                    setOtp(''); // Clear OTP field
+                    setConfirmationResult(null); // Invalidate confirmation
+                    // useEffect will handle reCAPTCHA cleanup/setup
+               } else {
+                   setError(`Failed to verify OTP (${err.code || 'Unknown'}). Please try again.`);
+               }
           }
       }
 
       setIsProcessing(false);
   };
 
-   // Reset state when modal is closed or opened - simplified cleanup
-   useEffect(() => {
-       if (!isOpen) {
-           // Cleanup on close
-           if (window.recaptchaVerifier) {
-               console.log("Cleaning up reCAPTCHA verifier on modal close.");
-               window.recaptchaVerifier.clear();
-               setRecaptchaVerifier(null);
-           }
-           // Reset other states
-           setPhoneNumber('');
-           setOtp('');
-           setError('');
-           setStep(1);
-           setIsProcessing(false);
-           setConfirmationResult(null);
-       }
-       // No need to setup reCAPTCHA here, the other effect handles it on open + step 1
-   }, [isOpen]);
+ // Effect to handle modal closing - ensure cleanup happens
+ useEffect(() => {
+     if (!isOpen) {
+         console.log("Modal closed. Running state reset and cleanup effect.");
+         // Reset internal state
+         setPhoneNumber('');
+         setOtp('');
+         setError('');
+         setStep(1);
+         setIsProcessing(false);
+         setConfirmationResult(null);
+         // Explicitly clear reCAPTCHA here as well, ensuring cleanup if effect didn't run properly
+         clearRecaptcha();
+     }
+ }, [isOpen]);
 
-  // JSX remains largely the same... make sure the recaptcha-container div is there
-   if (!isOpen) return null;
+ // JSX
+ if (!isOpen) return null;
 
-   return (
-       <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
-           <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md m-4 relative">
-               <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
-               <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
-                   {step === 1 ? 'Enter Phone Number' : 'Enter OTP'}
-               </h2>
-               <p className="text-center text-gray-500 mb-6">
-                   {step === 1 ? 'We\'ll send a verification code.' : `Enter the code sent to ${phoneNumber}.`}
-               </p>
-               <form onSubmit={handleAuthAction}>
-                   {step === 1 && (
-                       <div className="mb-4">
-                           <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="phoneNumber">Phone Number</label>
-                           <input
-                               type="tel"
-                               id="phoneNumber"
-                               value={phoneNumber}
-                               onChange={(e) => setPhoneNumber(e.target.value)}
-                               className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500"
-                               placeholder="+91 XXXXXXXXXX"
-                               required
-                           />
-                       </div>
-                   )}
-                   {step === 2 && (
-                       <div className="mb-6">
-                           <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="otp">Verification Code</label>
-                           <input
-                               type="number"
-                               id="otp"
-                               value={otp}
-                               onChange={(e) => setOtp(e.target.value)}
-                               className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500"
-                               placeholder="Enter 6-digit code"
-                               required
-                               maxLength="6"
-                               pattern="\d*"
-                           />
-                       </div>
-                   )}
-                   {/* Ensure this container is always rendered when the modal is open */}
-                   <div id="recaptcha-container" className="my-4"></div>
-                   {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
-                   <button
-                       type="submit"
-                       disabled={isProcessing}
-                       className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                   >
-                       {/* ... button content ... */}
-                        {isProcessing ? (
-                           <Loader2 className="animate-spin mx-auto" />
-                       ) : (
-                           step === 1 ? 'Send OTP' : 'Verify OTP & Log In'
-                       )}
-                   </button>
-               </form>
-               {step === 2 && (
-                    <p className="text-center text-sm text-gray-500 mt-4">
-                       <button
-                           onClick={() => {
-                               setStep(1);
-                               setError('');
-                               setOtp('');
-                               setConfirmationResult(null);
-                               // Need to setup reCAPTCHA again when going back
-                               if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
-                               // The useEffect hook will handle calling setupRecaptcha because step changes to 1
-                           }}
-                           className="font-bold text-green-600 hover:text-green-700">
-                          Change Phone Number or Resend OTP
-                       </button>
-                   </p>
-               )}
-           </div>
-       </div>
-   );
+ return (
+     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
+         <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md m-4 relative">
+             <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
+             <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
+                 {step === 1 ? 'Enter Phone Number' : 'Enter OTP'}
+             </h2>
+             <p className="text-center text-gray-500 mb-6">
+                 {step === 1 ? 'We\'ll send a verification code.' : `Enter the code sent to ${phoneNumber}.`}
+             </p>
+             <form onSubmit={handleAuthAction}>
+                 {step === 1 && (
+                     <div className="mb-4">
+                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="phoneNumber">Phone Number</label>
+                         <input
+                             type="tel" id="phoneNumber" value={phoneNumber}
+                             onChange={(e) => setPhoneNumber(e.target.value)}
+                             className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500"
+                             placeholder="+91 XXXXXXXXXX" required autoComplete="tel" // Add autocomplete hint
+                         />
+                     </div>
+                 )}
+                 {step === 2 && (
+                     <div className="mb-6">
+                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="otp">Verification Code</label>
+                         <input
+                             type="text" id="otp" value={otp} // Changed type to text + inputMode="numeric" for better mobile UX
+                             onChange={(e) => setOtp(e.target.value)}
+                             className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500"
+                             placeholder="Enter 6-digit code" required maxLength="6"
+                             inputMode="numeric" pattern="[0-9]*" autoComplete="one-time-code" // Add autocomplete hints
+                         />
+                     </div>
+                 )}
+                 {/* reCAPTCHA container - must always be in DOM when verifier might exist */}
+                 <div id="recaptcha-container" className="my-4 h-[1px] overflow-hidden"></div> {/* Keep in DOM but visually hidden if empty */}
+
+                 {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
+
+                 <button type="submit" disabled={isProcessing} /* ... className ... */ >
+                      {isProcessing ? <Loader2 className="animate-spin mx-auto" /> : (step === 1 ? 'Send OTP' : 'Verify OTP & Log In')}
+                 </button>
+             </form>
+             {step === 2 && (
+                  <p className="text-center text-sm text-gray-500 mt-4">
+                     <button
+                         type="button" // Important: Prevent form submission
+                         onClick={() => {
+                             console.log("Change/Resend button clicked.");
+                             // Simply change step, let useEffect handle cleanup/setup
+                             setStep(1);
+                             setError(''); // Clear errors like 'Invalid code'
+                             setOtp('');   // Clear entered OTP
+                             setConfirmationResult(null); // Invalidate old confirmation
+                         }}
+                         className="font-bold text-green-600 hover:text-green-700"
+                         disabled={isProcessing} // Disable if already processing something
+                     >
+                        Change Phone Number or Resend OTP
+                     </button>
+                 </p>
+             )}
+         </div>
+     </div>
+ );
 };
 // --- HomePage Component ---
 const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
