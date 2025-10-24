@@ -1172,10 +1172,6 @@ const ReviewModal = ({ isOpen, onClose, order, onSubmitReview }) => {
     );
 };
 
-// --- Privacy Policy & Terms Pages ---
-// These are static and don't need changes. Minified for brevity.
-// const PrivacyPolicyPage = () => { return (<div className="bg-white py-16 sm:py-24"><div className="container mx-auto px-6"><article className="prose lg:prose-lg max-w-4xl mx-auto"><h1>Privacy Policy</h1><p>...</p></article></div></div>); };
-// const TermsOfServicePage = () => { return (<div className="bg-white py-16 sm:py-24"><div className="container mx-auto px-6"><article className="prose lg:prose-lg max-w-4xl mx-auto"><h1>Terms of Service</h1><p>...</p></article></div></div>); };
 // --- [NEW] Login Modal (Offers OTP or Email/Password) ---
 const LoginModal = ({ isOpen, onClose, onSelectOtpLogin, showNotification }) => {
   const [showEmailPassword, setShowEmailPassword] = useState(false);
@@ -1706,18 +1702,20 @@ const App = () => {
           createdAt: firebase.firestore.FieldValue.serverTimestamp(), hasReview: false,
       };
       try {
-          console.log("Creating order document...");
-          const orderRef = await db.collection("orders").add(orderData);
-          console.log("Order document created:", orderRef.id);
-          if (!functionsAsia) throw new Error("Asia functions instance not available.");
-          const phonePePay = functionsAsia.httpsCallable('phonePePay');
-          console.log("Calling phonePePay function for order:", orderRef.id);
-          const response = await phonePePay({ orderId: orderRef.id });
-          console.log("phonePePay response:", response);
-          const { redirectUrl } = response.data.data || {};
-          if (redirectUrl) { console.log("Redirecting to payment URL..."); window.location.href = redirectUrl; }
-          else { throw new Error("Could not get payment redirect URL from function response."); }
-      } catch (error) {
+        const orderRef = await db.collection("orders").add(orderData);
+        const phonePePay = functionsAsia.httpsCallable('phonePePay');
+        const response = await phonePePay({ orderId: orderRef.id }); 
+        console.log("phonePePay response:", response); // This log will now be helpful
+    
+        const { redirectUrl } = response.data; 
+    
+        if (redirectUrl) {
+            console.log("Redirecting to payment URL...");
+            window.location.href = redirectUrl;
+        } else {
+            throw new Error("Could not get payment redirect URL from function response.");
+        }
+    }catch (error) {
           console.error("Error during payment process:", error);
           let errorMessage = "Failed to initiate payment. Please try again.";
           if (error.code === 'functions/unauthenticated') errorMessage = "Payment failed. Try disabling browser extensions or using a private window.";
