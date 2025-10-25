@@ -1819,7 +1819,24 @@ const App = () => {
             />
              <SetCredentialsModal isOpen={isSetCredentialsModalOpen} onClose={() => setIsSetCredentialsModalOpen(false)} newUser={newUserObject} showNotification={showNotification} />
              <ItemCustomizationModal isOpen={!!itemToCustomize} onClose={() => setItemToCustomize(null)} item={itemToCustomize} onConfirmAddToCart={handleConfirmAddToCart} />
-             <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} onUpdateQuantity={handleUpdateQuantity} onCheckout={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }} />
+             <CartSidebar 
+    isOpen={isCartOpen} 
+    onClose={() => setIsCartOpen(false)} 
+    cart={cart} 
+    onUpdateQuantity={handleUpdateQuantity} 
+    onCheckout={() => {
+        // --- THIS CHECK PREVENTS THE CRASH ---
+        if (!selectedRestaurant) {
+            showNotification("Please go back to the restaurant's menu to proceed to checkout.", "error");
+            setIsCartOpen(false); // Close the cart
+            return; // Stop
+        }
+        // --- END CHECK ---
+
+        setIsCartOpen(false); 
+        setIsCheckoutOpen(true); 
+    }} 
+/>
              <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} onPlaceOrder={handlePlaceOrder} cart={cart} restaurant={selectedRestaurant} />
              <ReviewModal isOpen={!!orderToReview} onClose={() => setOrderToReview(null)} order={orderToReview} onSubmitReview={handleSubmitReview} />
              <PaymentRedirectOverlay isOpen={isRedirecting} />
