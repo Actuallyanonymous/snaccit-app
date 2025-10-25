@@ -1090,28 +1090,71 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
         }
     }, [isOpen]);
 
-    const handleApplyCoupon = async () => {
-        if (!couponCode) return;
-        setIsValidating(true); setCouponError(''); setDiscount(0); setAppliedCoupon(null);
-        try {
-            const code = couponCode.toUpperCase();
-            const couponRef = db.collection("coupons").doc(code);
-            const couponSnap = await couponRef.get();
-            if (!couponSnap.exists) { setCouponError("Invalid coupon code."); return; }
-            const coupon = couponSnap.data();
-            if (!coupon.isActive) { setCouponError("This coupon is no longer active."); }
-            else if (new Date() > coupon.expiryDate.toDate()) { setCouponError("This coupon has expired."); }
-            else if (subtotal < coupon.minOrderValue) { setCouponError(`A minimum order of ₹${coupon.minOrderValue} is required.`); }
-            else {
-                let calculatedDiscount = 0;
-                if (coupon.type === 'fixed') calculatedDiscount = coupon.value;
-                else if (coupon.type === 'percentage') calculatedDiscount = (subtotal * coupon.value) / 100;
-                setDiscount(Math.min(calculatedDiscount, subtotal));
-                setAppliedCoupon({ code, ...coupon });
-            }
-        } catch (error) { console.error("Error validating coupon:", error); setCouponError("Could not validate coupon."); }
-        finally { setIsValidating(false); }
-    };
+    const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode) => {
+      if (!currentUser) { 
+          showNotification("Please log in to place an order.", "error"); 
+          return; 
+      }
+      setIsRedirecting(true); 
+      setIsCheckoutOpen(false);
+      const grandTotal = subtotal - discount;
+      const orderData = {
+          userId: currentUser.uid, 
+          userEmail: currentUser.email || null, // Email might be null initially with phone auth
+          restaurantId: selectedRestaurant.id, 
+          restaurantName: selectedRestaurant.name,
+          items: cart.map(item => ({ 
+               id: item.id, 
+               name: item.name, 
+               quantity: item.quantity, 
+               price: item.finalPrice, // Store the price paid per item including customizations
+               size: item.selectedSize.name, 
+               addons: item.selectedAddons.map(a => a.name) 
+          })),
+          subtotal, 
+          discount, 
+          couponCode: couponCode || null, 
+          total: grandTotal, 
+          status: "awaiting_payment", // Initial status before payment
+          arrivalTime,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(), 
+          hasReview: false,
+      };
+
+      try {
+          console.log("Creating order document...");
+          const orderRef = await db.collection("orders").add(orderData);
+          console.log("Order document created:", orderRef.id);
+
+          if (!functionsAsia) {
+               throw new Error("Asia functions instance not available.");
+          }
+          const phonePePay = functionsAsia.httpsCallable('phonePePay');
+          console.log("Calling phonePePay function for order:", orderRef.id);
+          const response = await phonePePay({ orderId: orderRef.id }); 
+          console.log("phonePePay response:", response);
+
+          // --- THIS IS THE CORRECTED LINE ---
+          const { redirectUrl } = response.data; // Changed from response.data.data
+
+          if (redirectUrl) {
+              console.log("Redirecting to payment URL...");
+              window.location.href = redirectUrl;
+              // No need to setIsRedirecting(false) here, page will navigate away
+          } else {
+              // This error should no longer happen, but we keep it as a safeguard
+              throw new Error("Could not get payment redirect URL from function response.");
+          }
+      } catch (error) {
+          console.error("Error during payment process:", error);
+          let errorMessage = "Failed to initiate payment. Please try again.";
+          if (error.code === 'functions/unauthenticated') errorMessage = "Payment failed. Try disabling browser extensions or using a private window.";
+          else if (error.message) errorMessage = error.message;
+          else if (error.details) errorMessage = error.details; // Sometimes error details are nested
+          showNotification(errorMessage, "error");
+          setIsRedirecting(false); // Hide overlay on failure
+      }
+  };
 
     const handleConfirm = async () => {
         if (!arrivalTime) { alert("Please select an arrival time."); return; }
