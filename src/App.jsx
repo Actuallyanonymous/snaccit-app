@@ -1701,7 +1701,7 @@ const App = () => {
             console.log("Calling phonePePay function for order:", orderRef.id);
             const response = await phonePePay({ orderId: orderRef.id });
             console.log("phonePePay response:", response);
-            const { redirectUrl } = response.data.data || {}; // Kept original response.data.data structure check
+            const { redirectUrl } = response.data|| {}; 
             if (redirectUrl) { console.log("Redirecting to payment URL..."); window.location.href = redirectUrl; }
             else { throw new Error("Could not get payment redirect URL from function response."); }
         } catch (error) {
