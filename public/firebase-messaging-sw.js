@@ -20,15 +20,20 @@ firebase.initializeApp(firebaseConfig);
 // Get the Firebase Messaging instance
 const messaging = firebase.messaging();
 
-// Optional: Add a background message handler. This is good practice.
+// Background message handler
 messaging.onBackgroundMessage((payload) => {
   console.log(
     '[firebase-messaging-sw.js] Received background message ',
     payload
   );
 
+  // Extract notification data
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
+    // icon: '/logo192.png', // You can uncomment this to add an icon
   };
+
+  // --- THIS IS THE CRITICAL LINE TO SHOW THE NOTIFICATION ---
+  return self.registration.showNotification(notificationTitle, notificationOptions);
 });
