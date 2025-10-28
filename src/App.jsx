@@ -1889,11 +1889,10 @@ const App = () => {
                                         {cartItemCount > 0 && <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">{cartItemCount}</span>}
                                     </button>
                                     <button onClick={() => setView('profile')} className="text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100"><User size={22} /></button>
-                                    <button onClick={handleLogout} className="hidden sm:inline-flex items-center text-sm font-semibold text-gray-600 hover:text-red-600 py-2 px-3 rounded-md hover:bg-gray-100">Log Out</button>
-                                </>
+                                    <button onClick={handleLogout} className="inline-flex items-center text-sm font-semibold text-gray-600 hover:text-red-600 py-2 px-3 rounded-md hover:bg-gray-100">Log Out</button>                                </>
                             ) : (
                                 <>
-                                    <button onClick={() => setIsLoginModalOpen(true)} className="hidden sm:inline-flex items-center text-sm font-semibold text-gray-600 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-100">Log In</button>
+                                    <button onClick={() => setIsLoginModalOpen(true)} className="inline-flex items-center text-sm font-semibold text-gray-600 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-100">Log In</button>
                                     <button onClick={() => setAuthModalOpen(true)} className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-2 px-5 rounded-full text-sm hover:shadow-lg hover:shadow-green-500/40 transition-shadow">Sign Up</button>
                                 </>
                             )}
