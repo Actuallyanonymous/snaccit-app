@@ -1046,7 +1046,7 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
         while (startTime < closingTime) {
             const slotTime = new Date(startTime);
             const displayFormat = slotTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            const valueFormat = slotTime.toTimeString().substring(0, 5);
+            const valueFormat = displayFormat;
             slots.push({ display: displayFormat, value: valueFormat });
             startTime.setMinutes(startTime.getMinutes() + intervalMinutes);
         }
@@ -1313,6 +1313,7 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ username: '', mobile: '' });
 
+
     useEffect(() => {
         if (!currentUser) return;
         
@@ -1424,8 +1425,9 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
                                     <div className="flex flex-col sm:flex-row justify-between items-start mb-3">
                                         <div>
                                             <h3 className="text-lg sm:text-xl font-bold">{order.restaurantName}</h3>
-                                            <p className="text-xs text-gray-500">Ordered on {order.createdAt?.toLocaleDateString() || 'N/A'} at {order.createdAt?.toLocaleTimeString() || ''}</p>
-                                             <p className="text-xs text-gray-500">Arrival Time: {order.arrivalTime}</p>
+                                                <p className="text-xs text-gray-500">
+                                                    Ordered on {order.createdAt?.toLocaleDateString() || 'N/A'} at {order.createdAt?.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) || ''}
+                                                </p>                                             <p className="text-xs text-gray-500">Arrival Time: {order.arrivalTime}</p>
                                         </div>
                                         <span className={`mt-2 sm:mt-0 px-3 py-1 text-xs sm:text-sm font-bold rounded-full capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-800'}`}>{order.status.replace('_', ' ')}</span>
                                     </div>

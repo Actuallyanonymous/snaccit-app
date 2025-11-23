@@ -31,7 +31,7 @@ exports.phonePePay = onCall({ // ** MODIFIED: Changed from onRequest to onCall *
       PHONEPE_SALT_KEY,
       PHONEPE_SALT_INDEX,
   ],
-  minInstances: 1,
+  minInstances: 0,
 }, async (req) => { // ** MODIFIED: Removed req, res and cors wrapper **
 
   // ** MODIFIED: Auth is now checked automatically **
