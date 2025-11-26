@@ -10,10 +10,10 @@ import {
 import 'firebase/compat/auth'; // Ensure Auth compat is imported
 import { auth, db, functionsAsia, messaging } from './firebase'; 
 import heroVideo from './assets/Snaccit_Pre_Order_Dinner_Advertisement.mp4';
-import butterChickenImg from './assets/butter-chicken.jpg';
-import pizzaImg from './assets/marg-pizza.jpg';
-import sushiImg from './assets/sushi-platter.jpg';
-import burgerImg from './assets/vegan-burger.jpg';
+import butterChickenImg from './assets/butter-chicken.png';
+import pizzaImg from './assets/marg-pizza.png';
+import sushiImg from './assets/sushi-platter.png';
+import burgerImg from './assets/vegan-burger.png';
 // --- Notification Component ---
 const Notification = ({ message, type, onDismiss }) => {
     if (!message) return null;
