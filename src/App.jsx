@@ -8,8 +8,8 @@ import {
     Search, Star, Award, User, Info, Bell, Loader2, Frown
 } from 'lucide-react';
 import 'firebase/compat/auth'; // Ensure Auth compat is imported
-import { auth, db, functionsAsia, messaging } from './firebase'; // Ensure auth is imported correctly
-
+import { auth, db, functionsAsia, messaging } from './firebase'; 
+import heroVideo from './assets/hero-video.mp4';
 // --- Notification Component ---
 const Notification = ({ message, type, onDismiss }) => {
     if (!message) return null;
@@ -678,8 +678,14 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
         <>
             <main className="relative h-[600px] flex items-center justify-center text-white overflow-hidden">
                 <div className="absolute inset-0 bg-black/50 z-10"></div>
-                <img src="https://placehold.co/1600x900/222222/555555?text=Snaccit+Hero" alt="Hero background" className="absolute inset-0 w-full h-full object-cover"/>
-                <div className="relative z-20 text-center px-6">
+<video
+                    className="absolute inset-0 w-full h-full object-cover"
+                    src={heroVideo}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                />                <div className="relative z-20 text-center px-6">
                     <AnimatedHeroText />
                     <p className="mt-6 max-w-2xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2">Pre-order your meal with Snaccit and have it served the moment you arrive. No more waiting, just eating.</p>
                     <div className="mt-10 slide-in-2"><button className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-4 px-10 rounded-full hover:shadow-xl hover:shadow-green-400/50 hover:scale-105 transition-all duration-300 shadow-lg text-lg">Find My Next Meal</button></div>
