@@ -9,13 +9,19 @@ import {
 } from 'lucide-react';
 import 'firebase/compat/auth'; // Ensure Auth compat is imported
 import { auth, db, functionsAsia, messaging } from './firebase'; 
-import heroVideo from './assets/Snaccit_Pre_Order_Dinner_Advertisement.mp4';
+
+// --- Import your local assets here ---
+// Make sure these filenames match exactly what is in your src/assets folder
+import heroVideo from './assets/hero-video.mp4';
 import butterChickenImg from './assets/butter-chicken.png';
 import pizzaImg from './assets/marg-pizza.png';
 import sushiImg from './assets/sushi-platter.png';
 import burgerImg from './assets/vegan-burger.png';
+
+
 // --- Notification Component ---
 const Notification = ({ message, type, onDismiss }) => {
+// ... (rest of the component is unchanged)
     if (!message) return null;
     const baseClasses = "fixed top-5 right-5 p-4 rounded-lg shadow-lg flex items-center z-[100] animate-fade-in-down";
     const typeClasses = {
@@ -39,6 +45,7 @@ const Notification = ({ message, type, onDismiss }) => {
 
 // --- Brand Logo Component ---
 const BrandLogo = () => (
+// ... (rest of the component is unchanged)
     <img
         src="https://placehold.co/250x80/059669/FFFFFF?text=Snaccit&font=poppins"
         alt="Snaccit Logo"
@@ -48,6 +55,7 @@ const BrandLogo = () => (
 
 // --- Animated Hero Text ---
 const AnimatedHeroText = () => (
+// ... (rest of the component is unchanged)
     <>
         <style>{`
             @keyframes slide-in { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -68,7 +76,8 @@ const AnimatedHeroText = () => (
 
 // --- Authentication Modal Component (Detects New User) ---
 const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
-    // ... (Full component code as provided in previous response) ...
+// ... (rest of the component is unchanged - long code omitted for brevity)
+// ... (Full component code as provided in previous response) ...
     const [phoneNumber, setPhoneNumber] = useState('');
     const [otp, setOtp] = useState('');
     const [error, setError] = useState('');
@@ -380,6 +389,7 @@ const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
 
 // --- [MODIFIED] Login Modal (Email/Password ONLY) ---
 const LoginModal = ({ isOpen, onClose, showNotification }) => {
+// ... (rest of the component is unchanged - long code omitted for brevity)
     // Note: onSelectOtpLogin prop is no longer needed
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -454,6 +464,7 @@ const LoginModal = ({ isOpen, onClose, showNotification }) => {
 
 // --- [NEW] Set Credentials Modal (After First Phone Sign-Up) ---
 const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => {
+// ... (rest of the component is unchanged - long code omitted for brevity)
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
@@ -577,6 +588,7 @@ const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => 
 
 // --- Privacy Policy Page ---
 const PrivacyPolicyPage = () => {
+// ... (rest of the component is unchanged - long code omitted for brevity)
     return (
         <div className="bg-white py-16 sm:py-24">
             <div className="container mx-auto px-6">
@@ -613,6 +625,7 @@ const PrivacyPolicyPage = () => {
 
 // --- Terms of Service Page ---
 const TermsOfServicePage = () => {
+// ... (rest of the component is unchanged - long code omitted for brevity)
     return (
         <div className="bg-white py-16 sm:py-24">
             <div className="container mx-auto px-6">
@@ -781,7 +794,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
         </>
     );
 };
-
+// ... (rest of the component is unchanged - long code omitted for brevity)
 // --- Star Rating Display Component ---
 const StarRating = ({ rating }) => {
     const stars = [];
@@ -798,6 +811,7 @@ const StarRating = ({ rating }) => {
 
 // --- MenuPage Component ---
 const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
+// ... (rest of the component is unchanged - long code omitted for brevity)
     const [menuItems, setMenuItems] = useState([]);
     const [reviews, setReviews] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -907,6 +921,7 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
 
 // --- Item Customization Modal ---
 const ItemCustomizationModal = ({ isOpen, onClose, item, onConfirmAddToCart }) => {
+// ... (rest of the component is unchanged - long code omitted for brevity)
     if (!isOpen || !item) return null;
     const initialSize = item.sizes && item.sizes.length > 0 ? item.sizes[0] : null;
     const [selectedSize, setSelectedSize] = useState(initialSize);
@@ -1007,6 +1022,7 @@ const ItemCustomizationModal = ({ isOpen, onClose, item, onConfirmAddToCart }) =
 
 // --- Cart Sidebar Component ---
 const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout }) => {
+// ... (rest of the component is unchanged - long code omitted for brevity)
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
 
     return (
@@ -1053,6 +1069,7 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout }) =>
 
 // --- Time Slot Picker Component ---
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
+// ... (rest of the component is unchanged - long code omitted for brevity)
     const generateTimeSlots = (openingTimeStr, closingTimeStr) => {
         const slots = [], now = new Date();
         const intervalMinutes = 15;
@@ -1099,6 +1116,7 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
 
 // --- Checkout Modal Component ---
 const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
+// ... (rest of the component is unchanged - long code omitted for brevity)
     const [arrivalTime, setArrivalTime] = useState('');
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
@@ -1116,104 +1134,38 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
         }
     }, [isOpen]);
 
-    const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode) => {
-      if (!currentUser) { 
-          showNotification("Please log in to place an order.", "error"); 
-          return; 
-      }
-      setIsRedirecting(true); 
-      setIsCheckoutOpen(false);
-      const grandTotal = subtotal - discount;
-      const orderData = {
-          userId: currentUser.uid, 
-          userEmail: currentUser.email || null, // Email might be null initially with phone auth
-          restaurantId: selectedRestaurant.id, 
-          restaurantName: selectedRestaurant.name,
-          items: cart.map(item => ({ 
-               id: item.id, 
-               name: item.name, 
-               quantity: item.quantity, 
-               price: item.finalPrice, // Store the price paid per item including customizations
-               size: item.selectedSize.name, 
-               addons: item.selectedAddons.map(a => a.name) 
-          })),
-          subtotal, 
-          discount, 
-          couponCode: couponCode || null, 
-          total: grandTotal, 
-          status: "awaiting_payment", // Initial status before payment
-          arrivalTime,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(), 
-          hasReview: false,
-      };
-
-      try {
-          console.log("Creating order document...");
-          const orderRef = await db.collection("orders").add(orderData);
-          console.log("Order document created:", orderRef.id);
-
-          if (!functionsAsia) {
-               throw new Error("Asia functions instance not available.");
-          }
-          const phonePePay = functionsAsia.httpsCallable('phonePePay');
-          console.log("Calling phonePePay function for order:", orderRef.id);
-          const response = await phonePePay({ orderId: orderRef.id }); 
-          console.log("phonePePay response:", response);
-
-          // --- THIS IS THE CORRECTED LINE ---
-          const { redirectUrl } = response.data; // Changed from response.data.data
-
-          if (redirectUrl) {
-              console.log("Redirecting to payment URL...");
-              window.location.href = redirectUrl;
-              // No need to setIsRedirecting(false) here, page will navigate away
-          } else {
-              // This error should no longer happen, but we keep it as a safeguard
-              throw new Error("Could not get payment redirect URL from function response.");
-          }
-      } catch (error) {
-          console.error("Error during payment process:", error);
-          let errorMessage = "Failed to initiate payment. Please try again.";
-          if (error.code === 'functions/unauthenticated') errorMessage = "Payment failed. Try disabling browser extensions or using a private window.";
-          else if (error.message) errorMessage = error.message;
-          else if (error.details) errorMessage = error.details; // Sometimes error details are nested
-          showNotification(errorMessage, "error");
-          setIsRedirecting(false); // Hide overlay on failure
-      }
-  };
-
-  const handleApplyCoupon = async () => {
-    if (!couponCode) return;
-    setIsValidating(true);
-    setCouponError('');
-    setDiscount(0);
-    setAppliedCoupon(null);
-    try {
-        const code = couponCode.toUpperCase();
-        const couponRef = db.collection("coupons").doc(code);
-        const couponSnap = await couponRef.get();
-        if (!couponSnap.exists) {
-            setCouponError("Invalid coupon code.");
-            return;
+    const handleApplyCoupon = async () => {
+        if (!couponCode) return;
+        setIsValidating(true);
+        setCouponError('');
+        setDiscount(0);
+        setAppliedCoupon(null);
+        try {
+            const code = couponCode.toUpperCase();
+            const couponRef = db.collection("coupons").doc(code);
+            const couponSnap = await couponRef.get();
+            if (!couponSnap.exists) {
+                setCouponError("Invalid coupon code.");
+                return;
+            }
+            const coupon = couponSnap.data();
+            if (!coupon.isActive) { setCouponError("This coupon is no longer active."); }
+            else if (new Date() > coupon.expiryDate.toDate()) { setCouponError("This coupon has expired."); }
+            else if (subtotal < coupon.minOrderValue) { setCouponError(`A minimum order of ₹${coupon.minOrderValue} is required to use this coupon.`); }
+            else {
+                let calculatedDiscount = 0;
+                if (coupon.type === 'fixed') { calculatedDiscount = coupon.value; }
+                else if (coupon.type === 'percentage') { calculatedDiscount = (subtotal * coupon.value) / 100; }
+                setDiscount(Math.min(calculatedDiscount, subtotal));
+                setAppliedCoupon({ code, ...coupon });
+            }
+        } catch (error) {
+            console.error("Error validating coupon:", error);
+            setCouponError("Could not validate coupon. Please try again.");
+        } finally {
+            setIsValidating(false);
         }
-        const coupon = couponSnap.data();
-        if (!coupon.isActive) { setCouponError("This coupon is no longer active."); }
-        else if (new Date() > coupon.expiryDate.toDate()) { setCouponError("This coupon has expired."); }
-        else if (subtotal < coupon.minOrderValue) { setCouponError(`A minimum order of ₹${coupon.minOrderValue} is required to use this coupon.`); }
-        else {
-            let calculatedDiscount = 0;
-            if (coupon.type === 'fixed') { calculatedDiscount = coupon.value; }
-            else if (coupon.type === 'percentage') { calculatedDiscount = (subtotal * coupon.value) / 100; }
-            setDiscount(Math.min(calculatedDiscount, subtotal));
-            setAppliedCoupon({ code, ...coupon });
-        }
-    } catch (error) {
-        console.error("Error validating coupon:", error);
-        setCouponError("Could not validate coupon. Please try again.");
-    } finally {
-        setIsValidating(false);
-    }
-};
+    };
 
     const handleConfirm = async () => {
         if (!arrivalTime) { alert("Please select an arrival time."); return; }
@@ -1242,8 +1194,8 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
                             {isValidating ? <Loader2 className="animate-spin h-5 w-5" /> : appliedCoupon ? 'Applied' : 'Apply'}
                         </button>
                     </div>
-                     {couponError && <p className="text-red-500 text-xs italic mb-2 -mt-2">{couponError}</p>}
-                     {appliedCoupon && !couponError && <p className="text-green-600 text-xs italic mb-2 -mt-2">Coupon "{appliedCoupon.code}" applied!</p>}
+                      {couponError && <p className="text-red-500 text-xs italic mb-2 -mt-2">{couponError}</p>}
+                      {appliedCoupon && !couponError && <p className="text-green-600 text-xs italic mb-2 -mt-2">Coupon "{appliedCoupon.code}" applied!</p>}
                     <div className="space-y-1 mb-4 text-sm">
                         <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
                         {discount > 0 && <div className="flex justify-between text-green-600 font-semibold"><span>Discount ({appliedCoupon.code})</span><span>- ₹{discount.toFixed(2)}</span></div>}
@@ -1266,6 +1218,7 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
 
 // --- Order Confirmation Component ---
 const OrderConfirmation = ({ onGoHome }) => (
+// ... (rest of the component is unchanged)
     <div className="container mx-auto px-6 py-20 text-center flex flex-col items-center justify-center min-h-[60vh]">
         <PartyPopper size={64} className="text-green-500 mb-6" />
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">Order Placed Successfully!</h1>
@@ -1276,6 +1229,7 @@ const OrderConfirmation = ({ onGoHome }) => (
 
 // --- Payment Status Page Component ---
 const PaymentStatusPage = ({ onGoHome }) => {
+// ... (rest of the component is unchanged - long code omitted for brevity)
     const [orderStatus, setOrderStatus] = useState('awaiting_payment');
     const [orderId, setOrderId] = useState(null);
 
@@ -1333,6 +1287,7 @@ const PaymentStatusPage = ({ onGoHome }) => {
 
 // --- Profile Page Component ---
 const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) => {
+// ... (rest of the component is unchanged - long code omitted for brevity)
     const [orders, setOrders] = useState([]);
     const [profile, setProfile] = useState({ username: '', mobile: '' });
     const [isLoading, setIsLoading] = useState(true);
@@ -1382,10 +1337,10 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
     const handleProfileChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
     const handleSaveProfile = async () => {
-         if (!formData.username || !formData.mobile) { // Basic validation
-             showNotification("Username and mobile number cannot be empty.", "error");
-             return;
-         }
+          if (!formData.username || !formData.mobile) { // Basic validation
+              showNotification("Username and mobile number cannot be empty.", "error");
+              return;
+          }
         const userDocRef = db.collection("users").doc(currentUser.uid);
         try {
             await userDocRef.set(formData, { merge: true }); // Merge to avoid overwriting other fields
@@ -1453,7 +1408,7 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
                                             <h3 className="text-lg sm:text-xl font-bold">{order.restaurantName}</h3>
                                                 <p className="text-xs text-gray-500">
                                                     Ordered on {order.createdAt?.toLocaleDateString() || 'N/A'} at {order.createdAt?.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) || ''}
-                                                </p>                                             <p className="text-xs text-gray-500">Arrival Time: {order.arrivalTime}</p>
+                                                </p>                                                            <p className="text-xs text-gray-500">Arrival Time: {order.arrivalTime}</p>
                                         </div>
                                         <span className={`mt-2 sm:mt-0 px-3 py-1 text-xs sm:text-sm font-bold rounded-full capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-800'}`}>{order.status.replace('_', ' ')}</span>
                                     </div>
@@ -1481,6 +1436,7 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
 
 // --- Review Modal Component ---
 const ReviewModal = ({ isOpen, onClose, order, onSubmitReview }) => {
+// ... (rest of the component is unchanged - long code omitted for brevity)
     const [rating, setRating] = useState(0);
     const [reviewText, setReviewText] = useState('');
      if (!isOpen || !order) return null;
@@ -1525,6 +1481,7 @@ const ReviewModal = ({ isOpen, onClose, order, onSubmitReview }) => {
 
 // --- Payment Redirect Overlay Component ---
 const PaymentRedirectOverlay = ({ isOpen }) => {
+// ... (rest of the component is unchanged)
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center">
@@ -1846,8 +1803,6 @@ const App = () => {
         setAuthModalOpen(false);
         setIsSetCredentialsModalOpen(true);
     };
-
-    // --- REMOVED handleSelectOtpLogin ---
 
     // --- Render View Logic ---
     const renderView = () => {
