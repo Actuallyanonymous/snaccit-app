@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import 'firebase/compat/auth'; // Ensure Auth compat is imported
 import { auth, db, functionsAsia, messaging } from './firebase'; 
-import heroVideo from './assets/hero-video.mp4';
+import heroVideo from './assets/Snaccit_Pre_Order_Dinner_Advertisement.mp4';
 // --- Notification Component ---
 const Notification = ({ message, type, onDismiss }) => {
     if (!message) return null;
