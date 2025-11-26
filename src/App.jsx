@@ -10,6 +10,10 @@ import {
 import 'firebase/compat/auth'; // Ensure Auth compat is imported
 import { auth, db, functionsAsia, messaging } from './firebase'; 
 import heroVideo from './assets/Snaccit_Pre_Order_Dinner_Advertisement.mp4';
+import butterChickenImg from './assets/butter-chicken.jpg';
+import pizzaImg from './assets/marg-pizza.jpg';
+import sushiImg from './assets/sushi-platter.jpg';
+import burgerImg from './assets/vegan-burger.jpg';
 // --- Notification Component ---
 const Notification = ({ message, type, onDismiss }) => {
     if (!message) return null;
@@ -663,10 +667,26 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
     }, [searchTerm, searchType, allRestaurants, activeFilter]);
 
     const topDishes = [
-         { name: "Butter Chicken", restaurant: "Curry Kingdom", imageUrl: "https://placehold.co/400x400/f59e0b/FFFFFF?text=Butter+Chicken" },
-         { name: "Margherita Pizza", restaurant: "Pizza Palace", imageUrl: "https://placehold.co/400x400/16a34a/FFFFFF?text=Pizza" },
-         { name: "Sushi Platter", restaurant: "Tokyo Bites", imageUrl: "https://placehold.co/400x400/3b82f6/FFFFFF?text=Sushi" },
-         { name: "Vegan Burger", restaurant: "The Vurger Co.", imageUrl: "https://placehold.co/400x400/22c55e/FFFFFF?text=Vegan+Burger" },
+          { 
+              name: "Butter Chicken", 
+              restaurant: "Curry Kingdom", 
+              imageUrl: butterChickenImg 
+          },
+          { 
+              name: "Margherita Pizza", 
+              restaurant: "Pizza Palace", 
+              imageUrl: pizzaImg 
+          },
+          { 
+              name: "Sushi Platter", 
+              restaurant: "Tokyo Bites", 
+              imageUrl: sushiImg 
+          },
+          { 
+              name: "Vegan Burger", 
+              restaurant: "The Vurger Co.", 
+              imageUrl: burgerImg 
+          },
     ];
 
     const handleDishClick = (dish) => {
