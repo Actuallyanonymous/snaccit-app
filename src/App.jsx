@@ -12,7 +12,7 @@ import { auth, db, functionsAsia, messaging } from './firebase';
 
 // --- Import your local assets here ---
 // Make sure these filenames match exactly what is in your src/assets folder
-import heroVideo from './assets/hero-video.mp4';
+import heroVideo from './assets/Snaccit_Pre_Order_Dinner_Advertisement.mp4';
 import butterChickenImg from './assets/butter-chicken.png';
 import pizzaImg from './assets/marg-pizza.png';
 import sushiImg from './assets/sushi-platter.png';
