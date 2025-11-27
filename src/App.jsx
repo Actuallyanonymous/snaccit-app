@@ -1997,18 +1997,23 @@ const App = () => {
                     {renderView()}
                 </main>
 
-                <footer className="bg-white border-t border-gray-200">
-                    <div className="container mx-auto px-6 py-12 text-center">
-                        <BrandLogo />
-                        <p className="text-gray-500 mt-4">Skip the wait. Savor the moment.</p>
-                        <div className="mt-6 flex justify-center space-x-6">
-                            <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); setView('terms'); window.history.pushState({}, '', '/terms-of-service'); }} className="text-sm text-gray-500 hover:text-green-600">Terms of Service</a>
-                            <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); setView('privacy'); window.history.pushState({}, '', '/privacy-policy'); }} className="text-sm text-gray-500 hover:text-green-600">Privacy Policy</a>
-                            <a href="#" className="text-sm text-gray-500 hover:text-green-600">Contact</a>
-                        </div>
-                        <p className="text-gray-400 mt-8 text-xs">© 2024 Snaccit Inc. All rights reserved.</p>
-                    </div>
-                </footer>
+                <footer className="bg-emerald-950 text-white relative z-40 pt-24 pb-12 overflow-hidden">
+    <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
+    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-[800px] h-[400px] bg-green-600/20 rounded-[100%] blur-[100px] pointer-events-none"></div>
+
+    <div className="container mx-auto px-6 relative z-10 text-center">
+        <BrandLogo className="scale-125 origin-center mb-8" />
+        <p className="text-green-200/80 text-lg max-w-md mx-auto mb-12 font-medium leading-relaxed">Skip the wait. Savor the moment. The future of dining is here.</p>
+        <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-12">
+            <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); setView('terms'); window.history.pushState({}, '', '/terms-of-service'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">Terms of Service<span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span></a>
+            <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); setView('privacy'); window.history.pushState({}, '', '/privacy-policy'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">Privacy Policy<span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span></a>
+            <a href="#" className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">Contact Us<span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span></a>
+        </div>
+        <div className="border-t border-green-800/50 pt-8">
+            <p className="text-green-300/60 text-sm font-medium">© 2024 Snaccit Inc. All rights reserved. Crafted with hunger.</p>
+        </div>
+    </div>
+</footer>
             </div>
         </>
     );
