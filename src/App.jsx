@@ -724,16 +724,40 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
                     <div className="mt-10 slide-in-2"><button className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-4 px-10 rounded-full hover:shadow-xl hover:shadow-green-400/50 hover:scale-105 transition-all duration-300 shadow-lg text-lg">Find My Next Meal</button></div>
                 </div>
             </main>
-            <section id="features" className="bg-cream-50 py-20 sm:py-24">
-                <div className="container mx-auto px-6">
-                    <div className="text-center mb-16"><h3 className="text-sm font-bold uppercase text-green-600 tracking-widest">A Seamless Experience</h3><h2 className="mt-2 text-3xl md:text-4xl font-bold text-gray-800">Get served in 3 simple steps</h2></div>
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {[{ icon: <Store className="w-10 h-10 text-green-600" />, title: "1. Choose & Pre-order", description: "Explore menus and select dishes." }, { icon: <Smartphone className="w-10 h-10 text-green-600" />, title: "2. Set Arrival Time", description: "Let the restaurant know when you'll be there." }, { icon: <ChefHat className="w-10 h-10 text-green-600" />, title: "3. Arrive and Dine", description: "Food served right as you take your seat." }].map((step, i) => (
-                            <div key={i} className="bg-white p-8 rounded-3xl shadow-lg border border-gray-200 text-center transform hover:-translate-y-2 transition-transform duration-300"><div className="inline-block bg-green-100 p-5 rounded-full mb-5 border-2 border-green-200">{step.icon}</div><h4 className="text-xl font-semibold mb-2 text-gray-800">{step.title}</h4><p className="text-gray-600">{step.description}</p></div>
-                        ))}
+            <section id="features" className="relative py-24 overflow-hidden bg-gradient-to-b from-cream-50 via-white to-cream-50">
+    {/* Decorative background blobs */}
+    <div className="absolute top-0 left-0 -translate-x-1/4 -translate-y-1/4 w-96 h-96 bg-green-100/40 rounded-full blur-3xl mix-blend-multiply animate-blob pointer-events-none"></div>
+    <div className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 w-96 h-96 bg-amber-100/40 rounded-full blur-3xl mix-blend-multiply animate-blob animation-delay-2000 pointer-events-none"></div>
+
+    <div className="container relative mx-auto px-6 z-10">
+        <div className="text-center mb-16">
+            <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest">A Seamless Experience</h3>
+            <h2 className="mt-2 text-3xl md:text-4xl font-bold text-gray-900">Get served in 3 simple steps</h2>
+        </div>
+        <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+            {[
+                { icon: <Store className="w-8 h-8 text-green-700" />, title: "Choose & Pre-order", description: "Explore menus and select your dishes before you even leave the house." },
+                { icon: <Smartphone className="w-8 h-8 text-green-700" />, title: "Set Arrival Time", description: "Let the restaurant know exactly when you'll be there for perfectly timed food." },
+                { icon: <ChefHat className="w-8 h-8 text-green-700" />, title: "Arrive and Dine", description: "Walk in, sit down, and have your freshly prepared meal served immediately." }
+            ].map((step, i) => (
+                <div key={i} className="group relative bg-white p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(5,150,105,0.2)] hover:border-green-200">
+                    <div className="relative inline-block mb-6">
+                        {/* Icon Container */}
+                        <div className="bg-green-50 p-6 rounded-full border border-green-100 group-hover:bg-green-100 group-hover:scale-110 transition-all duration-300">
+                            {step.icon}
+                        </div>
+                        {/* Step Number Badge */}
+                        <div className="absolute -top-2 -right-2 bg-gradient-to-br from-green-500 to-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-white">
+                            {i + 1}
+                        </div>
                     </div>
+                    <h4 className="text-xl font-bold mb-3 text-gray-900">{step.title}</h4>
+                    <p className="text-gray-600 leading-relaxed">{step.description}</p>
                 </div>
-            </section>
+            ))}
+        </div>
+    </div>
+</section>
             <section className="py-20 bg-white"><BrandLogo /></section>
             <section id="top-dishes" className="py-20 sm:py-24 bg-cream-50">
                 <div className="container mx-auto px-6">
