@@ -795,48 +795,112 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
         </div>
     </div>
 </section>
-            <section id="restaurants" className="py-20 sm:py-24 bg-white">
-                <div className="container mx-auto px-6">
-                    <div className="text-center mb-8"><h3 className="text-sm font-bold uppercase text-green-600 tracking-widest">Find Your Craving</h3><h2 className="mt-2 text-3xl md:text-4xl font-bold text-gray-800">Explore Restaurants</h2></div>
-                    <div className="max-w-3xl mx-auto mb-12">
-                          <div className="flex justify-center mb-4 space-x-2 bg-gray-200 p-1 rounded-full">
-                              <button onClick={() => setSearchType('restaurant')} className={`px-6 py-2 rounded-full font-semibold transition-colors ${searchType === 'restaurant' ? 'bg-white text-green-600 shadow' : 'text-gray-600'}`}>Restaurants</button>
-                              <button onClick={() => setSearchType('dish')} className={`px-6 py-2 rounded-full font-semibold transition-colors ${searchType === 'dish' ? 'bg-white text-green-600 shadow' : 'text-gray-600'}`}>Dishes</button>
-                          </div>
-                          <div className="relative">
-                              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Search className="text-gray-400" /></div>
-                              <input type="text" placeholder={searchType === 'restaurant' ? 'Search restaurants or cuisine...' : 'Search dishes...'} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full py-4 pl-12 pr-4 text-lg border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
-                          </div>
-                          <div className="flex justify-center mt-6 space-x-4">
-                              <button onClick={() => setActiveFilter('all')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'all' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}>All</button>
-                              <button onClick={() => setActiveFilter('topRated')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'topRated' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}><Award size={16} className="mr-2"/>Top Rated</button>
-                              <button onClick={() => setActiveFilter('veg')} className={`px-5 py-2 rounded-full font-semibold transition-colors flex items-center ${activeFilter === 'veg' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700'}`}><Leaf size={16} className="mr-2"/>Pure Veg</button>
-                          </div>
-                    </div>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {isLoading ? (
-                            <div className="md:col-span-2 lg:col-span-4 text-center"><Loader2 className="animate-spin mx-auto text-green-600" size={32} /></div>
-                        ) : (
-                            searchType === 'restaurant' ? (
-                                filteredResults.map((resto, index) => (
-                                    <div key={resto.id} onClick={() => onRestaurantClick(resto)} className="bg-white rounded-3xl shadow-md overflow-hidden transform hover:-translate-y-2 transition-transform duration-300 ease-in-out group border hover:shadow-xl hover:border-green-300 cursor-pointer animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
-                                        <div className="relative"><img src={resto.imageUrl} alt={resto.name} className="w-full h-48 object-cover" />{resto.rating >= 4.5 && <div className="absolute top-3 right-3 bg-amber-400 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center"><Star size={12} className="mr-1"/>TOP RATED</div>}</div>
-                                        <div className="p-6"><h4 className="text-xl font-bold text-gray-900 truncate">{resto.name}</h4><p className="text-gray-500 mt-1">{resto.cuisine}</p><div className="mt-4 flex justify-between items-center"><span className="text-amber-500 font-bold flex items-center"><Star size={16} className="mr-1"/>{resto.rating ? resto.rating.toFixed(1) : 'New'}</span><span className="text-gray-800 font-semibold">{resto.price}</span></div></div>
-                                    </div>
-                                ))
-                            ) : (
-                                filteredResults.map((dish, index) => (
-                                     <div key={`${dish.restaurantId}-${dish.id}`} onClick={() => handleDishClick(dish)} className="bg-white rounded-3xl shadow-md overflow-hidden transform hover:-translate-y-2 transition-transform duration-300 ease-in-out group border hover:shadow-xl hover:border-green-300 cursor-pointer animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
-                                         <div className="relative"><img src={dish.imageUrl || 'https://placehold.co/400x400/cccccc/ffffff?text=No+Image'} alt={dish.name} className="w-full h-48 object-cover" /></div>
-                                         <div className="p-6"><h4 className="text-xl font-bold text-gray-900 truncate">{dish.name}</h4><p className="text-gray-500 mt-1">from {dish.restaurantName}</p><div className="mt-4 flex justify-between items-center"><span className="font-bold text-lg">₹{dish.sizes && dish.sizes[0] ? dish.sizes[0].price : 'N/A'}</span></div></div>
-                                     </div>
-                                ))
-                            )
-                        )}
-                        {!isLoading && filteredResults.length === 0 && (<p className="md:col-span-2 lg:col-span-4 text-center text-gray-500">No results found matching your criteria.</p>)}
-                    </div>
+            {/* --- [UPDATED] Explore Restaurants Section (The Main Section) --- */}
+<section id="restaurants" className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-b from-cream-100 via-amber-50 to-white">
+    <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
+
+    <div className="container relative mx-auto px-6 z-10">
+        <div className="text-center mb-12">
+            <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest drop-shadow-sm">Find Your Craving</h3>
+            <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Explore Restaurants</h2>
+        </div>
+
+        <div className="max-w-3xl mx-auto mb-16">
+            <div className="flex justify-center mb-6">
+                <div className="bg-white/60 backdrop-blur-md p-1.5 rounded-full shadow-sm border border-gray-200/50 inline-flex">
+                    <button onClick={() => setSearchType('restaurant')} className={`px-8 py-3 rounded-full font-bold text-sm transition-all duration-300 ${searchType === 'restaurant' ? 'bg-green-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100/50'}`}>Restaurants</button>
+                    <button onClick={() => setSearchType('dish')} className={`px-8 py-3 rounded-full font-bold text-sm transition-all duration-300 ${searchType === 'dish' ? 'bg-green-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100/50'}`}>Dishes</button>
                 </div>
-            </section>
+            </div>
+
+            <div className="relative mb-8 group">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                    <Search className="text-gray-400 group-focus-within:text-green-500 transition-colors" size={22} />
+                </div>
+                <input
+                    type="text"
+                    placeholder={searchType === 'restaurant' ? 'Search for a restaurant or cuisine...' : 'Search for a specific dish...'}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full py-4 pl-14 pr-6 text-lg bg-white/80 backdrop-blur-md border-2 border-gray-200 rounded-full shadow-sm focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all duration-300 placeholder:text-gray-400"
+                />
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-3">
+                <button onClick={() => setActiveFilter('all')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center border-2 ${activeFilter === 'all' ? 'bg-gray-900 text-white border-gray-900 shadow-md' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}>All</button>
+                <button onClick={() => setActiveFilter('topRated')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center border-2 ${activeFilter === 'topRated' ? 'bg-amber-500 text-white border-amber-500 shadow-md' : 'bg-white text-gray-700 border-gray-200 hover:border-amber-500 hover:text-amber-600'}`}>
+                    <Award size={18} className="mr-2" />Top Rated
+                </button>
+                <button onClick={() => setActiveFilter('veg')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center border-2 ${activeFilter === 'veg' ? 'bg-green-600 text-white border-green-600 shadow-md' : 'bg-white text-gray-700 border-gray-200 hover:border-green-600 hover:text-green-700'}`}>
+                    <Leaf size={18} className="mr-2" />Pure Veg
+                </button>
+            </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {isLoading ? (
+                <div className="md:col-span-2 lg:col-span-4 text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
+            ) : (
+                searchType === 'restaurant' ? (
+                    filteredResults.map((resto, index) => (
+                        <div key={resto.id} onClick={() => onRestaurantClick(resto)} className="bg-white rounded-[2rem] shadow-[0_8px_25px_rgba(0,0,0,0.05)] overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] group cursor-pointer animate-fade-in h-full flex flex-col" style={{ animationDelay: `${index * 50}ms` }}>
+                            <div className="relative h-52 overflow-hidden">
+                                <img src={resto.imageUrl} alt={resto.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                {resto.rating >= 4.5 && (
+                                    <div className="absolute top-4 right-4 bg-amber-500 text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center shadow-sm">
+                                        <Star size={14} className="mr-1 fill-current" /> TOP RATED
+                                    </div>
+                                )}
+                            </div>
+                            <div className="p-6 flex flex-col flex-grow">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h4 className="text-xl font-extrabold text-gray-900 truncate pr-2">{resto.name}</h4>
+                                    {resto.rating && (
+                                        <div className="flex items-center bg-green-50 text-green-700 px-2.5 py-1 rounded-lg font-bold text-sm shrink-0">
+                                            <Star size={16} className="mr-1 fill-current" />
+                                            {resto.rating.toFixed(1)}
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="text-gray-500 text-sm font-medium mb-6">{resto.cuisine}</p>
+                                <div className="mt-auto flex justify-between items-center pt-4 border-t border-gray-100">
+                                    <span className="text-gray-900 font-bold text-lg">{resto.price}</span>
+                                    <span className="text-green-600 font-bold text-sm group-hover:underline">View Menu</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    filteredResults.map((dish, index) => (
+                        // --- REDESIGNED DISH CARD ---
+                        <div key={`${dish.restaurantId}-${dish.id}`} onClick={() => handleDishClick(dish)} className="bg-white rounded-[2rem] shadow-[0_8px_25px_rgba(0,0,0,0.05)] overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] group cursor-pointer animate-fade-in h-full flex flex-col" style={{ animationDelay: `${index * 50}ms` }}>
+                            <div className="relative h-52 overflow-hidden">
+                                <img src={dish.imageUrl || 'https://placehold.co/400x400/cccccc/ffffff?text=No+Image'} alt={dish.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            </div>
+                            <div className="p-6 flex flex-col flex-grow">
+                                <h4 className="text-xl font-extrabold text-gray-900 mb-1">{dish.name}</h4>
+                                <p className="text-sm font-medium text-gray-500 mb-6">from <span className="text-green-600">{dish.restaurantName}</span></p>
+                                <div className="mt-auto flex justify-between items-center pt-4 border-t border-gray-100">
+                                    <span className="font-extrabold text-2xl text-gray-900">₹{dish.sizes && dish.sizes[0] ? dish.sizes[0].price : 'N/A'}</span>
+                                    <PlusCircle size={28} className="text-green-500 group-hover:text-green-600 transition-colors" />
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )
+            )}
+        </div>
+        {!isLoading && filteredResults.length === 0 && (
+            <div className="text-center py-16">
+                <Frown size={48} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500 text-lg font-medium">No results found matching your criteria.</p>
+                <button onClick={() => { setSearchTerm(''); setActiveFilter('all'); }} className="mt-4 text-green-600 font-bold hover:underline">Clear Filters</button>
+            </div>
+        )}
+    </div>
+</section>
         </>
     );
 };
