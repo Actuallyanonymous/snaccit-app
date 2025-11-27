@@ -44,13 +44,18 @@ const Notification = ({ message, type, onDismiss }) => {
 };
 
 // --- Brand Logo Component ---
-const BrandLogo = () => (
-// ... (rest of the component is unchanged)
-    <img
-        src="https://placehold.co/250x80/059669/FFFFFF?text=Snaccit&font=poppins"
-        alt="Snaccit Logo"
-        className="mx-auto"
-    />
+const BrandLogo = ({ className = "" }) => (
+    <div className={`inline-flex items-center justify-center space-x-4 ${className}`}>
+        <div className="bg-gradient-to-br from-green-400 to-green-600 text-white p-3 rounded-2xl shadow-lg transform -rotate-12 hover:rotate-0 transition-transform duration-300">
+            <Utensils size={28} strokeWidth={2.5} />
+        </div>
+        <div className="text-left">
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white drop-shadow-sm leading-none">
+                Snaccit
+                <span className="text-green-400">.</span> 
+            </h1>
+        </div>
+    </div>
 );
 
 // --- Animated Hero Text ---
@@ -758,7 +763,22 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
         </div>
     </div>
 </section>
-            <section className="py-20 bg-white"><BrandLogo /></section>
+            <section className="relative py-28 bg-gradient-to-br from-green-900 via-green-800 to-green-950 overflow-hidden shadow-[inset_0_0_50px_rgba(0,0,0,0.3)]">
+    <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
+
+    <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-green-600/20 rounded-full blur-3xl mix-blend-overlay animate-pulse"></div>
+    <div className="absolute bottom-1/4 right-1/3 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl mix-blend-overlay animate-pulse animation-delay-2000"></div>
+
+    <div className="relative container mx-auto px-6 text-center z-10 flex flex-col items-center">
+        <BrandLogo className="scale-110 md:scale-125 origin-center" />
+        <div className="mt-8 h-1 w-24 bg-green-500/50 rounded-full"></div>
+        <p className="text-green-200 mt-6 text-xl max-w-lg mx-auto font-medium leading-relaxed drop-shadow">
+            The fastest way to your favorite food.
+            <br />
+            <span className="text-white/80 text-base font-normal">Skip the line, savor the time.</span>
+        </p>
+    </div>
+</section>
             <section id="top-dishes" className="py-20 sm:py-24 bg-cream-50">
                 <div className="container mx-auto px-6">
                     <div className="text-center mb-16"><h3 className="text-sm font-bold uppercase text-green-600 tracking-widest">Fan Favorites</h3><h2 className="mt-2 text-3xl md:text-4xl font-bold text-gray-800">Most Popular Dishes</h2></div>
