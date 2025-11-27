@@ -664,13 +664,12 @@ const TermsOfServicePage = () => {
     );
 };
 
-// --- [TOTALLY REDESIGNED] HomePage Component ---
+// --- HomePage Component ---
 const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchType, setSearchType] = useState('restaurant');
     const [activeFilter, setActiveFilter] = useState('all');
 
-    // ... (keep existing useMemo logic for filteredResults here) ...
     const filteredResults = useMemo(() => {
         let restaurantsToFilter = allRestaurants;
         if (activeFilter === 'topRated') restaurantsToFilter = restaurantsToFilter.filter(r => r.rating >= 4.5);
@@ -685,12 +684,27 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
         return restaurantsToFilter.filter(resto => resto.name.toLowerCase().includes(lowercasedSearchTerm) || resto.cuisine.toLowerCase().includes(lowercasedSearchTerm));
     }, [searchTerm, searchType, allRestaurants, activeFilter]);
 
-    // ... (keep existing topDishes data array here) ...
     const topDishes = [
-        { name: "Butter Chicken", restaurant: "Curry Kingdom", imageUrl: butterChickenImg },
-        { name: "Margherita Pizza", restaurant: "Pizza Palace", imageUrl: pizzaImg },
-        { name: "Sushi Platter", restaurant: "Tokyo Bites", imageUrl: sushiImg },
-        { name: "Vegan Burger", restaurant: "The Vurger Co.", imageUrl: burgerImg },
+          { 
+              name: "Butter Chicken", 
+              restaurant: "Curry Kingdom", 
+              imageUrl: butterChickenImg 
+          },
+          { 
+              name: "Margherita Pizza", 
+              restaurant: "Pizza Palace", 
+              imageUrl: pizzaImg 
+          },
+          { 
+              name: "Sushi Platter", 
+              restaurant: "Tokyo Bites", 
+              imageUrl: sushiImg 
+          },
+          { 
+              name: "Vegan Burger", 
+              restaurant: "The Vurger Co.", 
+              imageUrl: burgerImg 
+          },
     ];
 
     const handleDishClick = (dish) => {
@@ -700,268 +714,209 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
 
     return (
         <>
-            {/* --- Hero Section (Unchanged) --- */}
-            <main className="relative h-[650px] flex items-center justify-center text-white overflow-hidden">
-                <div className="absolute inset-0 bg-black/40 z-10 mix-blend-multiply"></div>
-                <video className="absolute inset-0 w-full h-full object-cover scale-105" src={heroVideo} autoPlay loop muted playsInline />
-                <div className="relative z-20 text-center px-6 max-w-4xl mx-auto">
+            <main className="relative h-[600px] flex items-center justify-center text-white overflow-hidden">
+                <div className="absolute inset-0 bg-black/50 z-10"></div>
+<video
+                    className="absolute inset-0 w-full h-full object-cover"
+                    src={heroVideo}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                />                <div className="relative z-20 text-center px-6">
                     <AnimatedHeroText />
-                    <p className="mt-8 max-w-2xl mx-auto text-xl text-gray-100 drop-shadow-lg slide-in-2 font-medium leading-relaxed">Pre-order your meal with Snaccit and have it served the moment you arrive. No more waiting, just eating.</p>
-                    <div className="mt-12 slide-in-2">
-                        <button onClick={() => { const el = document.getElementById('restaurants'); if(el) el.scrollIntoView({behavior:'smooth'}) }} className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-extrabold py-5 px-12 rounded-full hover:shadow-2xl hover:shadow-green-500/30 hover:-translate-y-1 transition-all duration-300 text-lg tracking-wide ring-4 ring-green-500/30">Find My Next Meal</button>
-                    </div>
-                </div>
-                 {/* Wave Separator Bottom */}
-                 <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0] z-30">
-                    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none" className="relative block w-full h-[80px] fill-cream-50">
-                        <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"></path>
-                    </svg>
+                    <p className="mt-6 max-w-2xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2">Pre-order your meal with Snaccit and have it served the moment you arrive. No more waiting, just eating.</p>
+                    <div className="mt-10 slide-in-2"><button className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-4 px-10 rounded-full hover:shadow-xl hover:shadow-green-400/50 hover:scale-105 transition-all duration-300 shadow-lg text-lg">Find My Next Meal</button></div>
                 </div>
             </main>
 
-            {/* --- [REVOLUTIONIZED] "How it Works" Section --- */}
-            <section id="features" className="relative py-32 overflow-hidden bg-cream-50 z-20">
-                {/* Connecting Path Line */}
-                <div className="absolute top-1/2 left-0 w-full h-32 -translate-y-1/2 hidden md:block pointer-events-none opacity-40">
-                     <svg width="100%" height="100%" viewBox="0 0 1440 200" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-                        <path d="M-100 100 C 200 0, 500 200, 800 100 C 1100 0, 1400 100, 1700 100" stroke="url(#paint0_linear)" strokeWidth="4" strokeDasharray="10 10"/>
-                        <defs>
-                            <linearGradient id="paint0_linear" x1="0" y1="100" x2="1440" y2="100" gradientUnits="userSpaceOnUse">
-                                <stop stopColor="#22c55e" stopOpacity="0.1"/>
-                                <stop offset="0.5" stopColor="#22c55e" stopOpacity="0.6"/>
-                                <stop offset="1" stopColor="#22c55e" stopOpacity="0.1"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                </div>
+<section id="features" className="relative py-24 overflow-hidden bg-gradient-to-b from-amber-50 via-cream-100 to-amber-50">
+    <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
 
-                <div className="container relative mx-auto px-6 z-10">
-                    <div className="text-center mb-20">
-                        <h3 className="text-sm font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-800 tracking-[0.2em] mb-4">A Seamless Experience</h3>
-                        <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight">Get served in <span className="underline decoration-green-500/50 decoration-4 underline-offset-4">3 simple steps</span></h2>
+    <div className="absolute top-0 left-0 -translate-x-1/4 -translate-y-1/4 w-96 h-96 bg-orange-200/40 rounded-full blur-3xl mix-blend-multiply animate-blob pointer-events-none"></div>
+    <div className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 w-96 h-96 bg-yellow-200/40 rounded-full blur-3xl mix-blend-multiply animate-blob animation-delay-2000 pointer-events-none"></div>
+
+    <div className="container relative mx-auto px-6 z-10">
+        <div className="text-center mb-16">
+            <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest drop-shadow-sm">A Seamless Experience</h3>
+            <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Get served in 3 simple steps</h2>
+        </div>
+        <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+            {[{ icon: <Store className="w-8 h-8 text-green-700" />, title: "1. Choose & Pre-order", description: "Explore menus and select your dishes before you even leave the house." }, { icon: <Smartphone className="w-8 h-8 text-green-700" />, title: "2. Set Arrival Time", description: "Let the restaurant know exactly when you'll be there for perfectly timed food." }, { icon: <ChefHat className="w-8 h-8 text-green-700" />, title: "3. Arrive and Dine", description: "Walk in, sit down, and have your freshly prepared meal served immediately." }].map((step, i) => (
+                <div key={i} className="group relative bg-white/80 backdrop-blur-md p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(251,191,36,0.3)] hover:border-amber-200">
+                    <div className="inline-block bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-full border border-green-200 mb-6 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                        {step.icon}
                     </div>
-                    <div className="grid md:grid-cols-3 gap-12 lg:gap-16 relative">
-                        {[
-                            { icon: <Store className="w-10 h-10 text-white" />, title: "1. Choose & Pre-order", description: "Browse menus and select your dishes before you even leave the house." },
-                            { icon: <Smartphone className="w-10 h-10 text-white" />, title: "2. Set Arrival Time", description: "Let the restaurant know exactly when you'll be there for perfectly timed food." },
-                            { icon: <ChefHat className="w-10 h-10 text-white" />, title: "3. Arrive and Dine", description: "Walk in, sit down, and have your freshly prepared meal served immediately." }
-                        ].map((step, i) => (
-                            <div key={i} className={`relative flex flex-col items-center text-center group ${i === 1 ? 'md:-translate-y-12' : ''}`}> {/* Stagger middle item up */}
-                                {/* Floating Icon Blob */}
-                                <div className="relative mb-8 animate-float" style={{ animationDelay: `${i * 0.5}s` }}>
-                                    <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-emerald-600 rounded-[2rem] rotate-6 group-hover:rotate-12 transition-transform duration-500 blur-md opacity-50"></div>
-                                    <div className="relative bg-gradient-to-br from-green-500 to-emerald-700 p-6 rounded-[2rem] shadow-xl group-hover:scale-110 transition-all duration-300 z-10 ring-4 ring-white">
-                                        {step.icon}
+                    <h4 className="text-xl font-bold mb-3 text-gray-900">{step.title}</h4>
+                    <p className="text-gray-600 leading-relaxed">{step.description}</p>
+                </div>
+            ))}
+        </div>
+    </div>
+</section>
+            <section className="relative py-28 bg-gradient-to-br from-green-900 via-green-800 to-green-950 overflow-hidden shadow-[inset_0_0_50px_rgba(0,0,0,0.3)]">
+    <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
+
+    <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-green-600/20 rounded-full blur-3xl mix-blend-overlay animate-pulse"></div>
+    <div className="absolute bottom-1/4 right-1/3 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl mix-blend-overlay animate-pulse animation-delay-2000"></div>
+
+    <div className="relative container mx-auto px-6 text-center z-10 flex flex-col items-center">
+        <BrandLogo className="scale-110 md:scale-125 origin-center" />
+        <div className="mt-8 h-1 w-24 bg-green-500/50 rounded-full"></div>
+        <p className="text-green-200 mt-6 text-xl max-w-lg mx-auto font-medium leading-relaxed drop-shadow">
+            The fastest way to your favorite food.
+            <br />
+            <span className="text-white/80 text-base font-normal">Skip the line, savor the time.</span>
+        </p>
+    </div>
+</section>
+
+<section id="top-dishes" className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-b from-green-50/50 via-white to-white">
+    <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
+    
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-3/4 bg-green-100/30 rounded-[100%] blur-3xl pointer-events-none"></div>
+
+    <div className="container relative mx-auto px-6 z-10">
+        <div className="text-center mb-16">
+            <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest drop-shadow-sm">Fan Favorites</h3>
+            <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Most Popular Dishes</h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+            {topDishes.map((dish, index) => (
+                <div key={index} className="relative rounded-3xl overflow-hidden group cursor-pointer shadow-md transition-all duration-500 hover:scale-[1.03] hover:shadow-[0_20px_30px_-10px_rgba(5,150,105,0.2)]">
+                    <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
+                    <div className="absolute bottom-0 left-0 p-6 text-white transform transition-transform duration-300 group-hover:translate-y-[-5px]">
+                        <h4 className="text-xl font-bold drop-shadow-lg leading-tight">{dish.name}</h4>
+                        <p className="text-sm opacity-90 font-medium text-green-100">{dish.restaurant}</p>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+</section>
+            {/* --- [UPDATED] Explore Restaurants Section (The Main Section) --- */}
+<section id="restaurants" className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-b from-cream-100 via-amber-50 to-white">
+    <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
+
+    <div className="container relative mx-auto px-6 z-10">
+        <div className="text-center mb-12">
+            <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest drop-shadow-sm">Find Your Craving</h3>
+            <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Explore Restaurants</h2>
+        </div>
+
+        <div className="max-w-3xl mx-auto mb-16">
+            <div className="flex justify-center mb-6">
+                <div className="bg-white/60 backdrop-blur-md p-1.5 rounded-full shadow-sm border border-gray-200/50 inline-flex">
+                    <button onClick={() => setSearchType('restaurant')} className={`px-8 py-3 rounded-full font-bold text-sm transition-all duration-300 ${searchType === 'restaurant' ? 'bg-green-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100/50'}`}>Restaurants</button>
+                    <button onClick={() => setSearchType('dish')} className={`px-8 py-3 rounded-full font-bold text-sm transition-all duration-300 ${searchType === 'dish' ? 'bg-green-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100/50'}`}>Dishes</button>
+                </div>
+            </div>
+
+            <div className="relative mb-8 group">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                    <Search className="text-gray-400 group-focus-within:text-green-500 transition-colors" size={22} />
+                </div>
+                <input
+                    type="text"
+                    placeholder={searchType === 'restaurant' ? 'Search for a restaurant or cuisine...' : 'Search for a specific dish...'}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full py-4 pl-14 pr-6 text-lg bg-white/80 backdrop-blur-md border-2 border-gray-200 rounded-full shadow-sm focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all duration-300 placeholder:text-gray-400"
+                />
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-3">
+                <button onClick={() => setActiveFilter('all')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center border-2 ${activeFilter === 'all' ? 'bg-gray-900 text-white border-gray-900 shadow-md' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}>All</button>
+                <button onClick={() => setActiveFilter('topRated')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center border-2 ${activeFilter === 'topRated' ? 'bg-amber-500 text-white border-amber-500 shadow-md' : 'bg-white text-gray-700 border-gray-200 hover:border-amber-500 hover:text-amber-600'}`}>
+                    <Award size={18} className="mr-2" />Top Rated
+                </button>
+                <button onClick={() => setActiveFilter('veg')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center border-2 ${activeFilter === 'veg' ? 'bg-green-600 text-white border-green-600 shadow-md' : 'bg-white text-gray-700 border-gray-200 hover:border-green-600 hover:text-green-700'}`}>
+                    <Leaf size={18} className="mr-2" />Pure Veg
+                </button>
+            </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {isLoading ? (
+                <div className="md:col-span-2 lg:col-span-4 text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
+            ) : (
+                searchType === 'restaurant' ? (
+                    filteredResults.map((resto, index) => (
+                        <div key={resto.id} onClick={() => onRestaurantClick(resto)} className="bg-white rounded-[2rem] shadow-[0_8px_25px_rgba(0,0,0,0.05)] overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] group cursor-pointer animate-fade-in h-full flex flex-col" style={{ animationDelay: `${index * 50}ms` }}>
+                            <div className="relative h-52 overflow-hidden">
+                                <img src={resto.imageUrl} alt={resto.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                {resto.rating >= 4.5 && (
+                                    <div className="absolute top-4 right-4 bg-amber-500 text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center shadow-sm">
+                                        <Star size={14} className="mr-1 fill-current" /> TOP RATED
                                     </div>
-                                </div>
-                                <h4 className="text-2xl font-bold mb-4 text-gray-900">{step.title}</h4>
-                                <p className="text-gray-600 leading-relaxed text-lg max-w-xs">{step.description}</p>
+                                )}
                             </div>
-                        ))}
-                    </div>
-                </div>
-                 {/* Wave Separator To Transition to Green Banner */}
-                 <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0] z-30 translate-y-1">
-                    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none" className="relative block w-full h-[100px] fill-emerald-950">
-                        <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" transform="scale(1, -1) translate(0, -120)"></path>
-                    </svg>
-                </div>
-            </section>
-
-            {/* --- [REVOLUTIONIZED] Brand Banner Section (Organic Shape) --- */}
-            <section className="relative py-32 bg-emerald-950 overflow-hidden z-20">
-                 {/* Organic Background Pattern */}
-                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zM32 63c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm57-13c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-rule='evenodd'/%3E%3C/svg%3E")` }}></div>
-                 {/* Glowing Pulses */}
-                <div className="absolute top-1/2 left-1/4 w-[500px] h-[500px] bg-green-600/30 rounded-full blur-[100px] mix-blend-screen animate-pulse -translate-y-1/2 pointer-events-none"></div>
-                <div className="absolute top-1/2 right-1/4 w-[400px] h-[400px] bg-emerald-500/20 rounded-full blur-[100px] mix-blend-screen animate-pulse animation-delay-2000 -translate-y-1/2 pointer-events-none"></div>
-
-                <div className="relative container mx-auto px-6 text-center z-10 flex flex-col items-center">
-                    <BrandLogo className="scale-125 md:scale-150 origin-center drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]" />
-                    <div className="mt-10 h-1.5 w-32 bg-gradient-to-r from-transparent via-green-400 to-transparent rounded-full"></div>
-                    <p className="text-green-50 mt-8 text-2xl md:text-3xl max-w-2xl mx-auto font-bold leading-relaxed text-shadow-lg">
-                        The fastest way to your favorite food.
-                        <br />
-                        <span className="text-green-200/80 text-xl md:text-2xl font-medium">Skip the line, savor the time.</span>
-                    </p>
-                </div>
-                 {/* Wave Separator Bottom (Transition to dishes) */}
-                 <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0] z-30 translate-y-1">
-                    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none" className="relative block w-full h-[100px] fill-cream-900">
-                         <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"></path>
-                    </svg>
-                </div>
-            </section>
-
-            {/* --- [REVOLUTIONIZED] Top Dishes Section (High Contrast) --- */}
-            <section id="top-dishes" className="relative py-32 overflow-hidden bg-cream-900 z-10">
-                {/* Dark Organic Blob Background to make dishes POP */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-gradient-to-br from-emerald-900 via-cream-900 to-cream-900 rounded-[40%] blur-[120px] rotate-12 opacity-70"></div>
-                </div>
-                <div className="container relative mx-auto px-6 z-10">
-                    <div className="text-center mb-20">
-                        <h3 className="text-sm font-black uppercase text-green-400 tracking-[0.2em] mb-4">Fan Favorites</h3>
-                        <h2 className="text-4xl md:text-5xl font-extrabold text-white leading-tight">Most Popular Dishes</h2>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
-                        {topDishes.map((dish, index) => (
-                            // Cards that really pop off the dark background
-                            <div key={index} className="relative rounded-[2.5rem] overflow-hidden group cursor-pointer shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-500 hover:scale-[1.03] hover:shadow-[0_30px_60px_rgba(34,197,94,0.3)] ring-1 ring-white/10 hover:ring-green-500/50">
-                                <img src={dish.imageUrl} alt={dish.name} className="w-full h-[300px] object-cover transition-transform duration-700 group-hover:scale-110" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-90 group-hover:opacity-80 transition-opacity"></div>
-                                <div className="absolute bottom-0 left-0 p-8 text-white transform transition-transform duration-300 group-hover:-translate-y-2">
-                                    <h4 className="text-2xl font-extrabold drop-shadow-lg leading-tight mb-2">{dish.name}</h4>
-                                    <p className="text-base opacity-90 font-medium text-green-300 flex items-center"><Store size={16} className="mr-2 inline"/>{dish.restaurant}</p>
+                            <div className="p-6 flex flex-col flex-grow">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h4 className="text-xl font-extrabold text-gray-900 truncate pr-2">{resto.name}</h4>
+                                    {resto.rating && (
+                                        <div className="flex items-center bg-green-50 text-green-700 px-2.5 py-1 rounded-lg font-bold text-sm shrink-0">
+                                            <Star size={16} className="mr-1 fill-current" />
+                                            {resto.rating.toFixed(1)}
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                 {/* Wave Separator Bottom (Transition to restaurants) */}
-                 <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0] z-30 translate-y-1">
-                    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none" className="relative block w-full h-[120px] fill-cream-100">
-                         <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" transform="scale(1, -1) translate(0, -120)"></path>
-                    </svg>
-                </div>
-            </section>
-
-            {/* --- [REVOLUTIONIZED] Explore Restaurants Section (Glassmorphism & Layers) --- */}
-            <section id="restaurants" className="relative py-32 overflow-hidden bg-cream-100 z-0">
-                 {/* Background blobs for the glass effect to sit on */}
-                 <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[600px] h-[600px] bg-amber-200/40 rounded-full blur-3xl mix-blend-multiply animate-blob pointer-events-none"></div>
-                 <div className="absolute bottom-0 left-0 translate-y-1/4 -translate-x-1/4 w-[600px] h-[600px] bg-green-200/40 rounded-full blur-3xl mix-blend-multiply animate-blob animation-delay-4000 pointer-events-none"></div>
-
-                <div className="container relative mx-auto px-6 z-10">
-                    <div className="text-center mb-16">
-                        <h3 className="text-sm font-black uppercase text-green-600 tracking-[0.2em] mb-4">Find Your Craving</h3>
-                        <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight">Explore Restaurants</h2>
-                    </div>
-
-                    {/* Glassmorphism Search Container */}
-                    <div className="max-w-4xl mx-auto mb-24 relative z-20">
-                        <div className="bg-white/40 backdrop-blur-xl p-8 rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] border border-white/60 ring-1 ring-gray-900/5">
-                             {/* Type Toggle */}
-                            <div className="flex justify-center mb-8">
-                                <div className="bg-gray-900/5 p-1.5 rounded-full inline-flex relative">
-                                     {/* Sliding background pill (simplified implementation) */}
-                                     <div className={`absolute top-1.5 left-1.5 h-[calc(100%-0.75rem)] w-[calc(50%-0.75rem)] bg-green-500 rounded-full shadow-sm transition-transform duration-300 ${searchType === 'dish' ? 'translate-x-full' : ''}`}></div>
-                                    <button onClick={() => setSearchType('restaurant')} className={`relative px-10 py-3 rounded-full font-bold text-sm transition-colors duration-300 z-10 ${searchType === 'restaurant' ? 'text-white' : 'text-gray-600 hover:text-gray-900'}`}>Restaurants</button>
-                                    <button onClick={() => setSearchType('dish')} className={`relative px-10 py-3 rounded-full font-bold text-sm transition-colors duration-300 z-10 ${searchType === 'dish' ? 'text-white' : 'text-gray-600 hover:text-gray-900'}`}>Dishes</button>
+                                <p className="text-gray-500 text-sm font-medium mb-6">{resto.cuisine}</p>
+                                <div className="mt-auto flex justify-between items-center pt-4 border-t border-gray-100">
+                                    <span className="text-gray-900 font-bold text-lg">{resto.price}</span>
+                                    <span className="text-green-600 font-bold text-sm group-hover:underline">View Menu</span>
                                 </div>
-                            </div>
-
-                            {/* Search Bar */}
-                            <div className="relative mb-8 group">
-                                <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none z-10">
-                                    <Search className="text-gray-400 group-focus-within:text-green-500 transition-colors" size={24} />
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder={searchType === 'restaurant' ? 'Search for a restaurant or cuisine...' : 'Search for a specific dish...'}
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full py-5 pl-16 pr-6 text-xl bg-white/70 backdrop-blur-md border-0 ring-1 ring-gray-200 rounded-full shadow-inner focus:outline-none focus:ring-4 focus:ring-green-500/30 transition-all duration-300 placeholder:text-gray-400 text-gray-800 font-medium"
-                                />
-                                 <div className="absolute inset-y-2 right-2">
-                                     <button className="h-full bg-green-500 hover:bg-green-600 text-white font-bold px-8 rounded-full shadow-md transition-colors flex items-center justify-center">Search</button>
-                                 </div>
-                            </div>
-
-                            {/* Filter Buttons */}
-                            <div className="flex flex-wrap justify-center gap-4">
-                                {[{id: 'all', label: 'All', icon: null}, {id: 'topRated', label: 'Top Rated', icon: Award}, {id: 'veg', label: 'Pure Veg', icon: Leaf}].map(filter => (
-                                    <button key={filter.id} onClick={() => setActiveFilter(filter.id)} className={`px-6 py-3 rounded-full font-bold text-sm transition-all duration-300 flex items-center border-2 ${activeFilter === filter.id ? 'bg-gray-900 text-white border-gray-900 shadow-lg scale-105' : 'bg-white/50 text-gray-700 border-gray-200 hover:border-gray-900 hover:bg-white'}`}>
-                                        {filter.icon && <filter.icon size={18} className="mr-2" />}{filter.label}
-                                    </button>
-                                ))}
                             </div>
                         </div>
-                    </div>
-
-                    {/* Results Grid - Premium Stacked Cards */}
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12">
-                        {isLoading ? (
-                            <div className="md:col-span-2 lg:col-span-3 text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={50} /></div>
-                        ) : (
-                            searchType === 'restaurant' ? (
-                                filteredResults.map((resto, index) => (
-                                    // --- ASTONISHING RESTAURANT CARD ---
-                                    <div key={resto.id} onClick={() => onRestaurantClick(resto)} className="group cursor-pointer animate-fade-in h-full relative perspective-1000" style={{ animationDelay: `${index * 100}ms` }}>
-                                        {/* Card Background Layer (creates stack effect) */}
-                                        <div className="absolute inset-0 bg-green-800 rounded-[2.5rem] transform translate-y-4 scale-95 opacity-0 group-hover:opacity-100 group-hover:translate-y-6 group-hover:rotate-1 transition-all duration-500 -z-10 shadow-xl"></div>
-                                        {/* Main Card */}
-                                        <div className="bg-white rounded-[2.5rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] overflow-hidden transform transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-[0_35px_70px_-15px_rgba(0,0,0,0.25)] h-full flex flex-col border border-gray-100 relative z-10">
-                                            <div className="relative h-72 overflow-hidden">
-                                                <img src={resto.imageUrl} alt={resto.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300"></div>
-                                                <div className="absolute top-6 left-6 flex gap-2">
-                                                    {resto.rating >= 4.5 && ( <div className="bg-amber-400 text-white text-xs font-black uppercase tracking-wider px-4 py-2 rounded-full flex items-center shadow-lg ring-2 ring-white/30"><Star size={14} className="mr-1 fill-current" /> Top Rated</div> )}
-                                                    {resto.isPureVeg && ( <div className="bg-green-500 text-white text-xs font-black uppercase tracking-wider px-4 py-2 rounded-full flex items-center shadow-lg ring-2 ring-white/30"><Leaf size={14} className="mr-1 fill-current" /> Veg</div> )}
-                                                </div>
-                                            </div>
-                                            <div className="p-8 flex flex-col flex-grow relative">
-                                                {/* Floating Rating Bubble */}
-                                                {resto.rating && (
-                                                    <div className="absolute -top-10 right-8 bg-white text-gray-900 p-4 rounded-2xl font-black text-xl shadow-[0_10px_25px_rgba(0,0,0,0.1)] flex flex-col items-center border border-gray-100 group-hover:scale-110 transition-transform">
-                                                        <div className="flex items-center text-green-500 mb-1"><Star size={20} className="fill-current" /></div>
-                                                        {resto.rating.toFixed(1)}
-                                                    </div>
-                                                )}
-                                                <h4 className="text-3xl font-extrabold text-gray-900 truncate pr-2 mb-3 group-hover:text-green-700 transition-colors">{resto.name}</h4>
-                                                <p className="text-gray-500 text-lg font-medium mb-8 italic">{resto.cuisine}</p>
-                                                <div className="mt-auto flex justify-between items-end pt-6 border-t border-dashed border-gray-200">
-                                                    <div><p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Avg. Price</p><span className="text-gray-900 font-black text-2xl">{resto.price}</span></div>
-                                                    <button className="bg-gray-900 text-white rounded-full p-4 hover:bg-green-500 transition-colors shadow-md group-hover:shadow-lg hover:scale-105 active:scale-95"><ArrowLeft size={24} className="rotate-180" /></button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                filteredResults.map((dish, index) => (
-                                    // --- ASTONISHING DISH CARD ---
-                                    <div key={`${dish.restaurantId}-${dish.id}`} onClick={() => handleDishClick(dish)} className="group cursor-pointer animate-fade-in h-full relative perspective-1000" style={{ animationDelay: `${index * 100}ms` }}>
-                                         {/* Card Background Layer */}
-                                        <div className="absolute inset-0 bg-amber-600 rounded-[2.5rem] transform translate-y-4 scale-95 opacity-0 group-hover:opacity-100 group-hover:translate-y-6 group-hover:-rotate-1 transition-all duration-500 -z-10 shadow-xl"></div>
-                                        {/* Main Card */}
-                                        <div className="bg-white rounded-[2.5rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] overflow-hidden transform transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-[0_35px_70px_-15px_rgba(0,0,0,0.25)] h-full flex flex-col border border-gray-100 relative z-10">
-                                            <div className="relative h-72 overflow-hidden">
-                                                <img src={dish.imageUrl || 'https://placehold.co/400x400/cccccc/ffffff?text=No+Image'} alt={dish.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300"></div>
-                                            </div>
-                                            <div className="p-8 flex flex-col flex-grow">
-                                                <h4 className="text-2xl font-extrabold text-gray-900 mb-2 group-hover:text-amber-600 transition-colors">{dish.name}</h4>
-                                                <p className="text-lg font-medium text-gray-500 mb-8 flex items-center"><Store size={18} className="mr-2 inline text-gray-400"/> {dish.restaurantName}</p>
-                                                <div className="mt-auto flex justify-between items-center pt-6 border-t border-dashed border-gray-200">
-                                                    <span className="font-black text-3xl text-gray-900 text-shadow-sm">₹{dish.sizes && dish.sizes[0] ? dish.sizes[0].price : 'N/A'}</span>
-                                                    <button className="bg-green-500 text-white rounded-full p-4 hover:bg-green-600 transition-all shadow-md group-hover:shadow-green-500/50 hover:scale-110 active:scale-95"><PlusCircle size={28} /></button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            )
-                        )}
-                    </div>
-                    {!isLoading && filteredResults.length === 0 && (
-                        <div className="text-center py-24 bg-white/40 backdrop-blur-md rounded-[3rem] border border-white/60 shadow-xl">
-                            <Frown size={64} className="mx-auto text-gray-300 mb-6" />
-                            <h3 className="text-2xl font-bold text-gray-800 mb-2">No cravings found.</h3>
-                            <p className="text-gray-500 text-lg font-medium mb-8">Try adjusting your search or filters.</p>
-                            <button onClick={() => { setSearchTerm(''); setActiveFilter('all'); }} className="bg-green-500 text-white px-10 py-4 rounded-full font-bold text-lg shadow-lg hover:bg-green-600 hover:shadow-green-500/30 transition-all hover:-translate-y-1">Reset All Filters</button>
+                    ))
+                ) : (
+                    filteredResults.map((dish, index) => (
+                        // --- REDESIGNED DISH CARD ---
+                        <div key={`${dish.restaurantId}-${dish.id}`} onClick={() => handleDishClick(dish)} className="bg-white rounded-[2rem] shadow-[0_8px_25px_rgba(0,0,0,0.05)] overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] group cursor-pointer animate-fade-in h-full flex flex-col" style={{ animationDelay: `${index * 50}ms` }}>
+                            <div className="relative h-52 overflow-hidden">
+                                <img src={dish.imageUrl || 'https://placehold.co/400x400/cccccc/ffffff?text=No+Image'} alt={dish.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            </div>
+                            <div className="p-6 flex flex-col flex-grow">
+                                <h4 className="text-xl font-extrabold text-gray-900 mb-1">{dish.name}</h4>
+                                <p className="text-sm font-medium text-gray-500 mb-6">from <span className="text-green-600">{dish.restaurantName}</span></p>
+                                <div className="mt-auto flex justify-between items-center pt-4 border-t border-gray-100">
+                                    <span className="font-extrabold text-2xl text-gray-900">₹{dish.sizes && dish.sizes[0] ? dish.sizes[0].price : 'N/A'}</span>
+                                    <PlusCircle size={28} className="text-green-500 group-hover:text-green-600 transition-colors" />
+                                </div>
+                            </div>
                         </div>
-                    )}
-                </div>
-                 {/* Final Wave Separator to Footer */}
-                <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0] z-30 translate-y-1">
-                    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none" className="relative block w-full h-[100px] fill-emerald-950">
-                         <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"></path>
-                    </svg>
-                </div>
-            </section>
+                    ))
+                )
+            )}
+        </div>
+        {!isLoading && filteredResults.length === 0 && (
+            <div className="text-center py-16">
+                <Frown size={48} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500 text-lg font-medium">No results found matching your criteria.</p>
+                <button onClick={() => { setSearchTerm(''); setActiveFilter('all'); }} className="mt-4 text-green-600 font-bold hover:underline">Clear Filters</button>
+            </div>
+        )}
+    </div>
+</section>
         </>
     );
+};
+// ... (rest of the component is unchanged - long code omitted for brevity)
+// --- Star Rating Display Component ---
+const StarRating = ({ rating }) => {
+    const stars = [];
+    const roundedRating = Math.round(rating * 2) / 2;
+    for (let i = 1; i <= 5; i++) {
+        let starClass = 'text-gray-300';
+        if (i <= roundedRating) {
+            starClass = 'text-amber-400 fill-current';
+        }
+        stars.push(<Star key={i} size={20} className={starClass} />);
+    }
+    return <div className="flex">{stars}</div>;
 };
 
 // --- MenuPage Component ---
@@ -1436,22 +1391,6 @@ const PaymentStatusPage = ({ onGoHome }) => {
             <button onClick={onGoHome} className="mt-8 bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition-colors">
                 {orderStatus === 'pending' ? 'Browse More' : 'Go Back Home'}
             </button>
-        </div>
-    );
-};
-
-// --- Star Rating Display ---
-const StarRating = ({ rating }) => {
-    return (
-        <div className="flex items-center">
-            {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                    key={star}
-                    size={16}
-                    // Fill the star yellow if it's less than or equal to the rating, otherwise gray
-                    className={star <= rating ? "text-amber-400 fill-current" : "text-gray-300"}
-                />
-            ))}
         </div>
     );
 };
@@ -2058,24 +1997,18 @@ const App = () => {
                     {renderView()}
                 </main>
 
-                
-<footer className="bg-emerald-950 text-white relative z-40 pt-24 pb-12 overflow-hidden">
-    <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
-    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-[800px] h-[400px] bg-green-600/20 rounded-[100%] blur-[100px] pointer-events-none"></div>
-
-    <div className="container mx-auto px-6 relative z-10 text-center">
-        <BrandLogo className="scale-125 origin-center mb-8" />
-        <p className="text-green-200/80 text-lg max-w-md mx-auto mb-12 font-medium leading-relaxed">Skip the wait. Savor the moment. The future of dining is here.</p>
-        <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-12">
-            <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); setView('terms'); window.history.pushState({}, '', '/terms-of-service'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">Terms of Service<span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span></a>
-            <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); setView('privacy'); window.history.pushState({}, '', '/privacy-policy'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">Privacy Policy<span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span></a>
-            <a href="#" className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">Contact Us<span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span></a>
-        </div>
-        <div className="border-t border-green-800/50 pt-8">
-            <p className="text-green-300/60 text-sm font-medium">© 2024 Snaccit Inc. All rights reserved. Crafted with hunger.</p>
-        </div>
-    </div>
-</footer>
+                <footer className="bg-white border-t border-gray-200">
+                    <div className="container mx-auto px-6 py-12 text-center">
+                        <BrandLogo />
+                        <p className="text-gray-500 mt-4">Skip the wait. Savor the moment.</p>
+                        <div className="mt-6 flex justify-center space-x-6">
+                            <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); setView('terms'); window.history.pushState({}, '', '/terms-of-service'); }} className="text-sm text-gray-500 hover:text-green-600">Terms of Service</a>
+                            <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); setView('privacy'); window.history.pushState({}, '', '/privacy-policy'); }} className="text-sm text-gray-500 hover:text-green-600">Privacy Policy</a>
+                            <a href="#" className="text-sm text-gray-500 hover:text-green-600">Contact</a>
+                        </div>
+                        <p className="text-gray-400 mt-8 text-xs">© 2024 Snaccit Inc. All rights reserved.</p>
+                    </div>
+                </footer>
             </div>
         </>
     );
