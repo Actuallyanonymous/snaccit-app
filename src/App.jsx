@@ -729,32 +729,23 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
                     <div className="mt-10 slide-in-2"><button className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-4 px-10 rounded-full hover:shadow-xl hover:shadow-green-400/50 hover:scale-105 transition-all duration-300 shadow-lg text-lg">Find My Next Meal</button></div>
                 </div>
             </main>
-            <section id="features" className="relative py-24 overflow-hidden bg-gradient-to-b from-cream-50 via-white to-cream-50">
-    {/* Decorative background blobs */}
-    <div className="absolute top-0 left-0 -translate-x-1/4 -translate-y-1/4 w-96 h-96 bg-green-100/40 rounded-full blur-3xl mix-blend-multiply animate-blob pointer-events-none"></div>
-    <div className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 w-96 h-96 bg-amber-100/40 rounded-full blur-3xl mix-blend-multiply animate-blob animation-delay-2000 pointer-events-none"></div>
+
+<section id="features" className="relative py-24 overflow-hidden bg-gradient-to-b from-amber-50 via-cream-100 to-amber-50">
+    <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
+
+    <div className="absolute top-0 left-0 -translate-x-1/4 -translate-y-1/4 w-96 h-96 bg-orange-200/40 rounded-full blur-3xl mix-blend-multiply animate-blob pointer-events-none"></div>
+    <div className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 w-96 h-96 bg-yellow-200/40 rounded-full blur-3xl mix-blend-multiply animate-blob animation-delay-2000 pointer-events-none"></div>
 
     <div className="container relative mx-auto px-6 z-10">
         <div className="text-center mb-16">
-            <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest">A Seamless Experience</h3>
-            <h2 className="mt-2 text-3xl md:text-4xl font-bold text-gray-900">Get served in 3 simple steps</h2>
+            <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest drop-shadow-sm">A Seamless Experience</h3>
+            <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Get served in 3 simple steps</h2>
         </div>
         <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-            {[
-                { icon: <Store className="w-8 h-8 text-green-700" />, title: "Choose & Pre-order", description: "Explore menus and select your dishes before you even leave the house." },
-                { icon: <Smartphone className="w-8 h-8 text-green-700" />, title: "Set Arrival Time", description: "Let the restaurant know exactly when you'll be there for perfectly timed food." },
-                { icon: <ChefHat className="w-8 h-8 text-green-700" />, title: "Arrive and Dine", description: "Walk in, sit down, and have your freshly prepared meal served immediately." }
-            ].map((step, i) => (
-                <div key={i} className="group relative bg-white p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(5,150,105,0.2)] hover:border-green-200">
-                    <div className="relative inline-block mb-6">
-                        {/* Icon Container */}
-                        <div className="bg-green-50 p-6 rounded-full border border-green-100 group-hover:bg-green-100 group-hover:scale-110 transition-all duration-300">
-                            {step.icon}
-                        </div>
-                        {/* Step Number Badge */}
-                        <div className="absolute -top-2 -right-2 bg-gradient-to-br from-green-500 to-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-white">
-                            {i + 1}
-                        </div>
+            {[{ icon: <Store className="w-8 h-8 text-green-700" />, title: "1. Choose & Pre-order", description: "Explore menus and select your dishes before you even leave the house." }, { icon: <Smartphone className="w-8 h-8 text-green-700" />, title: "2. Set Arrival Time", description: "Let the restaurant know exactly when you'll be there for perfectly timed food." }, { icon: <ChefHat className="w-8 h-8 text-green-700" />, title: "3. Arrive and Dine", description: "Walk in, sit down, and have your freshly prepared meal served immediately." }].map((step, i) => (
+                <div key={i} className="group relative bg-white/80 backdrop-blur-md p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(251,191,36,0.3)] hover:border-amber-200">
+                    <div className="inline-block bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-full border border-green-200 mb-6 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                        {step.icon}
                     </div>
                     <h4 className="text-xl font-bold mb-3 text-gray-900">{step.title}</h4>
                     <p className="text-gray-600 leading-relaxed">{step.description}</p>
@@ -779,20 +770,31 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
         </p>
     </div>
 </section>
-            <section id="top-dishes" className="py-20 sm:py-24 bg-cream-50">
-                <div className="container mx-auto px-6">
-                    <div className="text-center mb-16"><h3 className="text-sm font-bold uppercase text-green-600 tracking-widest">Fan Favorites</h3><h2 className="mt-2 text-3xl md:text-4xl font-bold text-gray-800">Most Popular Dishes</h2></div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {topDishes.map((dish, index) => (
-                             <div key={index} className="relative rounded-3xl overflow-hidden group cursor-pointer shadow-lg transform hover:scale-105 transition-transform duration-300">
-                                <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                                <div className="absolute bottom-0 left-0 p-6 text-white"><h4 className="text-xl font-bold drop-shadow-lg">{dish.name}</h4><p className="text-sm opacity-80">{dish.restaurant}</p></div>
-                             </div>
-                        ))}
+
+<section id="top-dishes" className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-b from-green-50/50 via-white to-white">
+    <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
+    
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-3/4 bg-green-100/30 rounded-[100%] blur-3xl pointer-events-none"></div>
+
+    <div className="container relative mx-auto px-6 z-10">
+        <div className="text-center mb-16">
+            <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest drop-shadow-sm">Fan Favorites</h3>
+            <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Most Popular Dishes</h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+            {topDishes.map((dish, index) => (
+                <div key={index} className="relative rounded-3xl overflow-hidden group cursor-pointer shadow-md transition-all duration-500 hover:scale-[1.03] hover:shadow-[0_20px_30px_-10px_rgba(5,150,105,0.2)]">
+                    <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
+                    <div className="absolute bottom-0 left-0 p-6 text-white transform transition-transform duration-300 group-hover:translate-y-[-5px]">
+                        <h4 className="text-xl font-bold drop-shadow-lg leading-tight">{dish.name}</h4>
+                        <p className="text-sm opacity-90 font-medium text-green-100">{dish.restaurant}</p>
                     </div>
                 </div>
-            </section>
+            ))}
+        </div>
+    </div>
+</section>
             <section id="restaurants" className="py-20 sm:py-24 bg-white">
                 <div className="container mx-auto px-6">
                     <div className="text-center mb-8"><h3 className="text-sm font-bold uppercase text-green-600 tracking-widest">Find Your Craving</h3><h2 className="mt-2 text-3xl md:text-4xl font-bold text-gray-800">Explore Restaurants</h2></div>
