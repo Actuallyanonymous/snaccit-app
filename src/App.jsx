@@ -1440,6 +1440,22 @@ const PaymentStatusPage = ({ onGoHome }) => {
     );
 };
 
+// --- Star Rating Display ---
+const StarRating = ({ rating }) => {
+    return (
+        <div className="flex items-center">
+            {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                    key={star}
+                    size={16}
+                    // Fill the star yellow if it's less than or equal to the rating, otherwise gray
+                    className={star <= rating ? "text-amber-400 fill-current" : "text-gray-300"}
+                />
+            ))}
+        </div>
+    );
+};
+
 // --- Profile Page Component ---
 const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) => {
 // ... (rest of the component is unchanged - long code omitted for brevity)
