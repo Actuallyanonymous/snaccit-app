@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.snaccit.app",
+      "sha256_cert_fingerprints": [
+        "BB:9C:9F:20:7F:DB:8B:88:CE:D5:83:5C:71:A3:A6:7D:FD:C5:C3:CE:7C:87:17:72:CA:C5:C0:B3:B9:C1:06:D0"
+      ]
+    }
+  }
+]
