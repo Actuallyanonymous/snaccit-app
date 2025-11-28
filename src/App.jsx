@@ -542,6 +542,7 @@ const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => 
             console.log("Firestore document updated.");
 
             showNotification("Account setup complete! You can now log in.", "success");
+            window.location.reload();
             onClose(); // Close the modal on success
 
         } catch (err) {
@@ -1690,6 +1691,7 @@ const App = () => {
     const [view, setView] = useState('home');
     const [selectedRestaurant, setSelectedRestaurant] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
+    const [userProfile, setUserProfile] = useState(null);
     const [restaurants, setRestaurants] = useState([]);
     const [isLoading, setIsLoading] = useState(true); // Loading restaurants state
     const [cart, setCart] = useState([]);
@@ -1752,13 +1754,28 @@ const App = () => {
 
         // Firebase Auth state listener
         console.log("Setting up auth state listener...");
-        const unsubAuth = auth.onAuthStateChanged((user) => {
+        const unsubAuth = auth.onAuthStateChanged(async (user) => {
             console.log("Auth state changed. User:", user ? user.uid : 'null');
             setCurrentUser(user);
             setIsAuthReady(true); // Auth state is now known
             if (user) {
                 // Request notification permission only if user is logged in
                 requestCustomerNotificationPermission(user);
+
+                try {
+                    const userDoc = await db.collection("users").doc(user.uid).get();
+                    if (userDoc.exists) {
+                        setUserProfile(userDoc.data());
+                        console.log("User profile loaded into App state.");
+                    } else {
+                         // Profile might not exist yet if they just signed up and haven't finished the second modal
+                        console.log("User logged in, but Firestore profile doc not found yet.");
+                        setUserProfile(null);
+                    }
+                } catch (error) {
+                    console.error("Error fetching user profile:", error);
+                }
+
             } else {
                 // Reset user-specific state on logout
                 console.log("User logged out, resetting cart and selection.");
