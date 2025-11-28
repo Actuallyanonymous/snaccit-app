@@ -1179,30 +1179,75 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout }) =>
 
 // --- Time Slot Picker Component ---
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
     const generateTimeSlots = (openingTimeStr, closingTimeStr) => {
-        const slots = [], now = new Date();
+        const slots = [];
+        const now = new Date();
         const intervalMinutes = 15;
-        const minimumLeadTimeMinutes = 15;
-        if (!openingTimeStr || !closingTimeStr || !/^\d{2}:\d{2}$/.test(openingTimeStr) || !/^\d{2}:\d{2}$/.test(closingTimeStr)) return [];
+        const minimumLeadTimeMinutes = 15; // e.g., 15 mins to prepare
+
+        if (!openingTimeStr || !closingTimeStr) return [];
+
+        // Parse opening and closing times
         const [openHours, openMinutes] = openingTimeStr.split(':').map(Number);
-        const openingTime = new Date(); openingTime.setHours(openHours, openMinutes, 0, 0);
+        const openingTime = new Date();
+        openingTime.setHours(openHours, openMinutes, 0, 0);
+
         const [closeHours, closeMinutes] = closingTimeStr.split(':').map(Number);
-        const closingTime = new Date(); closingTime.setHours(closeHours, closeMinutes, 0, 0);
-        const earliestOrderTime = new Date(now.getTime() + minimumLeadTimeMinutes * 60000);
-        const minutes = earliestOrderTime.getMinutes();
+        const closingTime = new Date();
+        closingTime.setHours(closeHours, closeMinutes, 0, 0);
+
+        // --- ASAP Logic ---
+        // Calculate the earliest possible time for ASAP
+        const asapTime = new Date(now.getTime() + minimumLeadTimeMinutes * 60000);
+        let asapValue = '';
+
+        // If the earliest time is before opening, ASAP means opening time.
+        if (asapTime < openingTime) {
+            asapValue = openingTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+        // If the earliest time is within operating hours, ASAP means that time.
+        else if (asapTime < closingTime) {
+            // Round ASAP time up to the next 5-minute mark for a cleaner time
+            const minutes = asapTime.getMinutes();
+            const remainder = minutes % 5;
+            if (remainder !== 0) {
+                asapTime.setMinutes(minutes + (5 - remainder), 0, 0);
+            }
+            asapValue = asapTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+        // If ASAP time is after closing, ASAP is not available today.
+        // (The loop below will also not generate slots, handling the "closed" state)
+
+
+        // --- Generate Future Time Slots ---
+        // Calculate the first slot time (rounded up to the next interval)
+        const earliestSlotTime = new Date(now.getTime() + minimumLeadTimeMinutes * 60000);
+        const minutes = earliestSlotTime.getMinutes();
         const remainder = minutes % intervalMinutes;
-        if (remainder !== 0) earliestOrderTime.setMinutes(minutes + (intervalMinutes - remainder), 0, 0);
-        else earliestOrderTime.setSeconds(0, 0);
-        let startTime = earliestOrderTime > openingTime ? earliestOrderTime : openingTime;
-        if (startTime >= closingTime) return [];
+        if (remainder !== 0) {
+            earliestSlotTime.setMinutes(minutes + (intervalMinutes - remainder), 0, 0);
+        } else {
+            earliestSlotTime.setSeconds(0, 0);
+        }
+
+        // Start generating slots from the later of (opening time) or (earliest possible slot time)
+        let startTime = earliestSlotTime > openingTime ? earliestSlotTime : openingTime;
+
+        // Loop to generate slots until closing time
         while (startTime < closingTime) {
-            const slotTime = new Date(startTime);
-            const displayFormat = slotTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            const valueFormat = displayFormat;
-            slots.push({ display: displayFormat, value: valueFormat });
+            const displayFormat = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            // Only add the slot if it's not the same as the ASAP time (to avoid duplicates)
+            if (displayFormat !== asapValue) {
+                slots.push({ display: displayFormat, value: displayFormat });
+            }
             startTime.setMinutes(startTime.getMinutes() + intervalMinutes);
         }
+
+        // If ASAP is a valid option, prepend it to the slots array
+        if (asapValue) {
+            slots.unshift({ display: 'ASAP', value: asapValue });
+        }
+
         return slots;
     };
 
@@ -1211,15 +1256,49 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
     if (!restaurant?.openingTime || !restaurant?.closingTime) {
         return <div className="text-center p-4 bg-yellow-50 text-yellow-700 rounded-lg border border-yellow-200"><p className="font-semibold">Restaurant hours not set.</p><p className="text-sm">Pre-orders unavailable.</p></div>;
     }
+
     if (timeSlots.length === 0) {
         return <div className="text-center p-4 bg-red-50 text-red-700 rounded-lg border border-red-200"><p className="font-semibold">Sorry, restaurant is closed for pre-orders now.</p><p className="text-sm">Hours: {restaurant.openingTime} - {restaurant.closingTime}</p></div>;
     }
+
     return (
         <div>
-            <label className="block text-gray-700 text-sm font-bold mb-3 flex items-center"><Clock className="inline mr-2" size={16}/>Estimated Arrival Time</label>
+            <label className="block text-gray-700 text-sm font-bold mb-3 flex items-center"><Clock className="inline mr-2" size={16} />Estimated Arrival Time</label>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
-                {timeSlots.map(slot => <button type="button" key={slot.value} onClick={() => onTimeSelect(slot.value)} className={`p-2 sm:p-3 text-sm sm:text-base rounded-lg font-semibold text-center transition-all duration-200 border-2 ${selectedTime === slot.value ? 'bg-green-600 text-white border-green-600 shadow-md ring-2 ring-green-300 ring-offset-1' : 'bg-white text-gray-700 border-gray-200 hover:border-green-400 hover:text-green-700 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500'}`}>{slot.display}</button>)}
+                {timeSlots.map((slot, index) => {
+                    // Special styling for the ASAP button (the first one)
+                    const isASAP = index === 0 && slot.display === 'ASAP';
+                    const isSelected = selectedTime === slot.value;
+
+                    let buttonClasses = `p-2 sm:p-3 text-sm sm:text-base rounded-lg font-semibold text-center transition-all duration-200 border-2 focus:outline-none focus:ring-1 focus:ring-green-500 `;
+
+                    if (isSelected) {
+                        buttonClasses += `bg-green-600 text-white border-green-600 shadow-md ring-2 ring-green-300 ring-offset-1 `;
+                    } else if (isASAP) {
+                        // Distinct style for unselected ASAP button
+                        buttonClasses += `bg-green-50 text-green-800 border-green-300 hover:border-green-500 hover:bg-green-100 `;
+                    } else {
+                        buttonClasses += `bg-white text-gray-700 border-gray-200 hover:border-green-400 hover:text-green-700 `;
+                    }
+
+                    return (
+                        <button
+                            type="button"
+                            key={slot.value} // Use the time value as the key
+                            onClick={() => onTimeSelect(slot.value)}
+                            className={buttonClasses}
+                        >
+                            {slot.display}
+                        </button>
+                    );
+                })}
             </div>
+            {/* Helper text to show the actual time for ASAP */}
+            {selectedTime && timeSlots[0]?.display === 'ASAP' && selectedTime === timeSlots[0].value && (
+                 <p className="text-xs text-green-600 mt-2 ml-1">
+                    Goal arrival time: <strong>{selectedTime}</strong>
+                </p>
+            )}
         </div>
     );
 };
