@@ -1181,14 +1181,15 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout }) =>
 // --- Time Slot Picker Component ---
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
     const generateTimeSlots = (openingTimeStr, closingTimeStr) => {
+        if (!openingTimeStr || !closingTimeStr) return [];
+
         const slots = [];
         const now = new Date();
         const intervalMinutes = 15;
-        const minimumLeadTimeMinutes = 15; // e.g., 15 mins to prepare
+        // Minimum time to prepare first specific slot (e.g., 15 mins from now)
+        const minimumLeadTimeMinutes = 15;
 
-        if (!openingTimeStr || !closingTimeStr) return [];
-
-        // Parse opening and closing times
+        // Parse opening and closing times into today's date objects
         const [openHours, openMinutes] = openingTimeStr.split(':').map(Number);
         const openingTime = new Date();
         openingTime.setHours(openHours, openMinutes, 0, 0);
@@ -1197,56 +1198,44 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
         const closingTime = new Date();
         closingTime.setHours(closeHours, closeMinutes, 0, 0);
 
-        // --- ASAP Logic ---
-        // Calculate the earliest possible time for ASAP
-        const asapTime = new Date(now.getTime() + minimumLeadTimeMinutes * 60000);
-        let asapValue = '';
-
-        // If the earliest time is before opening, ASAP means opening time.
-        if (asapTime < openingTime) {
-            asapValue = openingTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        // If it's already past closing time today, show nothing.
+        if (now >= closingTime) {
+             return [];
         }
-        // If the earliest time is within operating hours, ASAP means that time.
-        else if (asapTime < closingTime) {
-            // Round ASAP time up to the next 5-minute mark for a cleaner time
-            const minutes = asapTime.getMinutes();
-            const remainder = minutes % 5;
-            if (remainder !== 0) {
-                asapTime.setMinutes(minutes + (5 - remainder), 0, 0);
-            }
-            asapValue = asapTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-        }
-        // If ASAP time is after closing, ASAP is not available today.
-        // (The loop below will also not generate slots, handling the "closed" state)
+
+        // --- 1. ALWAYS Add the distinct "ASAP" option first ---
+        // This sends the literal string 'ASAP' as the arrival time value.
+        slots.push({ display: 'ASAP', value: 'ASAP' });
 
 
-        // --- Generate Future Time Slots ---
-        // Calculate the first slot time (rounded up to the next interval)
-        const earliestSlotTime = new Date(now.getTime() + minimumLeadTimeMinutes * 60000);
-        const minutes = earliestSlotTime.getMinutes();
+        // --- 2. Generate specific future time slots ---
+        // Calculate start time for numerical slots: Now + lead time...
+        let startTime = new Date(now.getTime() + minimumLeadTimeMinutes * 60000);
+
+        // ...rounded up to the next 15-minute interval mark.
+        const minutes = startTime.getMinutes();
         const remainder = minutes % intervalMinutes;
         if (remainder !== 0) {
-            earliestSlotTime.setMinutes(minutes + (intervalMinutes - remainder), 0, 0);
+            // Add minutes to reach the next interval mark, reset seconds
+            startTime.setMinutes(minutes + (intervalMinutes - remainder), 0, 0);
         } else {
-            earliestSlotTime.setSeconds(0, 0);
+            // Already on an interval mark, just clean up seconds
+            startTime.setSeconds(0, 0);
         }
 
-        // Start generating slots from the later of (opening time) or (earliest possible slot time)
-        let startTime = earliestSlotTime > openingTime ? earliestSlotTime : openingTime;
+        // Ensure the first numerical slot doesn't start *before* opening time.
+        // If calculated start time is too early, bump it to opening time.
+        if (startTime < openingTime) {
+            startTime = openingTime;
+        }
 
-        // Loop to generate slots until closing time
+        // Loop to generate numerical slots until closing time
         while (startTime < closingTime) {
             const displayFormat = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            // Only add the slot if it's not the same as the ASAP time (to avoid duplicates)
-            if (displayFormat !== asapValue) {
-                slots.push({ display: displayFormat, value: displayFormat });
-            }
+            // Add the numerical slot
+            slots.push({ display: displayFormat, value: displayFormat });
+            // Move to next interval
             startTime.setMinutes(startTime.getMinutes() + intervalMinutes);
-        }
-
-        // If ASAP is a valid option, prepend it to the slots array
-        if (asapValue) {
-            slots.unshift({ display: 'ASAP', value: asapValue });
         }
 
         return slots;
