@@ -1857,10 +1857,15 @@ const App = () => {
 
     const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode) => {
         if (!currentUser) { showNotification("Please log in to place an order.", "error"); return; }
+        if (!userProfile) { showNotification("Please wait for profile to load.", "error"); return; }
         setIsRedirecting(true); setIsCheckoutOpen(false);
         const grandTotal = subtotal - discount;
+        const phoneToSave = userProfile.mobile || userProfile.phoneNumber || currentUser.phoneNumber || 'N/A';
+        const nameToSave = userProfile.username || 'Customer';
         const orderData = {
             userId: currentUser.uid, userEmail: currentUser.email || null,
+            userName: nameToSave,
+            userPhone: phoneToSave,
             restaurantId: selectedRestaurant.id, restaurantName: selectedRestaurant.name,
             items: cart.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.finalPrice, size: item.selectedSize.name, addons: item.selectedAddons.map(a => a.name) })),
             subtotal, discount, couponCode: couponCode || null, total: grandTotal, status: "awaiting_payment", arrivalTime,
