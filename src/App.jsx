@@ -936,7 +936,10 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
         try {
             const menuCollectionRef = db.collection("restaurants").doc(restaurant.id).collection("menu");
             unsubMenu = menuCollectionRef.onSnapshot((snapshot) => {
-                setMenuItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                const allItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const availableItems = allItems.filter(item => item.isAvailable !== false);
+                
+                setMenuItems(availableItems);
                 setIsLoading(false);
             }, (error) => {
                 console.error("Error fetching menu snapshot: ", error);
