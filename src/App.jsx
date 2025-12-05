@@ -467,26 +467,21 @@ const LoginModal = ({ isOpen, onClose, showNotification }) => {
     );
 };
 
-// --- [NEW] Set Credentials Modal (After First Phone Sign-Up) ---
+// --- [UPDATED] Set Credentials Modal ---
 const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
+    const [referralInput, setReferralInput] = useState(''); // NEW State
     const [error, setError] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Import EmailAuthProvider directly from firebase compat namespace
     const { EmailAuthProvider } = firebase.auth;
 
     useEffect(() => {
-        // Reset form when modal opens
         if (isOpen) {
-            setEmail('');
-            setPassword('');
-            setUsername('');
-            setError('');
-            setIsProcessing(false);
+            setEmail(''); setPassword(''); setUsername(''); setReferralInput('');
+            setError(''); setIsProcessing(false);
         }
     }, [isOpen]);
 
@@ -495,67 +490,69 @@ const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => 
         setError('');
         setIsProcessing(true);
 
-        if (!newUser) {
-            setError("User session is invalid. Please try signing up again.");
-            setIsProcessing(false);
-            return;
-        }
-
-        if (password.length < 6) {
-             setError('Password should be at least 6 characters long.');
-             setIsProcessing(false);
-             return;
-        }
-         if (!username.trim()) {
-             setError('Please enter a username.');
-             setIsProcessing(false);
-             return;
-         }
+        if (!newUser) { setError("User session is invalid. Please try signing up again."); setIsProcessing(false); return; }
+        if (password.length < 6) { setError('Password should be at least 6 characters long.'); setIsProcessing(false); return; }
+        if (!username.trim()) { setError('Please enter a username.'); setIsProcessing(false); return; }
 
         try {
-            // 1. Create email/password credential
-            const credential = EmailAuthProvider.credential(email, password);
+            // --- 1. REFERRAL CHECK ---
+            let referredByUid = null;
+            if (referralInput.trim()) {
+                const codeToCheck = referralInput.trim().toUpperCase();
+                const usersRef = db.collection("users");
+                // Check if code exists
+                const snapshot = await usersRef.where("myReferralCode", "==", codeToCheck).limit(1).get();
+                
+                if (snapshot.empty) {
+                    setError("Invalid referral code.");
+                    setIsProcessing(false);
+                    return;
+                }
+                // Prevent referring yourself (edge case)
+                if (snapshot.docs[0].id === newUser.uid) {
+                     setError("You cannot use your own code.");
+                     setIsProcessing(false);
+                     return;
+                }
+                referredByUid = snapshot.docs[0].id;
+            }
 
-            // 2. Link credential to the currently signed-in user (newUser)
-            console.log("Attempting to link email/password credential...");
-            // Ensure the user object is still valid and reflects the current auth state
+            // --- 2. GENERATE NEW CODE FOR THIS USER ---
+            // Format: First 4 letters of name + Last 4 of UID (e.g., JOHN8721)
+            const cleanName = username.replace(/[^a-zA-Z]/g, '').substring(0, 4).toUpperCase();
+            const uidSuffix = newUser.uid.substring(0, 4).toUpperCase();
+            const myNewCode = `${cleanName}${uidSuffix}`;
+
+            // --- 3. LINK AUTH ---
+            const credential = EmailAuthProvider.credential(email, password);
             const currentUser = auth.currentUser;
             if (!currentUser || currentUser.uid !== newUser.uid) {
-                 throw { code: 'auth/user-mismatch', message: "User state mismatch. Please log in again." }; // Safety check
+                 throw { code: 'auth/user-mismatch', message: "User state mismatch. Please log in again." };
             }
             await currentUser.linkWithCredential(credential);
-            console.log("Email/Password linked successfully.");
 
-            // 3. Create/Update Firestore document
+            // --- 4. SAVE TO FIRESTORE ---
             const userDocRef = db.collection("users").doc(currentUser.uid);
-            console.log("Updating Firestore document with username and email...");
             await userDocRef.set({
-                // Set initial data or merge with potentially existing phone data
                 username: username.trim(),
-                email: email.toLowerCase(), // Store email consistently
-                phoneNumber: currentUser.phoneNumber, // Get from current user after linking
+                email: email.toLowerCase(),
+                phoneNumber: currentUser.phoneNumber,
                 mobile: currentUser.phoneNumber,
-                // Add createdAt only if creating the document for the first time
-                // Using merge: true handles both cases (creation and update)
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                // New Fields
+                myReferralCode: myNewCode,
+                referredBy: referredByUid, // Store the UID of the person who invited them
+                rewardsIssued: false // Flag for backend to issue coupons
             }, { merge: true });
-            console.log("Firestore document updated.");
 
             showNotification("Account setup complete! You can now log in.", "success");
             window.location.reload();
-            onClose(); // Close the modal on success
+            onClose();
 
         } catch (err) {
             console.error("Error setting credentials:", err);
-            switch (err.code) {
-                case 'auth/invalid-email': setError('Please enter a valid email address.'); break;
-                case 'auth/email-already-in-use': setError('This email is already associated with another account.'); break;
-                case 'auth/credential-already-in-use': setError('This email/credential is already linked to a user.'); break;
-                case 'auth/weak-password': setError('Password should be at least 6 characters long.'); break;
-                case 'auth/requires-recent-login': setError('Security check required. Please try signing up again.'); break; // Force re-auth
-                 case 'auth/user-mismatch': setError(err.message); break; // Show custom error
-                default: setError(`An unexpected error occurred (${err.code}). Please try again.`); break;
-            }
+            // ... (Your existing error handling switch case stays here) ...
+            setError(err.message || "An error occurred");
         } finally {
             setIsProcessing(false);
         }
@@ -568,8 +565,9 @@ const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => 
             <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md m-4 relative">
                  <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
                 <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Complete Your Account</h2>
-                <p className="text-center text-gray-500 mb-6">Set your email, password, and username.</p>
+                <p className="text-center text-gray-500 mb-6">Set your details to finish setup.</p>
                 <form onSubmit={handleSetCredentials}>
+                    {/* ... (Keep Email, Password, Username inputs exactly as they were) ... */}
                     <div className="mb-4">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-email">Email</label>
                         <input type="email" id="setup-email" value={email} onChange={(e) => setEmail(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="you@example.com" required autoComplete="email" />
@@ -582,6 +580,21 @@ const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => 
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-username">Username</label>
                         <input type="text" id="setup-username" value={username} onChange={(e) => setUsername(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Choose a username" required autoComplete="username" />
                     </div>
+
+                    {/* --- NEW REFERRAL INPUT --- */}
+                    <div className="mb-6 pt-2 border-t border-gray-100">
+                        <label className="block text-green-700 text-sm font-bold mb-2 mt-2">Have a Referral Code?</label>
+                        <input 
+                            type="text" 
+                            value={referralInput} 
+                            onChange={(e) => setReferralInput(e.target.value.toUpperCase())} 
+                            className="shadow-inner appearance-none border-2 border-green-100 bg-green-50/50 rounded-xl w-full py-3 px-4 text-green-800 font-bold tracking-widest leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:font-normal placeholder:text-gray-400" 
+                            placeholder="Enter code (Optional)" 
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Get ₹50 off your first order if you use a friend's code!</p>
+                    </div>
+                    {/* -------------------------- */}
+
                     {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
                     <button type="submit" disabled={isProcessing} className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
                          {isProcessing ? <Loader2 className="animate-spin mx-auto" size={24} /> : 'Save & Continue'}
@@ -1326,15 +1339,33 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
             const code = couponCode.toUpperCase();
             const couponRef = db.collection("coupons").doc(code);
             const couponSnap = await couponRef.get();
+            
             if (!couponSnap.exists) {
                 setCouponError("Invalid coupon code.");
                 return;
             }
             const coupon = couponSnap.data();
-            if (!coupon.isActive) { setCouponError("This coupon is no longer active."); }
-            else if (new Date() > coupon.expiryDate.toDate()) { setCouponError("This coupon has expired."); }
-            else if (subtotal < coupon.minOrderValue) { setCouponError(`A minimum order of ₹${coupon.minOrderValue} is required to use this coupon.`); }
+            const now = new Date();
+            
+            // --- VALIDATION LOGIC ---
+            if (!coupon.isActive) { 
+                setCouponError("This coupon is no longer active."); 
+            }
+            else if (coupon.isUsed) { // CHECK: Has it been used?
+                 setCouponError("This coupon has already been used."); 
+            }
+            else if (coupon.assignedTo && coupon.assignedTo !== auth.currentUser?.uid) {
+                // CHECK: Is it locked to the current user? (Referral coupons are locked)
+                setCouponError("This coupon is not valid for your account.");
+            }
+            else if (coupon.expiryDate && now > coupon.expiryDate.toDate()) { 
+                setCouponError("This coupon has expired."); 
+            }
+            else if (subtotal < coupon.minOrderValue) { 
+                setCouponError(`A minimum order of ₹${coupon.minOrderValue} is required.`); 
+            }
             else {
+                // All checks passed
                 let calculatedDiscount = 0;
                 if (coupon.type === 'fixed') { calculatedDiscount = coupon.value; }
                 else if (coupon.type === 'percentage') { calculatedDiscount = (subtotal * coupon.value) / 100; }

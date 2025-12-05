@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../Desktop/snaccit-functions-us"
+		},
+		{
+			"path": "../../snaccit-functions-us"
+		},
+		{
+			"path": "../../snaccit-dashboard"
+		},
+		{
+			"path": "../../snaccit-admin"
+		}
+	],
+	"settings": {}
+}
