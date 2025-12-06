@@ -1,8 +1,9 @@
 {
+  "id": "/",
   "short_name": "Snaccit",
   "name": "Snaccit: Skip the line",
   "description": "Pre-order your meal and have it served the moment you arrive.",
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#22c55e",
   "background_color": "#ffffff",
@@ -10,30 +11,25 @@
   "categories": ["food", "lifestyle", "shopping"],
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "logo192.png",
+      "src": "/logo192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any"
     },
     {
-      "src": "logo192.png",
+      "src": "/logo192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "maskable"
     },
     {
-      "src": "logo512.png",
+      "src": "/logo512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any"
     },
     {
-      "src": "logo512.png",
+      "src": "/logo512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
@@ -41,27 +37,18 @@
   ],
   "screenshots": [
     {
-      "src": "og-image.png",
+      "src": "/og-image.png",
       "sizes": "1200x630",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Home Screen"
     },
     {
-      "src": "logo512.png",
+      "src": "/logo512.png",
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "App Icon"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Explore Restaurants",
-      "short_name": "Restaurants",
-      "description": "Find a place to eat",
-      "url": "/",
-      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
     }
   ]
 }
