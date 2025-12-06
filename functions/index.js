@@ -2,7 +2,7 @@
 
 // --- Dependencies ---
 const {onRequest, onCall} = require("firebase-functions/v2/https");
-const {onDocumentUpdated} = require("firebase-functions/v2/firestore");
+const {onDocumentWritten, onDocumentUpdated} = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const axios = require("axios");
@@ -186,21 +186,24 @@ exports.phonePeCallback = onRequest({
 // ======================================================================
 // === 3. REFERRAL REWARD TRIGGER (asia-south2) ===
 // ======================================================================
-exports.issueReferralRewards = onDocumentUpdated({
+// MODIFIED: Now using 'onDocumentWritten' to catch NEW user creations too!
+
+exports.issueReferralRewards = onDocumentWritten({
   region: "asia-south2", 
   document: "users/{userId}",
 }, async (event) => {
-  const after = event.data.after.data();
-  const before = event.data.before.data();
+  // Safety check: if data is missing (e.g. delete event), stop.
+  if (!event.data || !event.data.after.exists) return;
 
-  // Check if 'referredBy' was just added/changed and we haven't issued rewards yet
+  const after = event.data.after.data();
+  // We don't strictly need 'before' for this logic, just the current state
+
+  // Check if 'referredBy' exists and we haven't issued rewards yet
   if (after.referredBy && !after.rewardsIssued) {
     const referrerId = after.referredBy;
     const newUserId = event.params.userId;
 
     // --- A. Coupon for the NEW USER (The Referee) ---
-    // STRATEGY: Use "WELCOME-" + the user's own unique referral code.
-    // Since 'myReferralCode' is unique to this user, this coupon ID is guaranteed unique.
     const newRefereeCode = `WELCOME-${after.myReferralCode}`;
     
     await db.collection("coupons").doc(newRefereeCode).set({
@@ -210,15 +213,13 @@ exports.issueReferralRewards = onDocumentUpdated({
         minOrderValue: 150,
         isActive: true,
         isUsed: false,
-        assignedTo: newUserId, // Locked to the new user
+        assignedTo: newUserId,
         expiryDate: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
         description: "Referral Welcome Bonus"
     });
 
     // --- B. Coupon for the REFERRER (The Friend) ---
-    // STRATEGY: Use crypto random bytes. "REF-" + 8 random hex characters.
-    // This provides 4.2 billion combinations, making collisions practically impossible.
-    const randomString = crypto.randomBytes(4).toString('hex').toUpperCase(); // e.g. "A1B2C3D4"
+    const randomString = crypto.randomBytes(4).toString('hex').toUpperCase();
     const newReferrerCode = `REF-${randomString}`;
     
     await db.collection("coupons").doc(newReferrerCode).set({
@@ -228,12 +229,12 @@ exports.issueReferralRewards = onDocumentUpdated({
         minOrderValue: 150,
         isActive: true,
         isUsed: false,
-        assignedTo: referrerId, // Locked to the referrer
+        assignedTo: referrerId,
         expiryDate: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)),
         description: `Bonus for referring ${after.username || 'a friend'}`
     });
 
-    // C. Mark user as rewarded so we don't loop
+    // C. Mark user as rewarded
     await event.data.after.ref.update({ rewardsIssued: true });
 
     logger.info(`Issued unique coupons: ${newRefereeCode} and ${newReferrerCode}`);
