@@ -724,7 +724,6 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
     const [searchTerm, setSearchTerm] = useState('');
     const [searchType, setSearchType] = useState('restaurant');
     const [activeFilter, setActiveFilter] = useState('all');
-    // NEW: State to control how many restaurants are visible
     const [visibleCount, setVisibleCount] = useState(8); 
 
     const filteredResults = useMemo(() => {
@@ -748,7 +747,6 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
         if (restaurant) onRestaurantClick(restaurant);
     };
 
-    // Reset visible count when search/filter changes so user doesn't get lost
     useEffect(() => {
         setVisibleCount(8);
     }, [searchTerm, activeFilter, searchType]);
@@ -762,14 +760,13 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
 
     return (
         <>
-            {/* 1. HERO SECTION (Unchanged) */}
+            {/* 1. HERO SECTION */}
             <main className="relative h-[500px] md:h-[600px] flex items-center justify-center text-white overflow-hidden">
                 <div className="absolute inset-0 bg-black/50 z-10"></div>
                 <video className="absolute inset-0 w-full h-full object-cover" src={heroVideo} autoPlay loop muted playsInline />
                 <div className="relative z-20 text-center px-6">
                     <AnimatedHeroText />
                     <p className="mt-6 max-w-2xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2">Pre-order your meal with Snaccit and have it served the moment you arrive.</p>
-                    {/* Scroll to restaurants on click */}
                     <div className="mt-10 slide-in-2">
                         <button onClick={() => document.getElementById('restaurants').scrollIntoView({ behavior: 'smooth' })} className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-4 px-10 rounded-full hover:shadow-xl hover:shadow-green-400/50 hover:scale-105 transition-all duration-300 shadow-lg text-lg">
                             Find My Next Meal
@@ -778,7 +775,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                 </div>
             </main>
 
-            {/* 2. RESTAURANTS SECTION (Moved to Top) */}
+            {/* 2. RESTAURANTS SECTION */}
             <section id="restaurants" className="relative py-20 bg-gray-50 -mt-8 rounded-t-[3rem] z-30">
                 <div className="container relative mx-auto px-6 z-10">
                     <div className="text-center mb-10">
@@ -821,7 +818,6 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                             <div className="md:col-span-2 lg:col-span-4 text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
                         ) : (
                             searchType === 'restaurant' ? (
-                                // Use .slice() to limit visible items
                                 filteredResults.slice(0, visibleCount).map((resto, index) => (
                                     <div key={resto.id} onClick={() => onRestaurantClick(resto)} className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer h-full flex flex-col">
                                         <div className="relative h-48 overflow-hidden">
@@ -896,9 +892,8 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                 </div>
             </section>
 
-            {/* 3. NEW: REFERRAL ADVERTISEMENT SECTION */}
+            {/* 3. REFERRAL ADVERTISEMENT SECTION */}
             <section className="py-20 bg-gradient-to-r from-emerald-900 to-green-900 text-white relative overflow-hidden">
-                {/* Decorative Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style={{ backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`, backgroundSize: '40px 40px' }}></div>
                 <div className="absolute -right-20 -top-20 w-96 h-96 bg-green-500/20 rounded-full blur-3xl"></div>
                 <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl"></div>
@@ -922,28 +917,20 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                                 </button>
                             </div>
                         </div>
-
-                        {/* Steps Visual */}
                         <div className="md:w-1/2 w-full">
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl text-center transform hover:-translate-y-1 transition-transform">
-                                    <div className="bg-green-500/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-green-300">
-                                        <Copy size={24}/>
-                                    </div>
+                                    <div className="bg-green-500/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-green-300"><Copy size={24}/></div>
                                     <h4 className="font-bold text-lg mb-1">1. Share</h4>
                                     <p className="text-sm text-white/60">Copy your unique code from your profile.</p>
                                 </div>
                                 <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl text-center transform hover:-translate-y-1 transition-transform sm:mt-8">
-                                    <div className="bg-green-500/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-green-300">
-                                        <Users size={24}/>
-                                    </div>
+                                    <div className="bg-green-500/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-green-300"><Users size={24}/></div>
                                     <h4 className="font-bold text-lg mb-1">2. Join</h4>
                                     <p className="text-sm text-white/60">Friend uses your code to sign up.</p>
                                 </div>
                                 <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl text-center transform hover:-translate-y-1 transition-transform sm:mt-16">
-                                    <div className="bg-green-500/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-green-300">
-                                        <Coins size={24}/>
-                                    </div>
+                                    <div className="bg-green-500/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-green-300"><Coins size={24}/></div>
                                     <h4 className="font-bold text-lg mb-1">3. Earn</h4>
                                     <p className="text-sm text-white/60">You both get a ₹50 coupon instantly!</p>
                                 </div>
@@ -953,11 +940,11 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                 </div>
             </section>
 
-            {/* 4. FEATURES SECTION (Demoted) */}
-            <section id="features" className="py-24 bg-white">
+            {/* 4. FEATURES SECTION (Revised CSS) */}
+            <section id="features" className="py-24 bg-amber-50/50">
                 <div className="container relative mx-auto px-6">
                     <div className="text-center mb-16">
-                        <h3 className="text-sm font-bold uppercase text-gray-400 tracking-widest">How it works</h3>
+                        <h3 className="text-sm font-bold uppercase text-amber-500 tracking-widest">How it works</h3>
                         <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Seamless Dining in 3 Steps</h2>
                     </div>
                     <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
@@ -965,8 +952,8 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                           { icon: <Clock className="w-8 h-8 text-green-600" />, title: "Set Arrival", description: "Tell us when you'll be there. We ensure the food is hot." }, 
                           { icon: <ChefHat className="w-8 h-8 text-green-600" />, title: "Dine Immediately", description: "Walk in, sit down, and start eating. No waiting lines." }]
                           .map((step, i) => (
-                            <div key={i} className="text-center p-6">
-                                <div className="inline-block bg-green-50 p-5 rounded-[2rem] mb-6">
+                            <div key={i} className="bg-white p-8 rounded-[2rem] border border-amber-100 shadow-sm text-center hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+                                <div className="inline-block bg-green-50 p-5 rounded-full mb-6 border border-green-100">
                                     {step.icon}
                                 </div>
                                 <h4 className="text-xl font-bold mb-3 text-gray-900">{step.title}</h4>
@@ -978,7 +965,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
             </section>
 
             {/* 5. TOP DISHES SECTION */}
-            <section id="top-dishes" className="py-24 bg-cream-50">
+            <section id="top-dishes" className="py-24 bg-white">
                  <div className="container relative mx-auto px-6 z-10">
                     <div className="text-center mb-12">
                         <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">Fan Favorites</h2>
@@ -986,7 +973,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                         {topDishes.map((dish, index) => (
-                            <div key={index} className="bg-white p-3 rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer group">
+                            <div key={index} className="bg-gray-50 p-3 rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer group border border-gray-100">
                                 <div className="h-40 rounded-xl overflow-hidden mb-3">
                                     <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                 </div>
@@ -995,14 +982,6 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                             </div>
                         ))}
                     </div>
-                </div>
-            </section>
-
-            {/* 6. BOTTOM BRANDING */}
-            <section className="relative py-20 bg-gray-900 text-center text-white overflow-hidden">
-                <div className="relative z-10">
-                     <BrandLogo className="scale-110 mb-6" />
-                     <p className="text-xl text-gray-400 font-light">Skip the line, savor the time.</p>
                 </div>
             </section>
         </>
