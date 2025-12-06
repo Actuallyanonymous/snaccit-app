@@ -2,6 +2,7 @@
 
 // --- Dependencies ---
 const {onRequest, onCall} = require("firebase-functions/v2/https");
+const {onDocumentUpdated} = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const axios = require("axios");
@@ -179,5 +180,98 @@ exports.phonePeCallback = onRequest({
   } catch (error) {
     logger.error("Error in PhonePe callback handler:", error);
     res.status(500).send("Internal Server Error");
+  }
+});
+
+// ======================================================================
+// === 3. REFERRAL REWARD TRIGGER (asia-south2) ===
+// ======================================================================
+// Runs when a user profile is updated (specifically when 'referredBy' is set)
+
+exports.issueReferralRewards = onDocumentUpdated({
+  region: "asia-south2", 
+  document: "users/{userId}",
+}, async (event) => {
+  const after = event.data.after.data();
+  const before = event.data.before.data();
+
+  // Check if 'referredBy' was just added/changed and we haven't issued rewards yet
+  if (after.referredBy && !after.rewardsIssued) {
+    const referrerId = after.referredBy;
+    const newUserId = event.params.userId;
+
+    // A. Coupon for the NEW USER (The Referee)
+    // e.g., "WELCOME-8A2B"
+    const newRefereeCode = `WELCOME-${newUserId.slice(0, 4).toUpperCase()}`;
+    
+    await db.collection("coupons").doc(newRefereeCode).set({
+        code: newRefereeCode,
+        value: 50, // 50 Rupees
+        type: "fixed",
+        minOrderValue: 150, // Minimum order
+        isActive: true,
+        isUsed: false, // Start unused
+        assignedTo: newUserId, // Only THIS user can use it
+        expiryDate: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)), // 30 days expiry
+        description: "Referral Welcome Bonus"
+    });
+
+    // B. Coupon for the REFERRER (The Friend)
+    // e.g., "REF-9X1Z-8821" (Unique every time)
+    const uniqueSuffix = Date.now().toString().slice(-4);
+    const newReferrerCode = `REF-${referrerId.slice(0, 4).toUpperCase()}-${uniqueSuffix}`;
+    
+    await db.collection("coupons").doc(newReferrerCode).set({
+        code: newReferrerCode,
+        value: 50,
+        type: "fixed",
+        minOrderValue: 150,
+        isActive: true,
+        isUsed: false,
+        assignedTo: referrerId, // Only the referrer can use it
+        expiryDate: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)), // 60 days
+        description: `Bonus for referring ${after.username || 'a friend'}`
+    });
+
+    // C. Mark user as rewarded so we don't loop
+    await event.data.after.ref.update({ rewardsIssued: true });
+
+    logger.info(`Issued referral coupons for ${newUserId} and ${referrerId}`);
+  }
+});
+
+// ======================================================================
+// === 4. COUPON STATUS MANAGER (asia-south2) ===
+// ======================================================================
+// Locks coupon when order is pending. Unlocks if order fails.
+
+exports.manageCouponOnOrderUpdate = onDocumentUpdated({
+  region: "asia-south2",
+  document: "orders/{orderId}",
+}, async (event) => {
+  const after = event.data.after.data();
+  const before = event.data.before.data();
+  
+  // If no coupon was used in this order, ignore
+  const couponCode = after.couponCode;
+  if (!couponCode) return; 
+
+  // Case A: Order moved to 'pending' (Payment Success) -> LOCK COUPON
+  if (after.status === "pending" && before.status !== "pending") {
+      await db.collection("coupons").doc(couponCode).update({
+          isUsed: true,
+          usedInOrderId: event.params.orderId
+      });
+      logger.info(`Coupon ${couponCode} marked as USED for order ${event.params.orderId}`);
+  }
+
+  // Case B: Order Failed/Declined -> UNLOCK COUPON
+  const failureStatuses = ["payment_failed", "declined", "cancelled"];
+  if (failureStatuses.includes(after.status) && !failureStatuses.includes(before.status)) {
+      await db.collection("coupons").doc(couponCode).update({
+          isUsed: false, // Make it usable again
+          usedInOrderId: admin.firestore.FieldValue.delete()
+      });
+      logger.info(`Coupon ${couponCode} REACTIVATED because order failed/declined.`);
   }
 });

@@ -5,7 +5,7 @@ import { requestCustomerNotificationPermission } from './firebaseMessaging';
 import {
     ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft,
     Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper,
-    Search, Star, Award, User, Info, Bell, Loader2, Frown
+    Search, Star, Award, User, Info, Bell, Loader2, Frown, Copy
 } from 'lucide-react';
 import 'firebase/compat/auth'; // Ensure Auth compat is imported
 import { auth, db, functionsAsia, messaging } from './firebase'; 
@@ -1517,11 +1517,10 @@ const PaymentStatusPage = ({ onGoHome }) => {
     );
 };
 
-// --- Profile Page Component ---
+// --- [UPDATED] Profile Page Component ---
 const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
     const [orders, setOrders] = useState([]);
-    const [profile, setProfile] = useState({ username: '', mobile: '' });
+    const [profile, setProfile] = useState({ username: '', mobile: '', myReferralCode: '' });
     const [isLoading, setIsLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ username: '', mobile: '' });
@@ -1539,8 +1538,6 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
                 setFormData(data); // Initialize form data
             } else {
                  console.log("No user profile found in Firestore, may need creation.");
-                 // User might exist in Auth but not Firestore if linking failed?
-                 // Or, if email/pass was primary, this doc might be empty initially.
             }
         });
 
@@ -1589,6 +1586,13 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
         setIsEditing(false);
     };
 
+    // Copy Function
+    const copyToClipboard = (text) => {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        showNotification("Code copied to clipboard!", "success");
+    };
+
     const statusColors = {
         pending: 'bg-yellow-100 text-yellow-800', accepted: 'bg-blue-100 text-blue-800',
         preparing: 'bg-indigo-100 text-indigo-800', ready: 'bg-green-100 text-green-800',
@@ -1602,30 +1606,66 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
             <div className="flex flex-col lg:flex-row gap-8">
                  {/* Personal Details Card */}
                 <div className="lg:w-1/3">
-                    <div className="bg-white p-6 rounded-2xl shadow-md">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-2xl font-bold">Personal Details</h2>
-                            {!isEditing && <button onClick={() => setIsEditing(true)} className="text-sm font-semibold text-blue-600 hover:text-blue-800">Change</button>}
+                    <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900">Personal Details</h2>
+                            {!isEditing && <button onClick={() => setIsEditing(true)} className="text-sm font-bold text-green-600 hover:text-green-700 bg-green-50 px-3 py-1 rounded-full">Edit</button>}
                         </div>
-                        <div className="space-y-4 max-w-md">
+                        
+                        <div className="space-y-5">
+                            {/* Existing Fields */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Email</label>
-                                <p className="text-gray-600 mt-1 p-2 bg-gray-100 rounded-md text-sm">{currentUser?.email || 'Not set'}</p>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Email</label>
+                                <p className="text-gray-700 font-medium bg-gray-50 p-3 rounded-xl border border-gray-100">{currentUser?.email || 'Not set'}</p>
                             </div>
                              <div>
-                                 <label className="block text-sm font-medium text-gray-700">Phone</label>
-                                 <p className="text-gray-600 mt-1 p-2 bg-gray-100 rounded-md text-sm">{currentUser?.phoneNumber || profile.mobile || 'Not set'}</p>
+                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Phone</label>
+                                 <p className="text-gray-700 font-medium bg-gray-50 p-3 rounded-xl border border-gray-100">{currentUser?.phoneNumber || profile.mobile || 'Not set'}</p>
                              </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700" htmlFor="username">Username</label>
-                                {isEditing ? <input type="text" name="username" id="username" value={formData.username || ''} onChange={handleProfileChange} className="mt-1 w-full border border-gray-300 rounded-md p-2 text-sm"/> : <p className="text-gray-900 mt-1 p-2 font-medium">{profile.username || 'Not set'}</p>}
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Username</label>
+                                {isEditing ? <input type="text" name="username" value={formData.username || ''} onChange={handleProfileChange} className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-green-500 outline-none font-medium"/> : <p className="text-gray-900 font-bold text-lg pl-1">{profile.username || 'Not set'}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700" htmlFor="mobile">Mobile (Other)</label>
-                                {isEditing ? <input type="tel" name="mobile" id="mobile" value={formData.mobile || ''} onChange={handleProfileChange} className="mt-1 w-full border border-gray-300 rounded-md p-2 text-sm"/> : <p className="text-gray-900 mt-1 p-2 font-medium">{profile.mobile || 'Not set'}</p>}
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Mobile (Alternate)</label>
+                                {isEditing ? <input type="tel" name="mobile" value={formData.mobile || ''} onChange={handleProfileChange} className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-green-500 outline-none font-medium"/> : <p className="text-gray-900 font-medium pl-1">{profile.mobile || 'Not set'}</p>}
                             </div>
-                            {isEditing && <div className="flex gap-2 pt-2"><button onClick={handleSaveProfile} className="w-full bg-green-600 text-white font-bold py-2 rounded-lg hover:bg-green-700 text-sm">Save</button><button onClick={handleCancelEdit} className="w-full bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300 text-sm">Cancel</button></div>}
+                            
+                            {isEditing && (
+                                <div className="flex gap-3 pt-2">
+                                    <button onClick={handleSaveProfile} className="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition-colors">Save Changes</button>
+                                    <button onClick={handleCancelEdit} className="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors">Cancel</button>
+                                </div>
+                            )}
                         </div>
+
+                        {/* --- NEW REFERRAL SECTION --- */}
+                        {!isEditing && (
+                            <div className="mt-10 pt-8 border-t border-dashed border-gray-200">
+                                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-100 relative overflow-hidden">
+                                    {/* Background decoration */}
+                                    <div className="absolute -right-6 -top-6 w-20 h-20 bg-green-200/50 rounded-full blur-xl"></div>
+                                    
+                                    <h3 className="text-green-800 font-extrabold text-lg mb-1">Refer & Earn ₹50</h3>
+                                    <p className="text-green-600/80 text-sm mb-4 leading-snug">Share your code. When friends sign up and order, you both get a discount!</p>
+                                    
+                                    <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-green-200 shadow-sm">
+                                        <div className="flex-grow text-center font-mono font-black text-xl text-gray-800 tracking-widest">
+                                            {profile.myReferralCode || <span className="text-sm text-gray-400 font-sans font-normal">Loading...</span>}
+                                        </div>
+                                        <button 
+                                            onClick={() => copyToClipboard(profile.myReferralCode)}
+                                            className="bg-green-100 p-2.5 rounded-lg text-green-700 hover:bg-green-200 transition-colors"
+                                            title="Copy Code"
+                                        >
+                                            <Copy size={20} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {/* ----------------------------- */}
+
                     </div>
                  </div>
                  {/* Order History Card */}
@@ -1663,7 +1703,7 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
                 </div>
             </div>
         </div>
-    );
+    );  
 };
 
 // --- Review Modal Component ---
