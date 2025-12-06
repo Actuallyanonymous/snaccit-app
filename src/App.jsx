@@ -5,7 +5,7 @@ import { requestCustomerNotificationPermission } from './firebaseMessaging';
 import {
     ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft,
     Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper,
-    Search, Star, Award, User, Info, Bell, Loader2, Frown, Copy
+    Search, Star, Award, User, Info, Bell, Loader2, Frown, Copy, TicketPercent
 } from 'lucide-react';
 import 'firebase/compat/auth'; // Ensure Auth compat is imported
 import { auth, db, functionsAsia, messaging } from './firebase'; 
@@ -467,21 +467,22 @@ const LoginModal = ({ isOpen, onClose, showNotification }) => {
     );
 };
 
-// --- [UPDATED] Set Credentials Modal ---
+// --- [UPDATED] Set Credentials Modal (With Success Screen) ---
 const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
-    const [referralInput, setReferralInput] = useState(''); // NEW State
+    const [referralInput, setReferralInput] = useState('');
     const [error, setError] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false); // <--- NEW STATE
 
     const { EmailAuthProvider } = firebase.auth;
 
     useEffect(() => {
         if (isOpen) {
             setEmail(''); setPassword(''); setUsername(''); setReferralInput('');
-            setError(''); setIsProcessing(false);
+            setError(''); setIsProcessing(false); setShowSuccess(false); // Reset on open
         }
     }, [isOpen]);
 
@@ -500,7 +501,6 @@ const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => 
             if (referralInput.trim()) {
                 const codeToCheck = referralInput.trim().toUpperCase();
                 const usersRef = db.collection("users");
-                // Check if code exists
                 const snapshot = await usersRef.where("myReferralCode", "==", codeToCheck).limit(1).get();
                 
                 if (snapshot.empty) {
@@ -508,7 +508,6 @@ const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => 
                     setIsProcessing(false);
                     return;
                 }
-                // Prevent referring yourself (edge case)
                 if (snapshot.docs[0].id === newUser.uid) {
                      setError("You cannot use your own code.");
                      setIsProcessing(false);
@@ -518,9 +517,8 @@ const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => 
             }
 
             // --- 2. GENERATE NEW CODE FOR THIS USER ---
-            // Format: First 4 letters of name + Last 4 of UID (e.g., JOHN8721)
-            const cleanName = username.replace(/[^a-zA-Z]/g, '').substring(0, 4).toUpperCase();
-            const uidSuffix = newUser.uid.substring(0, 4).toUpperCase();
+            const cleanName = username.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase();
+            const uidSuffix = newUser.uid.slice(-5).toUpperCase(); 
             const myNewCode = `${cleanName}${uidSuffix}`;
 
             // --- 3. LINK AUTH ---
@@ -539,67 +537,110 @@ const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => 
                 phoneNumber: currentUser.phoneNumber,
                 mobile: currentUser.phoneNumber,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                // New Fields
                 myReferralCode: myNewCode,
-                referredBy: referredByUid, // Store the UID of the person who invited them
-                rewardsIssued: false // Flag for backend to issue coupons
+                referredBy: referredByUid,
+                rewardsIssued: false
             }, { merge: true });
 
-            showNotification("Account setup complete! You can now log in.", "success");
-            window.location.reload();
-            onClose();
+            // --- SUCCESS STATE TRIGGER ---
+            setShowSuccess(true); // Show the success screen instead of closing immediately
 
         } catch (err) {
             console.error("Error setting credentials:", err);
-            // ... (Your existing error handling switch case stays here) ...
-            setError(err.message || "An error occurred");
-        } finally {
-            setIsProcessing(false);
-        }
+            switch (err.code) {
+                case 'auth/email-already-in-use': setError('This email is already associated with another account.'); break;
+                case 'auth/credential-already-in-use': setError('This email/credential is already linked to a user.'); break;
+                case 'auth/weak-password': setError('Password should be at least 6 characters long.'); break;
+                case 'auth/requires-recent-login': setError('Security check required. Please try signing up again.'); break;
+                case 'auth/user-mismatch': setError(err.message); break;
+                default: setError(`An unexpected error occurred (${err.code}). Please try again.`); break;
+            }
+            setIsProcessing(false); // Only stop processing on error
+        } 
+    };
+
+    const handleFinalClose = () => {
+        // We reload to ensure the main App fetches the new profile data cleanly
+        window.location.reload();
+        onClose();
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
-            <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md m-4 relative">
-                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
-                <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Complete Your Account</h2>
-                <p className="text-center text-gray-500 mb-6">Set your details to finish setup.</p>
-                <form onSubmit={handleSetCredentials}>
-                    {/* ... (Keep Email, Password, Username inputs exactly as they were) ... */}
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-email">Email</label>
-                        <input type="email" id="setup-email" value={email} onChange={(e) => setEmail(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="you@example.com" required autoComplete="email" />
-                    </div>
-                     <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-password">Password</label>
-                        <input type="password" id="setup-password" value={password} onChange={(e) => setPassword(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="•••••••••• (min. 6 characters)" required autoComplete="new-password" />
-                    </div>
-                     <div className="mb-6">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-username">Username</label>
-                        <input type="text" id="setup-username" value={username} onChange={(e) => setUsername(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Choose a username" required autoComplete="username" />
-                    </div>
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-[2rem] shadow-2xl p-8 w-full max-w-md relative overflow-hidden">
+                
+                {showSuccess ? (
+                    /* --- SUCCESS SCREEN --- */
+                    <div className="text-center py-4">
+                        <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6 animate-bounce">
+                            <PartyPopper size={40} className="text-green-600" />
+                        </div>
+                        <h2 className="text-3xl font-extrabold text-gray-800 mb-2">Welcome to Snaccit!</h2>
+                        <p className="text-gray-500 mb-8">Your account has been created successfully.</p>
+                        
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100 mb-8 text-left space-y-4">
+                            <div className="flex items-start">
+                                <div className="bg-white p-1.5 rounded-full shadow-sm mr-3 mt-0.5"><TicketPercent size={18} className="text-amber-500"/></div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900 text-sm">Discount Coupon</h4>
+                                    <p className="text-xs text-gray-600 mt-0.5">Check the <strong>"My Rewards"</strong> section in your Profile to find your coupon!</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start">
+                                <div className="bg-white p-1.5 rounded-full shadow-sm mr-3 mt-0.5"><Copy size={18} className="text-blue-500"/></div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900 text-sm">Your Referral Code</h4>
+                                    <p className="text-xs text-gray-600 mt-0.5">Find your unique code in your Profile. Share it to earn more rewards!</p>
+                                </div>
+                            </div>
+                        </div>
 
-                    {/* --- NEW REFERRAL INPUT --- */}
-                    <div className="mb-6 pt-2 border-t border-gray-100">
-                        <label className="block text-green-700 text-sm font-bold mb-2 mt-2">Have a Referral Code?</label>
-                        <input 
-                            type="text" 
-                            value={referralInput} 
-                            onChange={(e) => setReferralInput(e.target.value.toUpperCase())} 
-                            className="shadow-inner appearance-none border-2 border-green-100 bg-green-50/50 rounded-xl w-full py-3 px-4 text-green-800 font-bold tracking-widest leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:font-normal placeholder:text-gray-400" 
-                            placeholder="Enter code (Optional)" 
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Get ₹50 off your first order if you use a friend's code!</p>
+                        <button onClick={handleFinalClose} className="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition-all shadow-lg hover:shadow-green-500/30">
+                            Let's Eat!
+                        </button>
                     </div>
-                    {/* -------------------------- */}
+                ) : (
+                    /* --- FORM SCREEN --- */
+                    <>
+                        <button onClick={onClose} className="absolute top-5 right-5 text-gray-400 hover:text-gray-700"><X size={24} /></button>
+                        <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Complete Your Account</h2>
+                        <p className="text-center text-gray-500 mb-6">Set your details to finish setup.</p>
+                        <form onSubmit={handleSetCredentials}>
+                            <div className="mb-4">
+                                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-email">Email</label>
+                                <input type="email" id="setup-email" value={email} onChange={(e) => setEmail(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="you@example.com" required autoComplete="email" />
+                            </div>
+                            <div className="mb-4">
+                                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-password">Password</label>
+                                <input type="password" id="setup-password" value={password} onChange={(e) => setPassword(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="•••••••••• (min. 6 characters)" required autoComplete="new-password" />
+                            </div>
+                            <div className="mb-6">
+                                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-username">Username</label>
+                                <input type="text" id="setup-username" value={username} onChange={(e) => setUsername(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Choose a username" required autoComplete="username" />
+                            </div>
 
-                    {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
-                    <button type="submit" disabled={isProcessing} className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                         {isProcessing ? <Loader2 className="animate-spin mx-auto" size={24} /> : 'Save & Continue'}
-                    </button>
-                </form>
+                            {/* --- REFERRAL INPUT --- */}
+                            <div className="mb-6 pt-2 border-t border-gray-100">
+                                <label className="block text-green-700 text-sm font-bold mb-2 mt-2">Have a Referral Code?</label>
+                                <input 
+                                    type="text" 
+                                    value={referralInput} 
+                                    onChange={(e) => setReferralInput(e.target.value.toUpperCase())} 
+                                    className="shadow-inner appearance-none border-2 border-green-100 bg-green-50/50 rounded-xl w-full py-3 px-4 text-green-800 font-bold tracking-widest leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:font-normal placeholder:text-gray-400" 
+                                    placeholder="Enter code (Optional)" 
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Get ₹50 off your first order if you use a friend's code!</p>
+                            </div>
+
+                            {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
+                            <button type="submit" disabled={isProcessing} className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                {isProcessing ? <Loader2 className="animate-spin mx-auto" size={24} /> : 'Save & Continue'}
+                            </button>
+                        </form>
+                    </>
+                )}
             </div>
         </div>
     );
@@ -1517,62 +1558,78 @@ const PaymentStatusPage = ({ onGoHome }) => {
     );
 };
 
-// --- [UPDATED] Profile Page Component ---
+// --- [UPDATED] Profile Page Component with Coupons ---
 const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) => {
     const [orders, setOrders] = useState([]);
+    const [coupons, setCoupons] = useState([]); // <--- NEW STATE for Coupons
     const [profile, setProfile] = useState({ username: '', mobile: '', myReferralCode: '' });
     const [isLoading, setIsLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ username: '', mobile: '' });
 
-
     useEffect(() => {
         if (!currentUser) return;
         
-        setIsLoading(true); // Start loading when user changes
+        setIsLoading(true);
+
+        // 1. Fetch User Profile
         const userDocRef = db.collection("users").doc(currentUser.uid);
         const unsubProfile = userDocRef.onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
                 setProfile(data);
-                setFormData(data); // Initialize form data
-            } else {
-                 console.log("No user profile found in Firestore, may need creation.");
+                setFormData(data);
             }
         });
 
+        // 2. Fetch User's Active Coupons (NEW)
+        const couponsQuery = db.collection("coupons")
+            .where("assignedTo", "==", currentUser.uid) // Only my coupons
+            .where("isUsed", "==", false)               // Only unused ones
+            .where("isActive", "==", true);             // Only active ones
+            
+        const unsubCoupons = couponsQuery.onSnapshot((snapshot) => {
+            const userCoupons = snapshot.docs.map(doc => ({ 
+                id: doc.id, 
+                ...doc.data(),
+                expiryDate: doc.data().expiryDate?.toDate() 
+            }));
+            setCoupons(userCoupons);
+        });
+
+        // 3. Fetch Orders
         const ordersQuery = db.collection("orders").where("userId", "==", currentUser.uid).orderBy("createdAt", "desc").limit(20);
         const unsubOrders = ordersQuery.onSnapshot((snapshot) => {
             const userOrders = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate() // Keep as Date object initially
+                createdAt: doc.data().createdAt?.toDate()
             }));
             setOrders(userOrders);
-            setIsLoading(false); // Stop loading after orders are fetched
+            setIsLoading(false);
         }, (error) => {
             console.error("Error fetching user orders:", error);
             showNotification("Could not load order history.", "error");
-            setIsLoading(false); // Stop loading on error
+            setIsLoading(false);
         });
 
-        return () => { // Cleanup listeners
-             console.log("Cleaning up ProfilePage listeners.");
+        return () => { 
              unsubProfile();
              unsubOrders();
+             unsubCoupons(); // Cleanup coupons listener
          };
-    }, [currentUser]); // Re-run only when currentUser object changes
+    }, [currentUser]);
 
     const handleProfileChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
     const handleSaveProfile = async () => {
-          if (!formData.username || !formData.mobile) { // Basic validation
+          if (!formData.username || !formData.mobile) {
               showNotification("Username and mobile number cannot be empty.", "error");
               return;
           }
         const userDocRef = db.collection("users").doc(currentUser.uid);
         try {
-            await userDocRef.set(formData, { merge: true }); // Merge to avoid overwriting other fields
+            await userDocRef.set(formData, { merge: true });
             showNotification("Profile updated successfully!", "success");
             setIsEditing(false);
         } catch (error) {
@@ -1582,11 +1639,10 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
     };
 
     const handleCancelEdit = () => {
-        setFormData(profile); // Reset form data to last saved state
+        setFormData(profile);
         setIsEditing(false);
     };
 
-    // Copy Function
     const copyToClipboard = (text) => {
         if (!text) return;
         navigator.clipboard.writeText(text);
@@ -1604,16 +1660,17 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
         <div className="container mx-auto px-6 py-12 min-h-screen">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-8">My Profile</h1>
             <div className="flex flex-col lg:flex-row gap-8">
-                 {/* Personal Details Card */}
-                <div className="lg:w-1/3">
-                    <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
+                 {/* LEFT COLUMN: Details & Rewards */}
+                <div className="lg:w-1/3 space-y-8">
+                    
+                    {/* 1. Personal Details Card */}
+                    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-bold text-gray-900">Personal Details</h2>
                             {!isEditing && <button onClick={() => setIsEditing(true)} className="text-sm font-bold text-green-600 hover:text-green-700 bg-green-50 px-3 py-1 rounded-full">Edit</button>}
                         </div>
                         
                         <div className="space-y-5">
-                            {/* Existing Fields */}
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Email</label>
                                 <p className="text-gray-700 font-medium bg-gray-50 p-3 rounded-xl border border-gray-100">{currentUser?.email || 'Not set'}</p>
@@ -1633,77 +1690,108 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
                             
                             {isEditing && (
                                 <div className="flex gap-3 pt-2">
-                                    <button onClick={handleSaveProfile} className="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition-colors">Save Changes</button>
+                                    <button onClick={handleSaveProfile} className="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition-colors">Save</button>
                                     <button onClick={handleCancelEdit} className="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors">Cancel</button>
                                 </div>
                             )}
                         </div>
-
-                        {/* --- NEW REFERRAL SECTION --- */}
-                        {!isEditing && (
-                            <div className="mt-10 pt-8 border-t border-dashed border-gray-200">
-                                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-100 relative overflow-hidden">
-                                    {/* Background decoration */}
-                                    <div className="absolute -right-6 -top-6 w-20 h-20 bg-green-200/50 rounded-full blur-xl"></div>
-                                    
-                                    <h3 className="text-green-800 font-extrabold text-lg mb-1">Refer & Earn ₹50</h3>
-                                    <p className="text-green-600/80 text-sm mb-4 leading-snug">Share your code. When friends sign up and order, you both get a discount!</p>
-                                    
-                                    <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-green-200 shadow-sm">
-                                        <div className="flex-grow text-center font-mono font-black text-xl text-gray-800 tracking-widest">
-                                            {profile.myReferralCode || <span className="text-sm text-gray-400 font-sans font-normal">Loading...</span>}
-                                        </div>
-                                        <button 
-                                            onClick={() => copyToClipboard(profile.myReferralCode)}
-                                            className="bg-green-100 p-2.5 rounded-lg text-green-700 hover:bg-green-200 transition-colors"
-                                            title="Copy Code"
-                                        >
-                                            <Copy size={20} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                        {/* ----------------------------- */}
-
                     </div>
+
+                    {/* 2. MY REWARDS SECTION (NEW) */}
+                    {!isEditing && (
+                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-[2rem] shadow-sm border border-amber-100 relative overflow-hidden">
+                            <div className="absolute -right-10 -top-10 w-32 h-32 bg-amber-200/30 rounded-full blur-2xl"></div>
+                            <h2 className="text-xl font-extrabold text-amber-800 mb-4 flex items-center"><TicketPercent className="mr-2"/> My Rewards</h2>
+                            
+                            {coupons.length > 0 ? (
+                                <div className="space-y-3">
+                                    {coupons.map(coupon => (
+                                        <div key={coupon.code} className="bg-white p-4 rounded-xl border border-amber-200 shadow-sm relative group">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="font-black text-gray-800 text-lg">₹{coupon.value} OFF</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">One-Time</span>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mb-3">{coupon.description}</p>
+                                            <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-dashed border-gray-300">
+                                                <code className="flex-grow text-center font-mono font-bold text-green-700">{coupon.code}</code>
+                                                <button onClick={() => copyToClipboard(coupon.code)} className="text-gray-400 hover:text-green-600"><Copy size={16}/></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-amber-700/70 italic text-center py-4">No active coupons right now.</p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* 3. REFERRAL SECTION */}
+                    {!isEditing && (
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-[2rem] shadow-sm border border-green-100 relative overflow-hidden">
+                            <div className="absolute -right-6 -top-6 w-24 h-24 bg-green-200/50 rounded-full blur-xl"></div>
+                            <h3 className="text-green-800 font-extrabold text-lg mb-1">Refer & Earn ₹50</h3>
+                            <p className="text-green-600/80 text-sm mb-4 leading-snug">Share your code. When friends sign up and order, you both get a discount coupon!</p>
+                            
+                            <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-green-200 shadow-sm">
+                                <div className="flex-grow text-center font-mono font-black text-xl text-gray-800 tracking-widest">
+                                    {profile.myReferralCode || <span className="text-sm text-gray-400 font-sans font-normal">Loading...</span>}
+                                </div>
+                                <button onClick={() => copyToClipboard(profile.myReferralCode)} className="bg-green-100 p-2 rounded-lg text-green-700 hover:bg-green-200 transition-colors" title="Copy Code">
+                                    <Copy size={20} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                  </div>
-                 {/* Order History Card */}
+
+                 {/* RIGHT COLUMN: Order History */}
                 <div className="lg:w-2/3">
                     <h2 className="text-2xl font-bold mb-4">Order History</h2>
                     <div className="space-y-6">
                         {isLoading ? (<div className="flex justify-center"><Loader2 className="animate-spin text-green-600" size={32} /></div>) : orders.length > 0 ? (
                             orders.map(order => (
-                                <div key={order.id} className="bg-white rounded-2xl shadow-md p-5 sm:p-6">
+                                <div key={order.id} className="bg-white rounded-2xl shadow-md p-5 sm:p-6 border border-gray-100">
                                     <div className="flex flex-col sm:flex-row justify-between items-start mb-3">
                                         <div>
-                                            <h3 className="text-lg sm:text-xl font-bold">{order.restaurantName}</h3>
-                                                <p className="text-xs text-gray-500">
-                                                    Ordered on {order.createdAt?.toLocaleDateString() || 'N/A'} at {order.createdAt?.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) || ''}
-                                                </p>                                                            <p className="text-xs text-gray-500">Arrival Time: {order.arrivalTime}</p>
+                                            <h3 className="text-lg sm:text-xl font-bold text-gray-900">{order.restaurantName}</h3>
+                                            <p className="text-xs text-gray-500">
+                                                Ordered on {order.createdAt?.toLocaleDateString() || 'N/A'} at {order.createdAt?.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) || ''}
+                                            </p>
+                                            <p className="text-xs text-gray-500 font-medium mt-1">Arrival: <span className="text-blue-600">{order.arrivalTime}</span></p>
                                         </div>
                                         <span className={`mt-2 sm:mt-0 px-3 py-1 text-xs sm:text-sm font-bold rounded-full capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-800'}`}>{order.status.replace('_', ' ')}</span>
                                     </div>
-                                    <div className="border-t border-b py-3 my-3 text-sm">
-                                        {order.items.map((item, index) => <p key={index} className="text-gray-700">{item.quantity} x {item.name} {item.size && `(${item.size})`}</p>)}
+                                    <div className="border-t border-b py-3 my-3 text-sm space-y-1">
+                                        {order.items.map((item, index) => (
+                                            <p key={index} className="text-gray-700 flex justify-between">
+                                                <span>{item.quantity} x {item.name} {item.size && `(${item.size})`}</span>
+                                                <span className="font-medium">₹{item.price * item.quantity}</span>
+                                            </p>
+                                        ))}
                                     </div>
                                     <div className="flex flex-col sm:flex-row justify-between items-center mt-3">
-                                        <span className="font-bold text-lg order-2 sm:order-1 mt-2 sm:mt-0">Total: ₹{order.total.toFixed(2)}</span>
-                                        <div className="flex gap-2 order-1 sm:order-2 w-full sm:w-auto">
-                                            {order.status === 'completed' && !order.hasReview && <button onClick={() => onRateOrder(order)} className="flex-1 sm:flex-none bg-blue-100 text-blue-700 font-semibold py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-200 flex items-center justify-center gap-2 text-xs sm:text-sm"><Star size={16} /> Rate</button>}
-                                            <button onClick={() => onReorder(order)} className="flex-1 sm:flex-none bg-green-100 text-green-700 font-semibold py-2 px-3 sm:px-4 rounded-lg hover:bg-green-200 flex items-center justify-center gap-2 text-xs sm:text-sm"><PlusCircle size={16} /> Reorder</button>
+                                        <div>
+                                            {order.couponCode && <p className="text-xs text-green-600 font-bold">Coupon Applied: {order.couponCode}</p>}
+                                            <span className="font-black text-xl text-gray-900">Total: ₹{order.total.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex gap-2 mt-3 sm:mt-0 w-full sm:w-auto">
+                                            {order.status === 'completed' && !order.hasReview && <button onClick={() => onRateOrder(order)} className="flex-1 sm:flex-none bg-blue-50 text-blue-600 font-bold py-2 px-4 rounded-xl hover:bg-blue-100 flex items-center justify-center gap-2 text-sm transition-colors"><Star size={16} /> Rate</button>}
+                                            <button onClick={() => onReorder(order)} className="flex-1 sm:flex-none bg-green-50 text-green-700 font-bold py-2 px-4 rounded-xl hover:bg-green-100 flex items-center justify-center gap-2 text-sm transition-colors"><PlusCircle size={16} /> Reorder</button>
                                         </div>
                                     </div>
                                 </div>
                             ))
                         ) : (
-                            <div className="bg-white rounded-2xl shadow-md p-12 text-center"><p className="text-gray-500 italic">You haven't placed any orders yet.</p></div>
+                            <div className="bg-white rounded-[2rem] shadow-sm p-12 text-center border border-gray-100">
+                                <p className="text-gray-400 italic">You haven't placed any orders yet.</p>
+                                <p className="text-sm text-gray-300 mt-2">Your food journey begins now!</p>
+                            </div>
                         )}
                     </div>
                 </div>
             </div>
         </div>
-    );  
+    );
 };
 
 // --- Review Modal Component ---
