@@ -5,7 +5,7 @@ import { requestCustomerNotificationPermission } from './firebaseMessaging';
 import {
     ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft,
     Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper,
-    Search, Star, Award, User, Info, Bell, Loader2, Frown, Copy, 
+    Search, Star, Award, User, Info, Bell, Loader2, Frown, Copy,
     Tag, ChevronDown, Gift, UserPlus, DollarSign 
 } from 'lucide-react';
 import 'firebase/compat/auth'; // Ensure Auth compat is imported
@@ -728,7 +728,6 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
     const [visibleCount, setVisibleCount] = useState(8); 
 
     const filteredResults = useMemo(() => {
-        // Safety check
         let restaurantsToFilter = allRestaurants || []; 
         if (activeFilter === 'topRated') restaurantsToFilter = restaurantsToFilter.filter(r => r.rating >= 4.5);
         if (activeFilter === 'veg') restaurantsToFilter = restaurantsToFilter.filter(r => r.isPureVeg === true);
@@ -765,7 +764,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
             {/* 1. HERO SECTION */}
             <main className="relative h-[500px] md:h-[600px] flex items-center justify-center text-white overflow-hidden bg-gray-900">
                 <div className="absolute inset-0 bg-black/50 z-10"></div>
-                <video className="absolute inset-0 w-full h-full object-cover" src={heroVideo} autoPlay loop muted playsInline preload="auto" />
+                <video className="absolute inset-0 w-full h-full object-cover" src={heroVideo} autoPlay loop muted playsInline />
                 <div className="relative z-20 text-center px-6">
                     <AnimatedHeroText />
                     <p className="mt-6 max-w-2xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2">Pre-order your meal with Snaccit and have it served the moment you arrive.</p>
@@ -785,7 +784,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                         <div className="h-1.5 w-24 bg-green-500 mx-auto rounded-full"></div>
                     </div>
 
-                    {/* Search & Filter Controls */}
+                    {/* Search & Filter */}
                     <div className="max-w-4xl mx-auto mb-12">
                         <div className="flex justify-center mb-6">
                             <div className="bg-white p-1.5 rounded-full shadow-md border border-gray-100 inline-flex">
@@ -798,13 +797,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                                 <Search className="text-gray-400 group-focus-within:text-green-500 transition-colors" size={20} />
                             </div>
-                            <input
-                                type="text"
-                                placeholder={searchType === 'restaurant' ? 'Search for a restaurant or cuisine...' : 'Search for a specific dish...'}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full py-4 pl-12 pr-6 text-lg bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/10 transition-all duration-300 placeholder:text-gray-400"
-                            />
+                            <input type="text" placeholder={searchType === 'restaurant' ? 'Search for a restaurant or cuisine...' : 'Search for a specific dish...'} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full py-4 pl-12 pr-6 text-lg bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/10 transition-all duration-300 placeholder:text-gray-400"/>
                         </div>
 
                         <div className="flex flex-wrap justify-center gap-3">
@@ -814,58 +807,39 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                         </div>
                     </div>
 
-                    {/* Restaurant Grid */}
+                    {/* Grid */}
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                         {isLoading ? (
                             <div className="md:col-span-2 lg:col-span-4 text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
                         ) : (
                             searchType === 'restaurant' ? (
-                                filteredResults.slice(0, visibleCount).map((resto, index) => (
+                                filteredResults.slice(0, visibleCount).map((resto) => (
                                     <div key={resto.id} onClick={() => onRestaurantClick(resto)} className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer h-full flex flex-col">
                                         <div className="relative h-48 overflow-hidden bg-gray-200">
-                                            <img
-                                                src={resto.imageUrl}
-                                                alt={resto.name}
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/600x400/e2e8f0/1e293b?text=Image+Needed'; }}
-                                            />
+                                            <img src={resto.imageUrl} alt={resto.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/600x400/e2e8f0/1e293b?text=Image+Needed'; }} />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60"></div>
                                             <div className="absolute bottom-4 left-4 text-white">
                                                 <h4 className="text-xl font-bold truncate leading-tight">{resto.name}</h4>
                                                 <p className="text-sm text-gray-200 font-medium">{resto.cuisine}</p>
                                             </div>
-                                            {resto.rating >= 4.5 && (
-                                                <div className="absolute top-3 right-3 bg-white/95 backdrop-blur text-amber-500 text-[10px] font-black px-2 py-1 rounded-md shadow-sm flex items-center">
-                                                    <Star size={12} className="mr-1 fill-current" /> TOP RATED
-                                                </div>
-                                            )}
+                                            {resto.rating >= 4.5 && (<div className="absolute top-3 right-3 bg-white/95 backdrop-blur text-amber-500 text-[10px] font-black px-2 py-1 rounded-md shadow-sm flex items-center"><Star size={12} className="mr-1 fill-current" /> TOP RATED</div>)}
                                         </div>
                                         <div className="p-5 flex justify-between items-center bg-white">
-                                             <div className="flex items-center text-gray-800 font-bold text-sm">
-                                                <Star size={16} className="text-amber-400 fill-current mr-1"/> {resto.rating ? resto.rating.toFixed(1) : 'New'}
-                                             </div>
+                                             <div className="flex items-center text-gray-800 font-bold text-sm"><Star size={16} className="text-amber-400 fill-current mr-1"/> {resto.rating ? resto.rating.toFixed(1) : 'New'}</div>
                                             <span className="text-green-600 font-bold text-xs bg-green-50 px-3 py-1.5 rounded-full group-hover:bg-green-600 group-hover:text-white transition-colors">View Menu</span>
                                         </div>
                                     </div>
                                 ))
                             ) : (
-                                filteredResults.slice(0, visibleCount).map((dish, index) => (
+                                filteredResults.slice(0, visibleCount).map((dish) => (
                                     <div key={`${dish.restaurantId}-${dish.id}`} onClick={() => handleDishClick(dish)} className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer h-full flex flex-col">
                                         <div className="relative h-48 overflow-hidden bg-gray-200">
-                                             <img
-                                                src={dish.imageUrl || 'https://placehold.co/400x400/cccccc/ffffff?text=No+Image'}
-                                                alt={dish.name}
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x400/cccccc/ffffff?text=No+Image'; }}
-                                            />
+                                             <img src={dish.imageUrl || 'https://placehold.co/400x400/cccccc/ffffff?text=No+Image'} alt={dish.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x400/cccccc/ffffff?text=No+Image'; }} />
                                         </div>
                                         <div className="p-5">
                                             <h4 className="text-lg font-bold text-gray-900 mb-1">{dish.name}</h4>
                                             <p className="text-xs text-gray-500 mb-3">by {dish.restaurantName}</p>
-                                            <div className="flex justify-between items-center">
-                                                <span className="font-bold text-xl text-gray-900">₹{dish.sizes && dish.sizes[0] ? dish.sizes[0].price : 'N/A'}</span>
-                                                <PlusCircle size={24} className="text-green-500" />
-                                            </div>
+                                            <div className="flex justify-between items-center"><span className="font-bold text-xl text-gray-900">₹{dish.sizes && dish.sizes[0] ? dish.sizes[0].price : 'N/A'}</span><PlusCircle size={24} className="text-green-500" /></div>
                                         </div>
                                     </div>
                                 ))
@@ -873,13 +847,9 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                         )}
                     </div>
 
-                    {/* View More Button */}
                     {!isLoading && filteredResults.length > visibleCount && (
                         <div className="mt-12 text-center">
-                            <button 
-                                onClick={() => setVisibleCount(prev => prev + 8)} 
-                                className="inline-flex items-center bg-white border-2 border-gray-200 text-gray-600 font-bold py-3 px-8 rounded-full hover:border-green-500 hover:text-green-600 transition-all shadow-sm hover:shadow-md"
-                            >
+                            <button onClick={() => setVisibleCount(prev => prev + 8)} className="inline-flex items-center bg-white border-2 border-gray-200 text-gray-600 font-bold py-3 px-8 rounded-full hover:border-green-500 hover:text-green-600 transition-all shadow-sm hover:shadow-md">
                                 View More Restaurants <ChevronDown className="ml-2" size={20}/>
                             </button>
                         </div>
@@ -894,56 +864,38 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                 </div>
             </section>
 
-            {/* 3. NEW: REFERRAL ADVERTISEMENT SECTION */}
+            {/* 3. REFERRAL SECTION (Using Safe Icons) */}
             <section className="py-20 bg-gradient-to-r from-emerald-900 to-green-900 text-white relative overflow-hidden">
-                {/* Decorative Background Elements */}
-                <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style={{ backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`, backgroundSize: '40px 40px' }}></div>
-                <div className="absolute -right-20 -top-20 w-96 h-96 bg-green-500/20 rounded-full blur-3xl"></div>
-                <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl"></div>
-
                 <div className="container mx-auto px-6 relative z-10">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-12">
                         <div className="md:w-1/2 text-center md:text-left">
                             <div className="inline-flex items-center bg-white/10 backdrop-blur-sm px-4 py-1.5 rounded-full text-green-300 font-bold text-sm mb-6 border border-white/10">
                                 <Tag size={16} className="mr-2"/> Limitless Rewards
                             </div>
-                            <h2 className="text-4xl md:text-5xl font-extrabold mb-6 leading-tight">
-                                Eat Together, <br/><span className="text-green-400">Save Together.</span>
-                            </h2>
-                            <p className="text-lg text-green-100/80 mb-8 max-w-lg leading-relaxed">
-                                Invite your friends to Snaccit. They get <strong className="text-white">₹50 off</strong> their first order, and you get <strong className="text-white">₹50 off</strong> for every friend who joins!
-                            </p>
-                            
+                            <h2 className="text-4xl md:text-5xl font-extrabold mb-6 leading-tight">Eat Together, <br/><span className="text-green-400">Save Together.</span></h2>
+                            <p className="text-lg text-green-100/80 mb-8 max-w-lg leading-relaxed">Invite your friends to Snaccit. They get <strong className="text-white">₹50 off</strong> their first order, and you get <strong className="text-white">₹50 off</strong> too!</p>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                                 <button onClick={() => onViewProfile ? onViewProfile() : null} className="bg-white text-green-900 font-bold py-4 px-8 rounded-xl hover:bg-green-50 transition-colors shadow-lg shadow-green-900/20 flex items-center justify-center">
                                     <Gift size={20} className="mr-2"/> Get My Code
                                 </button>
                             </div>
                         </div>
-
-                        {/* Steps Visual */}
                         <div className="md:w-1/2 w-full">
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl text-center transform hover:-translate-y-1 transition-transform">
-                                    <div className="bg-green-500/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-green-300">
-                                        <Copy size={24}/>
-                                    </div>
+                                    <div className="bg-green-500/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-green-300"><Copy size={24}/></div>
                                     <h4 className="font-bold text-lg mb-1">1. Share</h4>
-                                    <p className="text-sm text-white/60">Copy your unique code from your profile.</p>
+                                    <p className="text-sm text-white/60">Copy your unique code.</p>
                                 </div>
                                 <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl text-center transform hover:-translate-y-1 transition-transform sm:mt-8">
-                                    <div className="bg-green-500/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-green-300">
-                                        <UserPlus size={24}/>
-                                    </div>
+                                    <div className="bg-green-500/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-green-300"><UserPlus size={24}/></div>
                                     <h4 className="font-bold text-lg mb-1">2. Join</h4>
-                                    <p className="text-sm text-white/60">Friend uses your code to sign up.</p>
+                                    <p className="text-sm text-white/60">Friend uses your code.</p>
                                 </div>
                                 <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl text-center transform hover:-translate-y-1 transition-transform sm:mt-16">
-                                    <div className="bg-green-500/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-green-300">
-                                        <DollarSign size={24}/>
-                                    </div>
+                                    <div className="bg-green-500/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-green-300"><DollarSign size={24}/></div>
                                     <h4 className="font-bold text-lg mb-1">3. Earn</h4>
-                                    <p className="text-sm text-white/60">You both get a ₹50 coupon instantly!</p>
+                                    <p className="text-sm text-white/60">You both get ₹50 coupon!</p>
                                 </div>
                             </div>
                         </div>
@@ -951,22 +903,17 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                 </div>
             </section>
 
-            {/* 4. FEATURES SECTION */}
-            <section id="features" className="py-24 bg-amber-50/50">
+            {/* 4. FEATURES & TOP DISHES (Unchanged) */}
+             <section id="features" className="py-24 bg-amber-50/50">
                 <div className="container relative mx-auto px-6">
-                    <div className="text-center mb-16">
-                        <h3 className="text-sm font-bold uppercase text-amber-500 tracking-widest">How it works</h3>
-                        <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Seamless Dining in 3 Steps</h2>
-                    </div>
+                    <div className="text-center mb-16"><h3 className="text-sm font-bold uppercase text-amber-500 tracking-widest">How it works</h3><h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Seamless Dining in 3 Steps</h2></div>
                     <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
                         {[{ icon: <Store className="w-8 h-8 text-green-600" />, title: "Choose & Order", description: "Browse top restaurants and order before you leave home." }, 
                           { icon: <Clock className="w-8 h-8 text-green-600" />, title: "Set Arrival", description: "Tell us when you'll be there. We ensure the food is hot." }, 
                           { icon: <ChefHat className="w-8 h-8 text-green-600" />, title: "Dine Immediately", description: "Walk in, sit down, and start eating. No waiting lines." }]
                           .map((step, i) => (
                             <div key={i} className="bg-white p-8 rounded-[2rem] border border-amber-100 shadow-sm text-center hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
-                                <div className="inline-block bg-green-50 p-5 rounded-full mb-6 border border-green-100">
-                                    {step.icon}
-                                </div>
+                                <div className="inline-block bg-green-50 p-5 rounded-full mb-6 border border-green-100">{step.icon}</div>
                                 <h4 className="text-xl font-bold mb-3 text-gray-900">{step.title}</h4>
                                 <p className="text-gray-500 leading-relaxed">{step.description}</p>
                             </div>
@@ -975,19 +922,13 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
                 </div>
             </section>
 
-            {/* 5. TOP DISHES SECTION */}
-            <section id="top-dishes" className="py-24 bg-white">
+             <section id="top-dishes" className="py-24 bg-white">
                  <div className="container relative mx-auto px-6 z-10">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">Fan Favorites</h2>
-                        <p className="text-gray-500 mt-2">Trending dishes everyone is ordering</p>
-                    </div>
+                    <div className="text-center mb-12"><h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">Fan Favorites</h2><p className="text-gray-500 mt-2">Trending dishes everyone is ordering</p></div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                         {topDishes.map((dish, index) => (
                             <div key={index} className="bg-gray-50 p-3 rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer group border border-gray-100">
-                                <div className="h-40 rounded-xl overflow-hidden mb-3">
-                                    <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                </div>
+                                <div className="h-40 rounded-xl overflow-hidden mb-3"><img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /></div>
                                 <h4 className="font-bold text-gray-800">{dish.name}</h4>
                                 <p className="text-xs text-gray-500">{dish.restaurant}</p>
                             </div>
@@ -999,117 +940,139 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onViewProfile 
     );
 };
 
-// --- MenuPage Component ---
+// --- [FIXED] MenuPage Component ---
 const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
-    const [menuItems, setMenuItems] = useState([]);
-    const [reviews, setReviews] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [menuItems, setMenuItems] = useState([]);
+    const [reviews, setReviews] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        if (!restaurant) return;
-        setIsLoading(true);
-        let unsubMenu = () => {};
-        let unsubReviews = () => {};
+    useEffect(() => {
+        if (!restaurant) return;
+        setIsLoading(true);
+        
+        let unsubMenu = () => {};
+        let unsubReviews = () => {};
 
-        try {
-            const menuCollectionRef = db.collection("restaurants").doc(restaurant.id).collection("menu");
-            unsubMenu = menuCollectionRef.onSnapshot((snapshot) => {
-                const allItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                const availableItems = allItems.filter(item => item.isAvailable !== false);
-                
-                setMenuItems(availableItems);
-                setIsLoading(false);
-            }, (error) => {
-                console.error("Error fetching menu snapshot: ", error);
-                setIsLoading(false);
-            });
+        try {
+            const menuCollectionRef = db.collection("restaurants").doc(restaurant.id).collection("menu");
+            unsubMenu = menuCollectionRef.onSnapshot((snapshot) => {
+                const allItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Filter unavailable items
+                const availableItems = allItems.filter(item => item.isAvailable !== false);
+                setMenuItems(availableItems);
+                setIsLoading(false);
+            }, (error) => {
+                console.error("Error fetching menu:", error);
+                setIsLoading(false);
+            });
 
-            const reviewsQuery = db.collection("reviews").where("restaurantId", "==", restaurant.id).orderBy("createdAt", "desc").limit(10);
-            unsubReviews = reviewsQuery.onSnapshot((snapshot) => {
-                setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            }, (error) => {
-                 console.error("Error fetching reviews snapshot: ", error);
-            });
-        } catch (error) {
-             console.error("Error setting up listeners:", error);
-             setIsLoading(false);
-        }
+            const reviewsQuery = db.collection("reviews").where("restaurantId", "==", restaurant.id).orderBy("createdAt", "desc").limit(10);
+            unsubReviews = reviewsQuery.onSnapshot((snapshot) => {
+                setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            });
+            
+        } catch (error) {
+            console.error("Error setting up listeners:", error);
+            setIsLoading(false);
+        }
 
-        return () => {
-             console.log("Cleaning up MenuPage listeners for", restaurant.id);
-            unsubMenu();
-            unsubReviews();
-        };
-    }, [restaurant]);
+        return () => {
+            if (typeof unsubMenu === 'function') unsubMenu();
+            if (typeof unsubReviews === 'function') unsubReviews();
+        };
+    }, [restaurant]);
 
-     if (!restaurant) {
-         return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
-     }
+    if (!restaurant) {
+        return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
+    }
 
-    return (
-        <div className="container mx-auto px-6 py-12 min-h-screen">
-            <button onClick={onBackClick} className="flex items-center text-gray-600 hover:text-green-600 font-semibold mb-8"><ArrowLeft className="mr-2" size={20} />Back to all restaurants</button>
-            <div className="flex flex-col md:flex-row items-center mb-12">
-                <img src={restaurant.imageUrl} alt={restaurant.name} className="w-full md:w-48 h-48 rounded-3xl object-cover shadow-lg"/>
-                <div className="md:ml-8 mt-6 md:mt-0 text-center md:text-left">
-                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800">{restaurant.name}</h1>
-                    <p className="text-lg sm:text-xl text-gray-500 mt-2">{restaurant.cuisine}</p>
-                    <div className="mt-4 flex flex-col sm:flex-row justify-center md:justify-start items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                        <span className="text-amber-500 font-bold flex items-center text-lg"><Star size={20} className="mr-1 fill-current"/>{restaurant.rating ? restaurant.rating.toFixed(1) : 'New'} ({restaurant.reviewCount || 0} reviews)</span>
-                        <span className="text-gray-400 hidden sm:inline">|</span>
-                        <span className="text-gray-800 font-semibold text-lg">{restaurant.price}</span>
-                    </div>
-                </div>
-            </div>
-            <div className="max-w-4xl mx-auto">
-                <div className="mb-12">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Reviews</h2>
-                    {reviews.length > 0 ? (
-                        <div className="space-y-4">
-                            {reviews.map(review => (
-                                <div key={review.id} className="bg-white p-4 rounded-lg shadow-sm border">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <StarRating rating={review.rating} />
-                                        <span className="text-xs text-gray-400">{review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : 'Date unavailable'}</span>
-                                    </div>
-                                     {review.text && <p className="text-gray-600 mt-2 text-sm">{review.text}</p> }
-                                    <p className="text-xs text-gray-500 mt-2 font-semibold">- {review.userEmail ? review.userEmail.split('@')[0] : 'Anonymous'}</p>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (<p className="text-gray-500 italic">No reviews yet.</p>)}
-                </div>
+    return (
+        <div className="container mx-auto px-6 py-12 min-h-screen">
+            <button onClick={onBackClick} className="flex items-center text-gray-600 hover:text-green-600 font-semibold mb-8"><ArrowLeft className="mr-2" size={20} />Back to all restaurants</button>
+            <div className="flex flex-col md:flex-row items-center mb-12">
+                <img 
+                    src={restaurant.imageUrl || 'https://placehold.co/600x400/e2e8f0/1e293b?text=Image+Needed'} 
+                    alt={restaurant.name} 
+                    className="w-full md:w-48 h-48 rounded-3xl object-cover shadow-lg"
+                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/600x400/e2e8f0/1e293b?text=Image+Needed'; }}
+                />
+                <div className="md:ml-8 mt-6 md:mt-0 text-center md:text-left">
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800">{restaurant.name}</h1>
+                    <p className="text-lg sm:text-xl text-gray-500 mt-2">{restaurant.cuisine}</p>
+                    <div className="mt-4 flex flex-col sm:flex-row justify-center md:justify-start items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                        <span className="text-amber-500 font-bold flex items-center text-lg"><Star size={20} className="mr-1 fill-current"/>{restaurant.rating ? restaurant.rating.toFixed(1) : 'New'} ({restaurant.reviewCount || 0} reviews)</span>
+                        <span className="text-gray-400 hidden sm:inline">|</span>
+                        <span className="text-gray-800 font-semibold text-lg">{restaurant.price}</span>
+                    </div>
+                </div>
+            </div>
 
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Menu</h2>
-                {isLoading ? (<div className="flex justify-center"><Loader2 className="animate-spin text-green-600" size={32} /></div>) : menuItems.length > 0 ? (
-                    <div className="space-y-4">
-                        {menuItems.map((item) => (
-                            <div key={item.id} className="bg-white rounded-2xl shadow-md p-4 flex items-center justify-between transition-shadow hover:shadow-lg">
-                                <div className="flex-1 min-w-0 pr-4">
-                                    <h3 className="font-bold text-lg text-gray-800">{item.name}</h3>
-                                     {item.description && <p className="text-gray-600 text-sm mt-1">{item.description}</p>}
-                                    <span className="font-semibold text-md text-gray-800 mt-2 block">
-                                         {item.sizes && item.sizes.length > 0 ? `₹${item.sizes[0].price}${item.sizes.length > 1 ? '+' : ''}` : 'Price unavailable'}
-                                    </span>
-                                </div>
-                                <div className="ml-4 flex-shrink-0">
-                                    <div className="relative w-24 h-24">
-                                        <img src={item.imageUrl || 'https://placehold.co/100x100/cccccc/ffffff?text=Food'} alt={item.name} className="w-full h-full rounded-lg object-cover"/>
-                                         {item.sizes && item.sizes.length > 0 && (
-                                            <button onClick={() => onSelectItem(item)} className="absolute -bottom-2 -right-2 bg-white text-green-700 p-1 rounded-full shadow-md hover:bg-green-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1">
-                                                <PlusCircle size={28}/>
-                                            </button>
-                                         )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (<p className="text-gray-500 italic">Menu not available for this restaurant.</p>)}
-            </div>
-        </div>
-    );
+            <div className="max-w-4xl mx-auto">
+                <div className="mb-12">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Reviews</h2>
+                    {reviews.length > 0 ? (
+                        <div className="space-y-4">
+                            {reviews.map(review => (
+                                <div key={review.id} className="bg-white p-4 rounded-lg shadow-sm border">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <StarRating rating={review.rating || 0} />
+                                        <span className="text-xs text-gray-400">
+                                            {review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : 'Date unavailable'}
+                                        </span>
+                                    </div>
+                                    {review.text && <p className="text-gray-600 mt-2 text-sm">{review.text}</p>}
+                                    <p className="text-xs text-gray-500 mt-2 font-semibold">- {review.userEmail ? review.userEmail.split('@')[0] : 'Anonymous'}</p>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (<p className="text-gray-500 italic">No reviews yet.</p>)}
+                </div>
+
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Menu</h2>
+                {isLoading ? (
+                    <div className="flex justify-center"><Loader2 className="animate-spin text-green-600" size={32} /></div>
+                ) : menuItems.length > 0 ? (
+                    <div className="space-y-4">
+                        {menuItems.map((item) => {
+                            // --- SAFETY CHECK ---
+                            // This block prevents the white screen crash if data is bad
+                            const price = (item.sizes && item.sizes[0] && item.sizes[0].price) ? item.sizes[0].price : null;
+                            const hasSizes = item.sizes && item.sizes.length > 1;
+                            
+                            return (
+                                <div key={item.id} className="bg-white rounded-2xl shadow-md p-4 flex items-center justify-between transition-shadow hover:shadow-lg">
+                                    <div className="flex-1 min-w-0 pr-4">
+                                        <h3 className="font-bold text-lg text-gray-800">{item.name}</h3>
+                                        {item.description && <p className="text-gray-600 text-sm mt-1">{item.description}</p>}
+                                        <span className="font-semibold text-md text-gray-800 mt-2 block">
+                                            {price ? `₹${price}${hasSizes ? '+' : ''}` : 'Price unavailable'}
+                                        </span>
+                                    </div>
+                                    <div className="ml-4 flex-shrink-0">
+                                        <div className="relative w-24 h-24">
+                                            <img 
+                                                src={item.imageUrl || 'https://placehold.co/100x100/cccccc/ffffff?text=Food'} 
+                                                alt={item.name} 
+                                                className="w-full h-full rounded-lg object-cover"
+                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100/cccccc/ffffff?text=Food'; }}
+                                            />
+                                            {price && (
+                                                <button onClick={() => onSelectItem(item)} className="absolute -bottom-2 -right-2 bg-white text-green-700 p-1 rounded-full shadow-md hover:bg-green-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1">
+                                                    <PlusCircle size={28}/>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <p className="text-gray-500 italic">Menu not available for this restaurant.</p>
+                )}
+            </div>
+        </div>
+    );
 };
 
 // --- Item Customization Modal ---
