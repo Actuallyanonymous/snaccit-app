@@ -721,7 +721,7 @@ const TermsOfServicePage = () => {
     );
 };
 
-// --- [FIXED] HomePage Component ---
+// --- [FINAL CORRECTED] HomePage Component ---
 const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchType, setSearchType] = useState('restaurant');
@@ -748,10 +748,24 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
         return restaurantsToFilter.filter(resto => resto.name.toLowerCase().includes(lowercasedSearchTerm) || resto.cuisine.toLowerCase().includes(lowercasedSearchTerm));
     }, [searchTerm, searchType, allRestaurants, activeFilter]);
 
-    // Show only 6 restaurants initially (to save space at top), or all if "Show More" is clicked
+    // Show only 6 restaurants initially, or all if "Show More" is clicked
     const displayList = (searchTerm || searchType === 'dish' || showAllRestaurants) 
         ? filteredResults 
         : filteredResults.slice(0, 6); 
+
+    // Hardcoded Top Dishes (Visual Only - requires matching IDs in real DB to click)
+    const topDishes = [
+          { name: "Butter Chicken", restaurant: "Curry Kingdom", imageUrl: butterChickenImg },
+          { name: "Margherita Pizza", restaurant: "Pizza Palace", imageUrl: pizzaImg },
+          { name: "Sushi Platter", restaurant: "Tokyo Bites", imageUrl: sushiImg },
+          { name: "Vegan Burger", restaurant: "The Vurger Co.", imageUrl: burgerImg },
+    ];
+
+    const handleDishClick = (dish) => {
+        // Try to find the restaurant by name since we don't have IDs in the static topDishes array
+        const restaurant = allRestaurants.find(r => r.name === dish.restaurant);
+        if (restaurant) onRestaurantClick(restaurant);
+    };
 
     return (
         <>
@@ -774,7 +788,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                 </div>
             </main>
 
-            {/* 2. RESTAURANTS SECTION (Moved to TOP as requested) */}
+            {/* 2. RESTAURANTS SECTION (At Top) */}
             <section id="restaurants" className="relative py-16 bg-gray-50/50">
                 <div className="container relative mx-auto px-6 z-10">
                     <div className="text-center mb-10">
@@ -784,7 +798,6 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
 
                     {/* Search & Filters */}
                     <div className="max-w-4xl mx-auto mb-12">
-                        {/* Search Bar */}
                         <div className="relative mb-6 group">
                             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                                 <Search className="text-gray-400 group-focus-within:text-green-500 transition-colors" size={20} />
@@ -798,7 +811,6 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                             />
                         </div>
 
-                        {/* Filter Buttons */}
                         <div className="flex flex-wrap justify-center gap-3">
                             <button onClick={() => setActiveFilter('all')} className={`px-5 py-2 rounded-xl font-bold text-sm border transition-all ${activeFilter === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>All</button>
                             <button onClick={() => setActiveFilter('topRated')} className={`px-5 py-2 rounded-xl font-bold text-sm border transition-all flex items-center ${activeFilter === 'topRated' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-white text-gray-600 border-gray-200 hover:border-amber-400'}`}><Award size={16} className="mr-2"/> Top Rated</button>
@@ -847,7 +859,35 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                 </div>
             </section>
 
-            {/* 3. REFER & WIN SECTION */}
+            {/* 3. [RESTORED] TOP DISHES SECTION */}
+            <section id="top-dishes" className="relative py-20 bg-white">
+                <div className="container relative mx-auto px-6 z-10">
+                    <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
+                        <div>
+                            <h3 className="text-sm font-bold uppercase text-orange-500 tracking-widest drop-shadow-sm">Visual Delight</h3>
+                            <h2 className="mt-1 text-3xl font-extrabold text-gray-900">Fan Favorites</h2>
+                        </div>
+                        <p className="text-gray-500 font-medium pb-2">Top picked dishes this week</p>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        {topDishes.map((dish, index) => (
+                            <div key={index} onClick={() => handleDishClick(dish)} className="relative rounded-3xl overflow-hidden group cursor-pointer shadow-lg transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl h-72">
+                                <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
+                                <div className="absolute bottom-0 left-0 p-5 text-white w-full">
+                                    <h4 className="text-xl font-bold leading-tight mb-1">{dish.name}</h4>
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-xs font-medium text-gray-300">{dish.restaurant}</p>
+                                        <div className="bg-white/20 backdrop-blur-md p-1.5 rounded-full"><PlusCircle size={18} className="text-white"/></div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* 4. REFER & WIN SECTION */}
             <section className="relative py-20 overflow-hidden bg-emerald-900">
                 {/* Background Pattern */}
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E")` }}></div>
@@ -905,9 +945,8 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                 </div>
             </section>
 
-            {/* 4. FEATURES SECTION (Restored Color & Vibrancy) */}
+            {/* 5. FEATURES SECTION (Colorful & Bold) */}
             <section id="features" className="relative py-24 bg-gradient-to-b from-amber-50 to-white overflow-hidden">
-                {/* Decorative Blobs */}
                 <div className="absolute top-0 left-0 w-64 h-64 bg-orange-200/40 rounded-full blur-3xl mix-blend-multiply pointer-events-none"></div>
                 <div className="absolute bottom-0 right-0 w-64 h-64 bg-yellow-200/40 rounded-full blur-3xl mix-blend-multiply pointer-events-none"></div>
 
