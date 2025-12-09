@@ -2,10 +2,12 @@
 import firebase from 'firebase/compat/app';
 import React, { useState, useEffect, useMemo } from 'react';
 import { requestCustomerNotificationPermission } from './firebaseMessaging';
-import {
-    ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft,
-    Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper,
-    Search, Star, Award, User, Info, Bell, Loader2, Frown, Copy, TicketPercent
+// Update this line at the top of your file:
+import { 
+    ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, 
+    Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, 
+    Search, Star, Award, User, Info, Bell, Loader2, Frown, Copy, TicketPercent,
+    Gift, ChevronDown 
 } from 'lucide-react';
 import 'firebase/compat/auth'; // Ensure Auth compat is imported
 import { auth, db, functionsAsia, messaging } from './firebase'; 
@@ -719,47 +721,43 @@ const TermsOfServicePage = () => {
     );
 };
 
-// --- HomePage Component ---
-const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
+// --- [UPDATED] HomePage Component ---
+const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchType, setSearchType] = useState('restaurant');
     const [activeFilter, setActiveFilter] = useState('all');
+    const [showAllRestaurants, setShowAllRestaurants] = useState(false); // New state for "Show More"
 
+    // Filter Logic
     const filteredResults = useMemo(() => {
         let restaurantsToFilter = allRestaurants;
+        
+        // Apply Filters
         if (activeFilter === 'topRated') restaurantsToFilter = restaurantsToFilter.filter(r => r.rating >= 4.5);
         if (activeFilter === 'veg') restaurantsToFilter = restaurantsToFilter.filter(r => r.isPureVeg === true);
+        
+        // Apply Search
         if (!searchTerm) return searchType === 'restaurant' ? restaurantsToFilter : [];
+        
         const lowercasedSearchTerm = searchTerm.toLowerCase();
         if (searchType === 'dish') {
-            return restaurantsToFilter.flatMap(resto =>
+            return restaurantsToFilter.flatMap(resto => 
                 (resto.menu || []).map(item => ({ ...item, restaurantId: resto.id, restaurantName: resto.name, restaurantCuisine: resto.cuisine, restaurantImageUrl: resto.imageUrl }))
             ).filter(item => item.name.toLowerCase().includes(lowercasedSearchTerm));
         }
         return restaurantsToFilter.filter(resto => resto.name.toLowerCase().includes(lowercasedSearchTerm) || resto.cuisine.toLowerCase().includes(lowercasedSearchTerm));
     }, [searchTerm, searchType, allRestaurants, activeFilter]);
 
+    // Slice results if not "Showing All" (Only applies if we are not searching/filtering specific dishes)
+    const displayList = (searchTerm || searchType === 'dish' || showAllRestaurants) 
+        ? filteredResults 
+        : filteredResults.slice(0, 8); // Show only 8 initially
+
     const topDishes = [
-          { 
-              name: "Butter Chicken", 
-              restaurant: "Curry Kingdom", 
-              imageUrl: butterChickenImg 
-          },
-          { 
-              name: "Margherita Pizza", 
-              restaurant: "Pizza Palace", 
-              imageUrl: pizzaImg 
-          },
-          { 
-              name: "Sushi Platter", 
-              restaurant: "Tokyo Bites", 
-              imageUrl: sushiImg 
-          },
-          { 
-              name: "Vegan Burger", 
-              restaurant: "The Vurger Co.", 
-              imageUrl: burgerImg 
-          },
+          { name: "Butter Chicken", restaurant: "Curry Kingdom", imageUrl: butterChickenImg },
+          { name: "Margherita Pizza", restaurant: "Pizza Palace", imageUrl: pizzaImg },
+          { name: "Sushi Platter", restaurant: "Tokyo Bites", imageUrl: sushiImg },
+          { name: "Vegan Burger", restaurant: "The Vurger Co.", imageUrl: burgerImg },
     ];
 
     const handleDishClick = (dish) => {
@@ -769,193 +767,232 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick }) => {
 
     return (
         <>
+            {/* HERO SECTION */}
             <main className="relative h-[600px] flex items-center justify-center text-white overflow-hidden">
                 <div className="absolute inset-0 bg-black/50 z-10"></div>
-<video
-                    className="absolute inset-0 w-full h-full object-cover"
-                    src={heroVideo}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                />                <div className="relative z-20 text-center px-6">
+                <video className="absolute inset-0 w-full h-full object-cover" src={heroVideo} autoPlay loop muted playsInline />                 
+                <div className="relative z-20 text-center px-6">
                     <AnimatedHeroText />
                     <p className="mt-6 max-w-2xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2">Pre-order your meal with Snaccit and have it served the moment you arrive. No more waiting, just eating.</p>
-                    <div className="mt-10 slide-in-2"><button className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-4 px-10 rounded-full hover:shadow-xl hover:shadow-green-400/50 hover:scale-105 transition-all duration-300 shadow-lg text-lg">Find My Next Meal</button></div>
+                    <div className="mt-10 slide-in-2">
+                        <button onClick={() => {
+                            document.getElementById('restaurants')?.scrollIntoView({ behavior: 'smooth' });
+                        }} className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-4 px-10 rounded-full hover:shadow-xl hover:shadow-green-400/50 hover:scale-105 transition-all duration-300 shadow-lg text-lg">
+                            Find My Next Meal
+                        </button>
+                    </div>
                 </div>
             </main>
 
-<section id="features" className="relative py-24 overflow-hidden bg-gradient-to-b from-amber-50 via-cream-100 to-amber-50">
-    <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
-
-    <div className="absolute top-0 left-0 -translate-x-1/4 -translate-y-1/4 w-96 h-96 bg-orange-200/40 rounded-full blur-3xl mix-blend-multiply animate-blob pointer-events-none"></div>
-    <div className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 w-96 h-96 bg-yellow-200/40 rounded-full blur-3xl mix-blend-multiply animate-blob animation-delay-2000 pointer-events-none"></div>
-
-    <div className="container relative mx-auto px-6 z-10">
-        <div className="text-center mb-16">
-            <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest drop-shadow-sm">A Seamless Experience</h3>
-            <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Get served in 3 simple steps</h2>
-        </div>
-        <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-            {[{ icon: <Store className="w-8 h-8 text-green-700" />, title: "1. Choose & Pre-order", description: "Explore menus and select your dishes before you even leave the house." }, { icon: <Smartphone className="w-8 h-8 text-green-700" />, title: "2. Set Arrival Time", description: "Let the restaurant know exactly when you'll be there for perfectly timed food." }, { icon: <ChefHat className="w-8 h-8 text-green-700" />, title: "3. Arrive and Dine", description: "Walk in, sit down, and have your freshly prepared meal served immediately." }].map((step, i) => (
-                <div key={i} className="group relative bg-white/80 backdrop-blur-md p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(251,191,36,0.3)] hover:border-amber-200">
-                    <div className="inline-block bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-full border border-green-200 mb-6 group-hover:scale-110 transition-transform duration-300 shadow-sm">
-                        {step.icon}
-                    </div>
-                    <h4 className="text-xl font-bold mb-3 text-gray-900">{step.title}</h4>
-                    <p className="text-gray-600 leading-relaxed">{step.description}</p>
-                </div>
-            ))}
-        </div>
-    </div>
-</section>
-            <section className="relative py-28 bg-gradient-to-br from-green-900 via-green-800 to-green-950 overflow-hidden shadow-[inset_0_0_50px_rgba(0,0,0,0.3)]">
-    <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
-
-    <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-green-600/20 rounded-full blur-3xl mix-blend-overlay animate-pulse"></div>
-    <div className="absolute bottom-1/4 right-1/3 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl mix-blend-overlay animate-pulse animation-delay-2000"></div>
-
-    <div className="relative container mx-auto px-6 text-center z-10 flex flex-col items-center">
-        <BrandLogo className="scale-110 md:scale-125 origin-center" />
-        <div className="mt-8 h-1 w-24 bg-green-500/50 rounded-full"></div>
-        <p className="text-green-200 mt-6 text-xl max-w-lg mx-auto font-medium leading-relaxed drop-shadow">
-            The fastest way to your favorite food.
-            <br />
-            <span className="text-white/80 text-base font-normal">Skip the line, savor the time.</span>
-        </p>
-    </div>
-</section>
-
-<section id="top-dishes" className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-b from-green-50/50 via-white to-white">
-    <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
-    
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-3/4 bg-green-100/30 rounded-[100%] blur-3xl pointer-events-none"></div>
-
-    <div className="container relative mx-auto px-6 z-10">
-        <div className="text-center mb-16">
-            <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest drop-shadow-sm">Fan Favorites</h3>
-            <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Most Popular Dishes</h2>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
-            {topDishes.map((dish, index) => (
-                <div key={index} className="relative rounded-3xl overflow-hidden group cursor-pointer shadow-md transition-all duration-500 hover:scale-[1.03] hover:shadow-[0_20px_30px_-10px_rgba(5,150,105,0.2)]">
-                    <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
-                    <div className="absolute bottom-0 left-0 p-6 text-white transform transition-transform duration-300 group-hover:translate-y-[-5px]">
-                        <h4 className="text-xl font-bold drop-shadow-lg leading-tight">{dish.name}</h4>
-                        <p className="text-sm opacity-90 font-medium text-green-100">{dish.restaurant}</p>
-                    </div>
-                </div>
-            ))}
-        </div>
-    </div>
-</section>
-            {/* --- [UPDATED] Explore Restaurants Section (The Main Section) --- */}
-<section id="restaurants" className="relative py-24 sm:py-28 overflow-hidden bg-gradient-to-b from-cream-100 via-amber-50 to-white">
-    <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
-
-    <div className="container relative mx-auto px-6 z-10">
-        <div className="text-center mb-12">
-            <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest drop-shadow-sm">Find Your Craving</h3>
-            <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Explore Restaurants</h2>
-        </div>
-
-        <div className="max-w-3xl mx-auto mb-16">
-            <div className="flex justify-center mb-6">
-                <div className="bg-white/60 backdrop-blur-md p-1.5 rounded-full shadow-sm border border-gray-200/50 inline-flex">
-                    <button onClick={() => setSearchType('restaurant')} className={`px-8 py-3 rounded-full font-bold text-sm transition-all duration-300 ${searchType === 'restaurant' ? 'bg-green-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100/50'}`}>Restaurants</button>
-                    <button onClick={() => setSearchType('dish')} className={`px-8 py-3 rounded-full font-bold text-sm transition-all duration-300 ${searchType === 'dish' ? 'bg-green-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100/50'}`}>Dishes</button>
-                </div>
-            </div>
-
-            <div className="relative mb-8 group">
-                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                    <Search className="text-gray-400 group-focus-within:text-green-500 transition-colors" size={22} />
-                </div>
-                <input
-                    type="text"
-                    placeholder={searchType === 'restaurant' ? 'Search for a restaurant or cuisine...' : 'Search for a specific dish...'}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full py-4 pl-14 pr-6 text-lg bg-white/80 backdrop-blur-md border-2 border-gray-200 rounded-full shadow-sm focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all duration-300 placeholder:text-gray-400"
-                />
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-3">
-                <button onClick={() => setActiveFilter('all')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center border-2 ${activeFilter === 'all' ? 'bg-gray-900 text-white border-gray-900 shadow-md' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}>All</button>
-                <button onClick={() => setActiveFilter('topRated')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center border-2 ${activeFilter === 'topRated' ? 'bg-amber-500 text-white border-amber-500 shadow-md' : 'bg-white text-gray-700 border-gray-200 hover:border-amber-500 hover:text-amber-600'}`}>
-                    <Award size={18} className="mr-2" />Top Rated
-                </button>
-                <button onClick={() => setActiveFilter('veg')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center border-2 ${activeFilter === 'veg' ? 'bg-green-600 text-white border-green-600 shadow-md' : 'bg-white text-gray-700 border-gray-200 hover:border-green-600 hover:text-green-700'}`}>
-                    <Leaf size={18} className="mr-2" />Pure Veg
-                </button>
-            </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {isLoading ? (
-                <div className="md:col-span-2 lg:col-span-4 text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
-            ) : (
-                searchType === 'restaurant' ? (
-                    filteredResults.map((resto, index) => (
-                        <div key={resto.id} onClick={() => onRestaurantClick(resto)} className="bg-white rounded-[2rem] shadow-[0_8px_25px_rgba(0,0,0,0.05)] overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] group cursor-pointer animate-fade-in h-full flex flex-col" style={{ animationDelay: `${index * 50}ms` }}>
-                            <div className="relative h-52 overflow-hidden">
-                                <img src={resto.imageUrl} alt={resto.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                {resto.rating >= 4.5 && (
-                                    <div className="absolute top-4 right-4 bg-amber-500 text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center shadow-sm">
-                                        <Star size={14} className="mr-1 fill-current" /> TOP RATED
-                                    </div>
-                                )}
+            {/* FEATURES SECTION */}
+            <section id="features" className="relative py-20 overflow-hidden bg-white">
+                <div className="container relative mx-auto px-6 z-10">
+                    <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+                        {[{ icon: <Store className="w-8 h-8 text-green-700" />, title: "1. Pre-order", description: "Select your dishes before you leave." }, 
+                          { icon: <Smartphone className="w-8 h-8 text-green-700" />, title: "2. Set Time", description: "Tell us when you'll arrive." }, 
+                          { icon: <ChefHat className="w-8 h-8 text-green-700" />, title: "3. Eat Immediately", description: "Your food is ready when you are." }
+                        ].map((step, i) => (
+                            <div key={i} className="flex flex-col items-center text-center p-6 rounded-3xl hover:bg-gray-50 transition-colors">
+                                <div className="bg-green-100 p-4 rounded-full mb-4 text-green-700 shadow-sm">{step.icon}</div>
+                                <h4 className="text-xl font-bold mb-2 text-gray-900">{step.title}</h4>
+                                <p className="text-gray-600 leading-relaxed text-sm">{step.description}</p>
                             </div>
-                            <div className="p-6 flex flex-col flex-grow">
-                                <div className="flex justify-between items-start mb-2">
-                                    <h4 className="text-xl font-extrabold text-gray-900 truncate pr-2">{resto.name}</h4>
-                                    {resto.rating && (
-                                        <div className="flex items-center bg-green-50 text-green-700 px-2.5 py-1 rounded-lg font-bold text-sm shrink-0">
-                                            <Star size={16} className="mr-1 fill-current" />
-                                            {resto.rating.toFixed(1)}
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* TOP DISHES SECTION */}
+            <section id="top-dishes" className="relative py-24 bg-gray-50">
+                <div className="container relative mx-auto px-6 z-10">
+                    <div className="flex justify-between items-end mb-12">
+                        <div>
+                            <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest drop-shadow-sm">Fan Favorites</h3>
+                            <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Trending Now</h2>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+                        {topDishes.map((dish, index) => (
+                            <div key={index} className="relative rounded-3xl overflow-hidden group cursor-pointer shadow-md transition-all duration-500 hover:scale-[1.03] hover:shadow-xl h-64">
+                                <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90"></div>
+                                <div className="absolute bottom-0 left-0 p-5 text-white">
+                                    <h4 className="text-lg font-bold leading-tight">{dish.name}</h4>
+                                    <p className="text-xs font-medium text-gray-300 mt-1">{dish.restaurant}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* --- NEW REFER & WIN SECTION --- */}
+            <section className="relative py-20 overflow-hidden">
+                {/* Modern Gradient Background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600"></div>
+                
+                {/* Abstract Shapes for Visual Interest */}
+                <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-yellow-300/20 rounded-full blur-3xl"></div>
+
+                <div className="container relative mx-auto px-6 z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+                    <div className="text-white text-center md:text-left max-w-2xl">
+                        <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/30 mb-6">
+                            <Gift size={16} className="text-yellow-200" />
+                            <span className="text-sm font-bold tracking-wide uppercase text-yellow-50">Rewards Program</span>
+                        </div>
+                        <h2 className="text-4xl md:text-5xl font-black mb-4 leading-tight">
+                            Eat together. <br/> Win together.
+                        </h2>
+                        <p className="text-lg text-orange-50 mb-8 leading-relaxed opacity-90">
+                            Invite your friends to Snaccit. They get <span className="font-bold text-white bg-white/20 px-1 rounded">₹50 off</span> their first order, and you earn <span className="font-bold text-white bg-white/20 px-1 rounded">₹50 cash</span> in your wallet.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                            <button 
+                                onClick={onGoToProfile}
+                                className="bg-white text-orange-600 font-bold py-4 px-8 rounded-full shadow-lg hover:shadow-xl hover:bg-gray-50 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
+                            >
+                                <Copy size={18} /> Get My Referral Code
+                            </button>
+                            <button 
+                                onClick={onGoToProfile}
+                                className="bg-transparent border-2 border-white/40 text-white font-bold py-4 px-8 rounded-full hover:bg-white/10 transition-all duration-300"
+                            >
+                                View My Rewards
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {/* Visual Illustration */}
+                    <div className="relative hidden md:block">
+                        <div className="relative z-10 bg-white/10 backdrop-blur-lg p-8 rounded-[2.5rem] border border-white/20 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                             <div className="bg-white p-6 rounded-2xl shadow-lg flex items-center gap-4 mb-4">
+                                <div className="bg-green-100 p-3 rounded-full"><User className="text-green-600" size={24}/></div>
+                                <div>
+                                    <p className="text-gray-900 font-bold">You Shared</p>
+                                    <p className="text-xs text-gray-500">Code: PUSHK92</p>
+                                </div>
+                             </div>
+                             <div className="flex justify-center my-2"><div className="h-8 w-0.5 bg-white/40"></div></div>
+                             <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-2xl shadow-lg text-white flex items-center gap-4">
+                                <div className="bg-white/20 p-3 rounded-full"><PartyPopper className="text-white" size={24}/></div>
+                                <div>
+                                    <p className="font-bold text-lg">You Won ₹50!</p>
+                                    <p className="text-xs text-green-100">Added to wallet</p>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* RESTAURANTS SECTION */}
+            <section id="restaurants" className="relative py-24 sm:py-28 bg-white">
+                <div className="container relative mx-auto px-6 z-10">
+                    <div className="text-center mb-12">
+                        <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest drop-shadow-sm">Find Your Craving</h3>
+                        <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Explore Restaurants</h2>
+                    </div>
+
+                    {/* Search & Filters */}
+                    <div className="max-w-3xl mx-auto mb-16">
+                        <div className="flex justify-center mb-6">
+                            <div className="bg-gray-100 p-1 rounded-full inline-flex">
+                                <button onClick={() => setSearchType('restaurant')} className={`px-6 py-2 rounded-full font-bold text-sm transition-all duration-300 ${searchType === 'restaurant' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Restaurants</button>
+                                <button onClick={() => setSearchType('dish')} className={`px-6 py-2 rounded-full font-bold text-sm transition-all duration-300 ${searchType === 'dish' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Dishes</button>
+                            </div>
+                        </div>
+
+                        <div className="relative mb-8 group">
+                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                                <Search className="text-gray-400 group-focus-within:text-green-500 transition-colors" size={20} />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder={searchType === 'restaurant' ? 'Search restaurants...' : 'Search specific dishes...'}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full py-4 pl-12 pr-6 text-lg bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-500/10 transition-all duration-300 placeholder:text-gray-400"
+                            />
+                        </div>
+
+                        <div className="flex flex-wrap justify-center gap-3">
+                            <button onClick={() => setActiveFilter('all')} className={`px-5 py-2 rounded-full font-bold text-sm border transition-all ${activeFilter === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>All</button>
+                            <button onClick={() => setActiveFilter('topRated')} className={`px-5 py-2 rounded-full font-bold text-sm border transition-all flex items-center ${activeFilter === 'topRated' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-white text-gray-600 border-gray-200 hover:border-amber-400'}`}><Award size={16} className="mr-2"/> Top Rated</button>
+                            <button onClick={() => setActiveFilter('veg')} className={`px-5 py-2 rounded-full font-bold text-sm border transition-all flex items-center ${activeFilter === 'veg' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-white text-gray-600 border-gray-200 hover:border-green-400'}`}><Leaf size={16} className="mr-2"/> Pure Veg</button>
+                        </div>
+                    </div>
+
+                    {/* Restaurant Grid */}
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                        {isLoading ? (
+                            <div className="md:col-span-2 lg:col-span-4 text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
+                        ) : (
+                            displayList.map((item, index) => {
+                                // Logic to decide if we rendering a restaurant or a dish card
+                                if (searchType === 'restaurant') {
+                                    return (
+                                        <div key={item.id} onClick={() => onRestaurantClick(item)} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
+                                            <div className="relative h-48 overflow-hidden">
+                                                <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                                {item.rating >= 4.5 && <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-amber-600 text-xs font-bold px-2 py-1 rounded-md shadow-sm flex items-center"><Star size={12} className="mr-1 fill-current"/> 4.5+</div>}
+                                            </div>
+                                            <div className="p-6 flex flex-col flex-grow">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <h4 className="text-xl font-bold text-gray-900 line-clamp-1">{item.name}</h4>
+                                                    {item.rating && <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded flex items-center"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
+                                                </div>
+                                                <p className="text-gray-500 text-sm font-medium mb-4 line-clamp-1">{item.cuisine}</p>
+                                                <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
+                                                    <span className="text-gray-900 font-bold">{item.price}</span>
+                                                    <span className="text-green-600 text-sm font-bold group-hover:underline">View Menu</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    )}
-                                </div>
-                                <p className="text-gray-500 text-sm font-medium mb-6">{resto.cuisine}</p>
-                                <div className="mt-auto flex justify-between items-center pt-4 border-t border-gray-100">
-                                    <span className="text-gray-900 font-bold text-lg">{resto.price}</span>
-                                    <span className="text-green-600 font-bold text-sm group-hover:underline">View Menu</span>
-                                </div>
-                            </div>
+                                    );
+                                } else {
+                                    // Dish Card Logic (unchanged from your original, just styled)
+                                    return (
+                                        <div key={`${item.restaurantId}-${item.id}`} onClick={() => handleDishClick(item)} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
+                                             <div className="relative h-48 overflow-hidden">
+                                                <img src={item.imageUrl || 'https://placehold.co/400x400'} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                             </div>
+                                             <div className="p-6 flex flex-col flex-grow">
+                                                <h4 className="text-lg font-bold text-gray-900 line-clamp-1">{item.name}</h4>
+                                                <p className="text-xs text-gray-500 mb-4">from <span className="text-green-600 font-semibold">{item.restaurantName}</span></p>
+                                                <div className="mt-auto flex justify-between items-center">
+                                                    <span className="font-bold text-gray-900">₹{item.sizes?.[0]?.price || 'N/A'}</span>
+                                                    <PlusCircle size={24} className="text-green-500 group-hover:text-green-600" />
+                                                </div>
+                                             </div>
+                                        </div>
+                                    )
+                                }
+                            })
+                        )}
+                    </div>
+                    
+                    {/* SHOW MORE BUTTON */}
+                    {!isLoading && !searchTerm && searchType === 'restaurant' && !showAllRestaurants && filteredResults.length > 8 && (
+                        <div className="mt-16 text-center">
+                             <button 
+                                onClick={() => setShowAllRestaurants(true)}
+                                className="group bg-white border-2 border-gray-200 text-gray-600 font-bold py-3 px-8 rounded-full hover:border-green-500 hover:text-green-600 transition-all duration-300 inline-flex items-center gap-2"
+                             >
+                                Show All Restaurants <ChevronDown size={20} className="group-hover:translate-y-1 transition-transform" />
+                             </button>
                         </div>
-                    ))
-                ) : (
-                    filteredResults.map((dish, index) => (
-                        // --- REDESIGNED DISH CARD ---
-                        <div key={`${dish.restaurantId}-${dish.id}`} onClick={() => handleDishClick(dish)} className="bg-white rounded-[2rem] shadow-[0_8px_25px_rgba(0,0,0,0.05)] overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] group cursor-pointer animate-fade-in h-full flex flex-col" style={{ animationDelay: `${index * 50}ms` }}>
-                            <div className="relative h-52 overflow-hidden">
-                                <img src={dish.imageUrl || 'https://placehold.co/400x400/cccccc/ffffff?text=No+Image'} alt={dish.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            </div>
-                            <div className="p-6 flex flex-col flex-grow">
-                                <h4 className="text-xl font-extrabold text-gray-900 mb-1">{dish.name}</h4>
-                                <p className="text-sm font-medium text-gray-500 mb-6">from <span className="text-green-600">{dish.restaurantName}</span></p>
-                                <div className="mt-auto flex justify-between items-center pt-4 border-t border-gray-100">
-                                    <span className="font-extrabold text-2xl text-gray-900">₹{dish.sizes && dish.sizes[0] ? dish.sizes[0].price : 'N/A'}</span>
-                                    <PlusCircle size={28} className="text-green-500 group-hover:text-green-600 transition-colors" />
-                                </div>
-                            </div>
+                    )}
+
+                    {!isLoading && filteredResults.length === 0 && (
+                        <div className="text-center py-16">
+                            <Frown size={48} className="mx-auto text-gray-300 mb-4" />
+                            <p className="text-gray-500 text-lg font-medium">No results found.</p>
+                            <button onClick={() => { setSearchTerm(''); setActiveFilter('all'); }} className="mt-4 text-green-600 font-bold hover:underline">Clear Filters</button>
                         </div>
-                    ))
-                )
-            )}
-        </div>
-        {!isLoading && filteredResults.length === 0 && (
-            <div className="text-center py-16">
-                <Frown size={48} className="mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500 text-lg font-medium">No results found matching your criteria.</p>
-                <button onClick={() => { setSearchTerm(''); setActiveFilter('all'); }} className="mt-4 text-green-600 font-bold hover:underline">Clear Filters</button>
-            </div>
-        )}
-    </div>
-</section>
+                    )}
+                </div>
+            </section>
         </>
     );
 };
@@ -2185,22 +2222,34 @@ const App = () => {
         setIsSetCredentialsModalOpen(true);
     };
 
-    // --- Render View Logic ---
-    const renderView = () => {
-        if (!isAuthReady || (view !== 'home' && view !== 'privacy' && view !== 'terms' && isLoading)) {
-            return <div className="min-h-[calc(100vh-200px)] flex items-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
-        }
-        switch(view) {
-            case 'home': return <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} />;
-            case 'menu': return selectedRestaurant ? <MenuPage restaurant={selectedRestaurant} onBackClick={handleBackClick} onSelectItem={handleSelectItemForCustomization} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} />;
-            case 'confirmation': return <OrderConfirmation onGoHome={() => handleGoHome()} />;
-            case 'paymentStatus': return <PaymentStatusPage onGoHome={() => handleGoHome()} />;
-            case 'privacy': return <PrivacyPolicyPage />;
-            case 'terms': return <TermsOfServicePage />;
-            case 'profile': return currentUser ? <ProfilePage currentUser={currentUser} showNotification={showNotification} onReorder={handleReorder} onRateOrder={setOrderToReview} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} />;
-            default: return <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} />;
-        }
-    };
+    // renderView function:
+
+const renderView = () => {
+    if (!isAuthReady || (view !== 'home' && view !== 'privacy' && view !== 'terms' && isLoading)) {
+        return <div className="min-h-[calc(100vh-200px)] flex items-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
+    }
+    switch(view) {
+        // --- UPDATE THIS LINE ---
+        case 'home': 
+            return <HomePage 
+                allRestaurants={restaurants} 
+                isLoading={isLoading} 
+                onRestaurantClick={handleRestaurantClick} 
+                onGoToProfile={() => setView('profile')} // <--- ADD THIS PROP
+            />;
+        // ------------------------
+        
+        case 'menu': return selectedRestaurant ? <MenuPage restaurant={selectedRestaurant} onBackClick={handleBackClick} onSelectItem={handleSelectItemForCustomization} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
+        
+        // ... rest of the cases remain the same
+        case 'confirmation': return <OrderConfirmation onGoHome={() => handleGoHome()} />;
+        case 'paymentStatus': return <PaymentStatusPage onGoHome={() => handleGoHome()} />;
+        case 'privacy': return <PrivacyPolicyPage />;
+        case 'terms': return <TermsOfServicePage />;
+        case 'profile': return currentUser ? <ProfilePage currentUser={currentUser} showNotification={showNotification} onReorder={handleReorder} onRateOrder={setOrderToReview} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
+        default: return <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
+    }
+};
 
     // --- Main JSX Return ---
     return (
