@@ -721,12 +721,12 @@ const TermsOfServicePage = () => {
     );
 };
 
-// --- [UPDATED] HomePage Component ---
+// --- [FIXED] HomePage Component ---
 const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchType, setSearchType] = useState('restaurant');
     const [activeFilter, setActiveFilter] = useState('all');
-    const [showAllRestaurants, setShowAllRestaurants] = useState(false); // New state for "Show More"
+    const [showAllRestaurants, setShowAllRestaurants] = useState(false);
 
     // Filter Logic
     const filteredResults = useMemo(() => {
@@ -748,255 +748,194 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
         return restaurantsToFilter.filter(resto => resto.name.toLowerCase().includes(lowercasedSearchTerm) || resto.cuisine.toLowerCase().includes(lowercasedSearchTerm));
     }, [searchTerm, searchType, allRestaurants, activeFilter]);
 
-    // Slice results if not "Showing All" (Only applies if we are not searching/filtering specific dishes)
+    // Show only 6 restaurants initially (to save space at top), or all if "Show More" is clicked
     const displayList = (searchTerm || searchType === 'dish' || showAllRestaurants) 
         ? filteredResults 
-        : filteredResults.slice(0, 8); // Show only 8 initially
-
-    const topDishes = [
-          { name: "Butter Chicken", restaurant: "Curry Kingdom", imageUrl: butterChickenImg },
-          { name: "Margherita Pizza", restaurant: "Pizza Palace", imageUrl: pizzaImg },
-          { name: "Sushi Platter", restaurant: "Tokyo Bites", imageUrl: sushiImg },
-          { name: "Vegan Burger", restaurant: "The Vurger Co.", imageUrl: burgerImg },
-    ];
-
-    const handleDishClick = (dish) => {
-        const restaurant = allRestaurants.find(r => r.id === dish.restaurantId);
-        if (restaurant) onRestaurantClick(restaurant);
-    };
+        : filteredResults.slice(0, 6); 
 
     return (
         <>
-            {/* HERO SECTION */}
-            <main className="relative h-[600px] flex items-center justify-center text-white overflow-hidden">
+            {/* 1. HERO SECTION */}
+            <main className="relative h-[500px] flex items-center justify-center text-white overflow-hidden">
                 <div className="absolute inset-0 bg-black/50 z-10"></div>
                 <video className="absolute inset-0 w-full h-full object-cover" src={heroVideo} autoPlay loop muted playsInline />                 
                 <div className="relative z-20 text-center px-6">
                     <AnimatedHeroText />
-                    <p className="mt-6 max-w-2xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2">Pre-order your meal with Snaccit and have it served the moment you arrive. No more waiting, just eating.</p>
-                    <div className="mt-10 slide-in-2">
+                    <p className="mt-4 max-w-xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2 font-medium">
+                        Pre-order now. Arrive later. Eat instantly.
+                    </p>
+                    <div className="mt-8 slide-in-2">
                         <button onClick={() => {
                             document.getElementById('restaurants')?.scrollIntoView({ behavior: 'smooth' });
-                        }} className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-4 px-10 rounded-full hover:shadow-xl hover:shadow-green-400/50 hover:scale-105 transition-all duration-300 shadow-lg text-lg">
-                            Find My Next Meal
+                        }} className="bg-white text-green-700 font-extrabold py-3 px-8 rounded-full hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:scale-105 transition-all duration-300 shadow-lg text-lg">
+                            Order Now
                         </button>
                     </div>
                 </div>
             </main>
 
-            {/* FEATURES SECTION */}
-            <section id="features" className="relative py-20 overflow-hidden bg-white">
+            {/* 2. RESTAURANTS SECTION (Moved to TOP as requested) */}
+            <section id="restaurants" className="relative py-16 bg-gray-50/50">
                 <div className="container relative mx-auto px-6 z-10">
-                    <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-                        {[{ icon: <Store className="w-8 h-8 text-green-700" />, title: "1. Pre-order", description: "Select your dishes before you leave." }, 
-                          { icon: <Smartphone className="w-8 h-8 text-green-700" />, title: "2. Set Time", description: "Tell us when you'll arrive." }, 
-                          { icon: <ChefHat className="w-8 h-8 text-green-700" />, title: "3. Eat Immediately", description: "Your food is ready when you are." }
-                        ].map((step, i) => (
-                            <div key={i} className="flex flex-col items-center text-center p-6 rounded-3xl hover:bg-gray-50 transition-colors">
-                                <div className="bg-green-100 p-4 rounded-full mb-4 text-green-700 shadow-sm">{step.icon}</div>
-                                <h4 className="text-xl font-bold mb-2 text-gray-900">{step.title}</h4>
-                                <p className="text-gray-600 leading-relaxed text-sm">{step.description}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* TOP DISHES SECTION */}
-            <section id="top-dishes" className="relative py-24 bg-gray-50">
-                <div className="container relative mx-auto px-6 z-10">
-                    <div className="flex justify-between items-end mb-12">
-                        <div>
-                            <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest drop-shadow-sm">Fan Favorites</h3>
-                            <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Trending Now</h2>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
-                        {topDishes.map((dish, index) => (
-                            <div key={index} className="relative rounded-3xl overflow-hidden group cursor-pointer shadow-md transition-all duration-500 hover:scale-[1.03] hover:shadow-xl h-64">
-                                <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90"></div>
-                                <div className="absolute bottom-0 left-0 p-5 text-white">
-                                    <h4 className="text-lg font-bold leading-tight">{dish.name}</h4>
-                                    <p className="text-xs font-medium text-gray-300 mt-1">{dish.restaurant}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* --- NEW REFER & WIN SECTION --- */}
-            <section className="relative py-20 overflow-hidden">
-                {/* Modern Gradient Background */}
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600"></div>
-                
-                {/* Abstract Shapes for Visual Interest */}
-                <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-yellow-300/20 rounded-full blur-3xl"></div>
-
-                <div className="container relative mx-auto px-6 z-10 flex flex-col md:flex-row items-center justify-between gap-10">
-                    <div className="text-white text-center md:text-left max-w-2xl">
-                        <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/30 mb-6">
-                            <Gift size={16} className="text-yellow-200" />
-                            <span className="text-sm font-bold tracking-wide uppercase text-yellow-50">Rewards Program</span>
-                        </div>
-                        <h2 className="text-4xl md:text-5xl font-black mb-4 leading-tight">
-                            Eat together. <br/> Win together.
-                        </h2>
-                        <p className="text-lg text-orange-50 mb-8 leading-relaxed opacity-90">
-                            Invite your friends to Snaccit. They get <span className="font-bold text-white bg-white/20 px-1 rounded">₹50 off</span> their first order, and you earn <span className="font-bold text-white bg-white/20 px-1 rounded">₹50 cash</span> in your wallet.
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                            <button 
-                                onClick={onGoToProfile}
-                                className="bg-white text-orange-600 font-bold py-4 px-8 rounded-full shadow-lg hover:shadow-xl hover:bg-gray-50 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
-                            >
-                                <Copy size={18} /> Get My Referral Code
-                            </button>
-                            <button 
-                                onClick={onGoToProfile}
-                                className="bg-transparent border-2 border-white/40 text-white font-bold py-4 px-8 rounded-full hover:bg-white/10 transition-all duration-300"
-                            >
-                                View My Rewards
-                            </button>
-                        </div>
-                    </div>
-                    
-                    {/* Visual Illustration */}
-                    <div className="relative hidden md:block">
-                        <div className="relative z-10 bg-white/10 backdrop-blur-lg p-8 rounded-[2.5rem] border border-white/20 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                             <div className="bg-white p-6 rounded-2xl shadow-lg flex items-center gap-4 mb-4">
-                                <div className="bg-green-100 p-3 rounded-full"><User className="text-green-600" size={24}/></div>
-                                <div>
-                                    <p className="text-gray-900 font-bold">You Shared</p>
-                                    <p className="text-xs text-gray-500">Code: PUSHK92</p>
-                                </div>
-                             </div>
-                             <div className="flex justify-center my-2"><div className="h-8 w-0.5 bg-white/40"></div></div>
-                             <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-2xl shadow-lg text-white flex items-center gap-4">
-                                <div className="bg-white/20 p-3 rounded-full"><PartyPopper className="text-white" size={24}/></div>
-                                <div>
-                                    <p className="font-bold text-lg">You Won ₹50!</p>
-                                    <p className="text-xs text-green-100">Added to wallet</p>
-                                </div>
-                             </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* RESTAURANTS SECTION */}
-            <section id="restaurants" className="relative py-24 sm:py-28 bg-white">
-                <div className="container relative mx-auto px-6 z-10">
-                    <div className="text-center mb-12">
-                        <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest drop-shadow-sm">Find Your Craving</h3>
-                        <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Explore Restaurants</h2>
+                    <div className="text-center mb-10">
+                        <h3 className="text-sm font-bold uppercase text-green-600 tracking-widest">Hungry?</h3>
+                        <h2 className="mt-1 text-3xl font-extrabold text-gray-900">Explore Restaurants</h2>
                     </div>
 
                     {/* Search & Filters */}
-                    <div className="max-w-3xl mx-auto mb-16">
-                        <div className="flex justify-center mb-6">
-                            <div className="bg-gray-100 p-1 rounded-full inline-flex">
-                                <button onClick={() => setSearchType('restaurant')} className={`px-6 py-2 rounded-full font-bold text-sm transition-all duration-300 ${searchType === 'restaurant' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Restaurants</button>
-                                <button onClick={() => setSearchType('dish')} className={`px-6 py-2 rounded-full font-bold text-sm transition-all duration-300 ${searchType === 'dish' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Dishes</button>
-                            </div>
-                        </div>
-
-                        <div className="relative mb-8 group">
+                    <div className="max-w-4xl mx-auto mb-12">
+                        {/* Search Bar */}
+                        <div className="relative mb-6 group">
                             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                                 <Search className="text-gray-400 group-focus-within:text-green-500 transition-colors" size={20} />
                             </div>
                             <input
                                 type="text"
-                                placeholder={searchType === 'restaurant' ? 'Search restaurants...' : 'Search specific dishes...'}
+                                placeholder="Search restaurants..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full py-4 pl-12 pr-6 text-lg bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-500/10 transition-all duration-300 placeholder:text-gray-400"
+                                className="w-full py-3 pl-12 pr-6 text-lg bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/10 transition-all"
                             />
                         </div>
 
+                        {/* Filter Buttons */}
                         <div className="flex flex-wrap justify-center gap-3">
-                            <button onClick={() => setActiveFilter('all')} className={`px-5 py-2 rounded-full font-bold text-sm border transition-all ${activeFilter === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>All</button>
-                            <button onClick={() => setActiveFilter('topRated')} className={`px-5 py-2 rounded-full font-bold text-sm border transition-all flex items-center ${activeFilter === 'topRated' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-white text-gray-600 border-gray-200 hover:border-amber-400'}`}><Award size={16} className="mr-2"/> Top Rated</button>
-                            <button onClick={() => setActiveFilter('veg')} className={`px-5 py-2 rounded-full font-bold text-sm border transition-all flex items-center ${activeFilter === 'veg' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-white text-gray-600 border-gray-200 hover:border-green-400'}`}><Leaf size={16} className="mr-2"/> Pure Veg</button>
+                            <button onClick={() => setActiveFilter('all')} className={`px-5 py-2 rounded-xl font-bold text-sm border transition-all ${activeFilter === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>All</button>
+                            <button onClick={() => setActiveFilter('topRated')} className={`px-5 py-2 rounded-xl font-bold text-sm border transition-all flex items-center ${activeFilter === 'topRated' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-white text-gray-600 border-gray-200 hover:border-amber-400'}`}><Award size={16} className="mr-2"/> Top Rated</button>
+                            <button onClick={() => setActiveFilter('veg')} className={`px-5 py-2 rounded-xl font-bold text-sm border transition-all flex items-center ${activeFilter === 'veg' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-white text-gray-600 border-gray-200 hover:border-green-400'}`}><Leaf size={16} className="mr-2"/> Pure Veg</button>
                         </div>
                     </div>
 
                     {/* Restaurant Grid */}
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {isLoading ? (
-                            <div className="md:col-span-2 lg:col-span-4 text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
+                            <div className="md:col-span-2 lg:col-span-3 text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
                         ) : (
-                            displayList.map((item, index) => {
-                                // Logic to decide if we rendering a restaurant or a dish card
-                                if (searchType === 'restaurant') {
-                                    return (
-                                        <div key={item.id} onClick={() => onRestaurantClick(item)} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
-                                            <div className="relative h-48 overflow-hidden">
-                                                <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                                {item.rating >= 4.5 && <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-amber-600 text-xs font-bold px-2 py-1 rounded-md shadow-sm flex items-center"><Star size={12} className="mr-1 fill-current"/> 4.5+</div>}
-                                            </div>
-                                            <div className="p-6 flex flex-col flex-grow">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <h4 className="text-xl font-bold text-gray-900 line-clamp-1">{item.name}</h4>
-                                                    {item.rating && <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded flex items-center"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
-                                                </div>
-                                                <p className="text-gray-500 text-sm font-medium mb-4 line-clamp-1">{item.cuisine}</p>
-                                                <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
-                                                    <span className="text-gray-900 font-bold">{item.price}</span>
-                                                    <span className="text-green-600 text-sm font-bold group-hover:underline">View Menu</span>
-                                                </div>
-                                            </div>
+                            displayList.map((item) => (
+                                <div key={item.id} onClick={() => onRestaurantClick(item)} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
+                                    <div className="relative h-56 overflow-hidden">
+                                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                        {item.rating >= 4.5 && <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-amber-600 text-xs font-bold px-2 py-1 rounded-lg shadow-sm flex items-center"><Star size={12} className="mr-1 fill-current"/> Top Rated</div>}
+                                    </div>
+                                    <div className="p-6 flex flex-col flex-grow">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h4 className="text-xl font-bold text-gray-900 line-clamp-1">{item.name}</h4>
+                                            {item.rating && <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded flex items-center"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
                                         </div>
-                                    );
-                                } else {
-                                    // Dish Card Logic (unchanged from your original, just styled)
-                                    return (
-                                        <div key={`${item.restaurantId}-${item.id}`} onClick={() => handleDishClick(item)} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
-                                             <div className="relative h-48 overflow-hidden">
-                                                <img src={item.imageUrl || 'https://placehold.co/400x400'} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                             </div>
-                                             <div className="p-6 flex flex-col flex-grow">
-                                                <h4 className="text-lg font-bold text-gray-900 line-clamp-1">{item.name}</h4>
-                                                <p className="text-xs text-gray-500 mb-4">from <span className="text-green-600 font-semibold">{item.restaurantName}</span></p>
-                                                <div className="mt-auto flex justify-between items-center">
-                                                    <span className="font-bold text-gray-900">₹{item.sizes?.[0]?.price || 'N/A'}</span>
-                                                    <PlusCircle size={24} className="text-green-500 group-hover:text-green-600" />
-                                                </div>
-                                             </div>
+                                        <p className="text-gray-500 text-sm font-medium mb-4 line-clamp-1">{item.cuisine}</p>
+                                        <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
+                                            <span className="text-gray-900 font-bold">{item.price}</span>
+                                            <span className="text-green-600 text-sm font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1" size={14}/></span>
                                         </div>
-                                    )
-                                }
-                            })
+                                    </div>
+                                </div>
+                            ))
                         )}
                     </div>
                     
                     {/* SHOW MORE BUTTON */}
-                    {!isLoading && !searchTerm && searchType === 'restaurant' && !showAllRestaurants && filteredResults.length > 8 && (
-                        <div className="mt-16 text-center">
+                    {!isLoading && !searchTerm && !showAllRestaurants && filteredResults.length > 6 && (
+                        <div className="mt-12 text-center">
                              <button 
                                 onClick={() => setShowAllRestaurants(true)}
-                                className="group bg-white border-2 border-gray-200 text-gray-600 font-bold py-3 px-8 rounded-full hover:border-green-500 hover:text-green-600 transition-all duration-300 inline-flex items-center gap-2"
+                                className="group bg-white border-2 border-green-600 text-green-600 font-bold py-3 px-10 rounded-full hover:bg-green-600 hover:text-white transition-all duration-300 inline-flex items-center gap-2 shadow-sm hover:shadow-lg"
                              >
                                 Show All Restaurants <ChevronDown size={20} className="group-hover:translate-y-1 transition-transform" />
                              </button>
                         </div>
                     )}
+                </div>
+            </section>
 
-                    {!isLoading && filteredResults.length === 0 && (
-                        <div className="text-center py-16">
-                            <Frown size={48} className="mx-auto text-gray-300 mb-4" />
-                            <p className="text-gray-500 text-lg font-medium">No results found.</p>
-                            <button onClick={() => { setSearchTerm(''); setActiveFilter('all'); }} className="mt-4 text-green-600 font-bold hover:underline">Clear Filters</button>
+            {/* 3. REFER & WIN SECTION */}
+            <section className="relative py-20 overflow-hidden bg-emerald-900">
+                {/* Background Pattern */}
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E")` }}></div>
+                
+                <div className="container relative mx-auto px-6 z-10 flex flex-col md:flex-row items-center justify-between gap-12">
+                    <div className="text-white text-center md:text-left md:w-1/2">
+                        <div className="inline-flex items-center gap-2 bg-yellow-400/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-yellow-400/30 mb-6">
+                            <Gift size={16} className="text-yellow-300" />
+                            <span className="text-sm font-bold tracking-wide uppercase text-yellow-100">Referral Program</span>
                         </div>
-                    )}
+                        <h2 className="text-4xl md:text-5xl font-black mb-6 leading-tight">
+                            Give ₹50.<br/>Get ₹50.
+                        </h2>
+                        <p className="text-lg text-emerald-100 mb-8 leading-relaxed">
+                            It's simple: You refer a friend. They sign up and order. 
+                            <br/><span className="text-white font-bold">You BOTH get a ₹50 discount coupon!</span>
+                        </p>
+                        
+                        <div className="bg-emerald-800/50 p-4 rounded-xl border border-emerald-700 mb-8 inline-block text-left">
+                            <p className="text-sm text-emerald-200 flex items-center gap-2 mb-1"><Info size={14}/> Where do I find it?</p>
+                            <p className="text-white font-medium">Your <span className="text-yellow-300 font-bold">Referral Code</span> & <span className="text-yellow-300 font-bold">Coupons</span> are located in your Profile.</p>
+                        </div>
+
+                        <div>
+                            <button 
+                                onClick={onGoToProfile}
+                                className="bg-yellow-400 text-yellow-900 font-bold py-4 px-8 rounded-full shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:shadow-xl hover:bg-yellow-300 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 mx-auto md:mx-0"
+                            >
+                                Go to My Profile <ArrowLeft className="rotate-180" size={18} />
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {/* Visual Illustration */}
+                    <div className="md:w-1/2 flex justify-center">
+                        <div className="relative bg-white p-6 rounded-3xl shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500 max-w-sm w-full">
+                             <div className="absolute -top-4 -left-4 bg-red-500 text-white font-bold px-4 py-2 rounded-lg shadow-lg rotate-[-10deg]">WIN ₹50</div>
+                             <div className="flex items-center gap-4 border-b border-dashed border-gray-200 pb-4 mb-4">
+                                <div className="bg-green-100 p-4 rounded-full"><User className="text-green-600" size={24}/></div>
+                                <div>
+                                    <p className="text-gray-900 font-bold text-lg">You</p>
+                                    <p className="text-sm text-gray-500">Share Code: <span className="font-mono bg-gray-100 px-1 rounded">SNAC50</span></p>
+                                </div>
+                             </div>
+                             <div className="flex justify-center mb-4"><ArrowLeft className="rotate-[-90deg] text-gray-300" size={24}/></div>
+                             <div className="flex items-center gap-4 bg-green-50 p-4 rounded-xl border border-green-100">
+                                <div className="bg-white p-3 rounded-full shadow-sm"><TicketPercent className="text-green-600" size={24}/></div>
+                                <div>
+                                    <p className="font-bold text-gray-800">Coupon Unlocked!</p>
+                                    <p className="text-xs text-green-700">₹50 off for both of you.</p>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* 4. FEATURES SECTION (Restored Color & Vibrancy) */}
+            <section id="features" className="relative py-24 bg-gradient-to-b from-amber-50 to-white overflow-hidden">
+                {/* Decorative Blobs */}
+                <div className="absolute top-0 left-0 w-64 h-64 bg-orange-200/40 rounded-full blur-3xl mix-blend-multiply pointer-events-none"></div>
+                <div className="absolute bottom-0 right-0 w-64 h-64 bg-yellow-200/40 rounded-full blur-3xl mix-blend-multiply pointer-events-none"></div>
+
+                <div className="container relative mx-auto px-6 z-10">
+                    <div className="text-center mb-16">
+                        <h3 className="text-sm font-bold uppercase text-orange-600 tracking-widest">Simple & Fast</h3>
+                        <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">How Snaccit Works</h2>
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+                        {[{ icon: <Smartphone className="w-10 h-10 text-white" />, title: "1. Pre-order", description: "Explore menus and add items to your cart before you leave.", color: "from-blue-400 to-blue-600" }, 
+                          { icon: <Clock className="w-10 h-10 text-white" />, title: "2. Set Time", description: "Select your arrival time so we know when to cook.", color: "from-orange-400 to-orange-600" }, 
+                          { icon: <Utensils className="w-10 h-10 text-white" />, title: "3. Eat Instantly", description: "Walk in, sit down, and your food is served immediately.", color: "from-green-400 to-green-600" }
+                        ].map((step, i) => (
+                            <div key={i} className="group relative bg-white p-8 rounded-[2.5rem] shadow-xl border border-white/50 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
+                                <div className={`inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br ${step.color} rounded-2xl shadow-lg mb-6 group-hover:scale-110 transition-transform duration-300 rotate-[-5deg] group-hover:rotate-0`}>
+                                    {step.icon}
+                                </div>
+                                <h4 className="text-2xl font-bold mb-3 text-gray-900">{step.title}</h4>
+                                <p className="text-gray-600 leading-relaxed font-medium">{step.description}</p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </section>
         </>
     );
 };
-// ... (rest of the component is unchanged - long code omitted for brevity)
+
 // --- Star Rating Display Component ---
 const StarRating = ({ rating }) => {
     const stars = [];
@@ -2226,7 +2165,7 @@ const App = () => {
 
 const renderView = () => {
     if (!isAuthReady || (view !== 'home' && view !== 'privacy' && view !== 'terms' && isLoading)) {
-        return <div className="min-h-[calc(100vh-200px)] flex items-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
+        return <div className="min-h-[calc(100vh-200px)] flex itemgit pushs-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
     }
     switch(view) {
         // --- UPDATE THIS LINE ---
@@ -2240,7 +2179,7 @@ const renderView = () => {
         // ------------------------
         
         case 'menu': return selectedRestaurant ? <MenuPage restaurant={selectedRestaurant} onBackClick={handleBackClick} onSelectItem={handleSelectItemForCustomization} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
-        
+
         // ... rest of the cases remain the same
         case 'confirmation': return <OrderConfirmation onGoHome={() => handleGoHome()} />;
         case 'paymentStatus': return <PaymentStatusPage onGoHome={() => handleGoHome()} />;
