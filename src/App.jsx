@@ -788,7 +788,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                 </div>
             </main>
 
-            {/* 2. RESTAURANTS SECTION (At Top) */}
+            {/* 2. RESTAURANTS SECTION */}
             <section id="restaurants" className="relative py-16 bg-gray-50/50">
                 <div className="container relative mx-auto px-6 z-10">
                     <div className="text-center mb-10">
@@ -797,7 +797,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                     </div>
 
                     {/* Search & Filters */}
-                    <div className="max-w-4xl mx-auto mb-12">
+                    <div className="max-w-4xl mx-auto mb-10">
                         <div className="relative mb-6 group">
                             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                                 <Search className="text-gray-400 group-focus-within:text-green-500 transition-colors" size={20} />
@@ -819,25 +819,25 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                     </div>
 
                     {/* Restaurant Grid */}
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
                         {isLoading ? (
-                            <div className="md:col-span-2 lg:col-span-3 text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
+                            <div className="col-span-full text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
                         ) : (
                             displayList.map((item) => (
-                                <div key={item.id} onClick={() => onRestaurantClick(item)} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
-                                    <div className="relative h-56 overflow-hidden">
+                                <div key={item.id} onClick={() => onRestaurantClick(item)} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
+                                    <div className="relative h-44 overflow-hidden">
                                         <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                        {item.rating >= 4.5 && <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-amber-600 text-xs font-bold px-2 py-1 rounded-lg shadow-sm flex items-center"><Star size={12} className="mr-1 fill-current"/> Top Rated</div>}
+                                        {item.rating >= 4.5 && <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-amber-600 text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm flex items-center"><Star size={10} className="mr-1 fill-current"/> Top Rated</div>}
                                     </div>
-                                    <div className="p-6 flex flex-col flex-grow">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h4 className="text-xl font-bold text-gray-900 line-clamp-1">{item.name}</h4>
-                                            {item.rating && <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded flex items-center"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
+                                    <div className="p-5 flex flex-col flex-grow">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <h4 className="text-lg font-bold text-gray-900 line-clamp-1">{item.name}</h4>
+                                            {item.rating && <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded flex items-center"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
                                         </div>
-                                        <p className="text-gray-500 text-sm font-medium mb-4 line-clamp-1">{item.cuisine}</p>
-                                        <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
-                                            <span className="text-gray-900 font-bold">{item.price}</span>
-                                            <span className="text-green-600 text-sm font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1" size={14}/></span>
+                                        <p className="text-gray-500 text-sm font-medium mb-3 line-clamp-1">{item.cuisine}</p>
+                                        <div className="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
+                                            <span className="text-gray-900 font-bold text-sm">{item.price}</span>
+                                            <span className="text-green-600 text-xs font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1" size={14}/></span>
                                         </div>
                                     </div>
                                 </div>
@@ -845,19 +845,19 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                         )}
                     </div>
                     
-                    {/* SHOW MORE BUTTON */}
                     {!isLoading && !searchTerm && !showAllRestaurants && filteredResults.length > 6 && (
-                        <div className="mt-12 text-center">
+                        <div className="mt-10 text-center">
                              <button 
-                                onClick={() => setShowAllRestaurants(true)}
-                                className="group bg-white border-2 border-green-600 text-green-600 font-bold py-3 px-10 rounded-full hover:bg-green-600 hover:text-white transition-all duration-300 inline-flex items-center gap-2 shadow-sm hover:shadow-lg"
+                                 onClick={() => setShowAllRestaurants(true)}
+                                 className="group bg-white border-2 border-green-600 text-green-600 font-bold py-2 px-8 rounded-full hover:bg-green-600 hover:text-white transition-all duration-300 inline-flex items-center gap-2 shadow-sm"
                              >
-                                Show All Restaurants <ChevronDown size={20} className="group-hover:translate-y-1 transition-transform" />
+                                Show All Restaurants <ChevronDown size={18} className="group-hover:translate-y-1 transition-transform" />
                              </button>
                         </div>
                     )}
                 </div>
             </section>
+            
 
             {/* 3. [RESTORED] TOP DISHES SECTION */}
             <section id="top-dishes" className="relative py-20 bg-white">
