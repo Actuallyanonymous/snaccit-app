@@ -1365,23 +1365,57 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
     );
 };
 
-// --- Checkout Modal Component ---
+// --- Checkout Modal Component (With Points Redemption) ---
 const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
     const [arrivalTime, setArrivalTime] = useState('');
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-    const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
+    
+    // Coupon State
     const [couponCode, setCouponCode] = useState('');
-    const [discount, setDiscount] = useState(0);
+    const [discount, setDiscount] = useState(0); // Coupon discount amount
     const [couponError, setCouponError] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [isValidating, setIsValidating] = useState(false);
-    const grandTotal = subtotal - discount;
 
+    // Points State (NEW)
+    const [usePoints, setUsePoints] = useState(false);
+    const [userPoints, setUserPoints] = useState(0);
+
+    // Calculate Subtotal
+    const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
+
+    // Calculate Points Value (10 Points = 1 Rupee)
+    // Logic: If toggle ON, discount is points/10, but cannot exceed the remaining subtotal
+    const pointsDiscountValue = useMemo(() => {
+        if (!usePoints || userPoints <= 0) return 0;
+        const potentialDiscount = Math.floor(userPoints / 10);
+        // Ensure we don't discount more than the subtotal (after coupon)
+        const remainingToPay = Math.max(0, subtotal - discount); 
+        return Math.min(potentialDiscount, remainingToPay);
+    }, [usePoints, userPoints, subtotal, discount]);
+
+    // Final Total Calculation
+    const grandTotal = Math.max(0, subtotal - discount - pointsDiscountValue);
+
+    // Reset state when modal opens
     useEffect(() => {
         if (isOpen) {
-            setArrivalTime(''); setCouponCode(''); setDiscount(0);
-            setCouponError(''); setAppliedCoupon(null);
+            setArrivalTime(''); 
+            setCouponCode(''); 
+            setDiscount(0);
+            setCouponError(''); 
+            setAppliedCoupon(null);
+            setUsePoints(false);
+            setIsPlacingOrder(false);
+
+            // Fetch User Points
+            if (auth.currentUser) {
+                db.collection("users").doc(auth.currentUser.uid).get().then(doc => {
+                    if(doc.exists) {
+                        setUserPoints(doc.data().points || 0);
+                    }
+                }).catch(err => console.error("Error fetching points:", err));
+            }
         }
     }, [isOpen]);
 
@@ -1407,11 +1441,10 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
             if (!coupon.isActive) { 
                 setCouponError("This coupon is no longer active."); 
             }
-            else if (coupon.isUsed) { // CHECK: Has it been used?
+            else if (coupon.isUsed) { 
                  setCouponError("This coupon has already been used."); 
             }
             else if (coupon.assignedTo && coupon.assignedTo !== auth.currentUser?.uid) {
-                // CHECK: Is it locked to the current user? (Referral coupons are locked)
                 setCouponError("This coupon is not valid for your account.");
             }
             else if (coupon.expiryDate && now > coupon.expiryDate.toDate()) { 
@@ -1421,10 +1454,13 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
                 setCouponError(`A minimum order of ₹${coupon.minOrderValue} is required.`); 
             }
             else {
-                // All checks passed
+                // Apply Discount
                 let calculatedDiscount = 0;
                 if (coupon.type === 'fixed') { calculatedDiscount = coupon.value; }
                 else if (coupon.type === 'percentage') { calculatedDiscount = (subtotal * coupon.value) / 100; }
+                
+                // If points are already active, re-check logic? 
+                // For simplicity, coupon applies first, then points cover the rest.
                 setDiscount(Math.min(calculatedDiscount, subtotal));
                 setAppliedCoupon({ code, ...coupon });
             }
@@ -1439,8 +1475,9 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
     const handleConfirm = async () => {
         if (!arrivalTime) { alert("Please select an arrival time."); return; }
         setIsPlacingOrder(true);
-        await onPlaceOrder(arrivalTime, subtotal, discount, appliedCoupon?.code);
-        setIsPlacingOrder(false); // Only re-enable if payment redirect fails in handlePlaceOrder
+        // PASS 'usePoints' TO THE PARENT FUNCTION HERE
+        await onPlaceOrder(arrivalTime, subtotal, discount, appliedCoupon?.code, usePoints);
+        setIsPlacingOrder(false); 
     };
 
     if (!isOpen) return null;
@@ -1453,27 +1490,67 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
                     <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Confirm Your Pre-order</h2>
                     <p className="text-center text-gray-500 text-sm">Ordering from <span className="font-semibold">{restaurant?.name || 'Restaurant'}</span>.</p>
                 </div>
+                
                 <div className="px-6 sm:px-8 py-6 overflow-y-auto">
                     <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} restaurant={restaurant} />
                 </div>
-                 <div className="mt-auto border-t p-4 sm:p-6 bg-gray-50 rounded-b-3xl">
+
+                <div className="mt-auto border-t p-4 sm:p-6 bg-gray-50 rounded-b-3xl">
+                    {/* Coupon Input */}
                     <div className="flex gap-2 mb-4">
                         <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Enter Coupon Code" className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-green-500 focus:border-green-500" disabled={!!appliedCoupon} />
                         <button type="button" onClick={handleApplyCoupon} disabled={isValidating || !!appliedCoupon || !couponCode.trim()} className="bg-gray-200 text-gray-700 font-semibold px-4 rounded-lg hover:bg-gray-300 disabled:opacity-50 text-sm flex-shrink-0">
                             {isValidating ? <Loader2 className="animate-spin h-5 w-5" /> : appliedCoupon ? 'Applied' : 'Apply'}
                         </button>
                     </div>
-                      {couponError && <p className="text-red-500 text-xs italic mb-2 -mt-2">{couponError}</p>}
-                      {appliedCoupon && !couponError && <p className="text-green-600 text-xs italic mb-2 -mt-2">Coupon "{appliedCoupon.code}" applied!</p>}
+                    {couponError && <p className="text-red-500 text-xs italic mb-4 -mt-2">{couponError}</p>}
+                    {appliedCoupon && !couponError && <p className="text-green-600 text-xs italic mb-4 -mt-2">Coupon "{appliedCoupon.code}" applied!</p>}
+
+                    {/* NEW: Points Redemption Toggle */}
+                    {userPoints > 0 && (
+                        <div className="flex items-center justify-between bg-amber-50 p-3 rounded-lg border border-amber-200 mb-4 shadow-sm">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-amber-100 p-2 rounded-full text-amber-600"><Award size={20}/></div>
+                                <div>
+                                    <p className="font-bold text-amber-900 text-sm">Redeem Points</p>
+                                    <p className="text-xs text-amber-700 font-medium">Available: {userPoints} (Save ₹{Math.floor(userPoints/10)})</p>
+                                </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} className="sr-only peer" />
+                                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                        </div>
+                    )}
+
+                    {/* Totals Breakdown */}
                     <div className="space-y-1 mb-4 text-sm">
                         <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
-                        {discount > 0 && <div className="flex justify-between text-green-600 font-semibold"><span>Discount ({appliedCoupon.code})</span><span>- ₹{discount.toFixed(2)}</span></div>}
-                        <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2 text-gray-900"><span >Grand Total</span><span>₹{grandTotal.toFixed(2)}</span></div>
+                        
+                        {discount > 0 && (
+                            <div className="flex justify-between text-green-600 font-semibold">
+                                <span>Coupon Discount</span>
+                                <span>- ₹{discount.toFixed(2)}</span>
+                            </div>
+                        )}
+                        
+                        {usePoints && pointsDiscountValue > 0 && (
+                            <div className="flex justify-between text-amber-600 font-semibold">
+                                <span>Points Redeemed ({pointsDiscountValue * 10} pts)</span>
+                                <span>- ₹{pointsDiscountValue.toFixed(2)}</span>
+                            </div>
+                        )}
+
+                        <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2 text-gray-900">
+                            <span>Grand Total</span>
+                            <span>₹{grandTotal.toFixed(2)}</span>
+                        </div>
                     </div>
+
                     <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className={`w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg transition-all disabled:opacity-50 flex justify-center items-center px-6 ${!arrivalTime ? 'cursor-not-allowed' : ''}`}>
                          {isPlacingOrder ? <Loader2 className="animate-spin" size={24} /> : (
                              <span className="flex justify-between w-full items-center">
-                                 <span>Proceed to Payment</span>
+                                 <span>{grandTotal === 0 ? 'Confirm (Paid by Points)' : 'Proceed to Payment'}</span>
                                  <span>₹{grandTotal.toFixed(2)}</span>
                              </span>
                          )}
@@ -1712,33 +1789,8 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
                         </div>
                     </div>
 
-                    {/* 2. MY REWARDS SECTION (NEW) */}
-                    {!isEditing && (
-                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-[2rem] shadow-sm border border-amber-100 relative overflow-hidden">
-                            <div className="absolute -right-10 -top-10 w-32 h-32 bg-amber-200/30 rounded-full blur-2xl"></div>
-                            <h2 className="text-xl font-extrabold text-amber-800 mb-4 flex items-center"><TicketPercent className="mr-2"/> My Rewards</h2>
-                            
-                            {coupons.length > 0 ? (
-                                <div className="space-y-3">
-                                    {coupons.map(coupon => (
-                                        <div key={coupon.code} className="bg-white p-4 rounded-xl border border-amber-200 shadow-sm relative group">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="font-black text-gray-800 text-lg">₹{coupon.value} OFF</span>
-                                                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">One-Time</span>
-                                            </div>
-                                            <p className="text-xs text-gray-500 mb-3">{coupon.description}</p>
-                                            <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-dashed border-gray-300">
-                                                <code className="flex-grow text-center font-mono font-bold text-green-700">{coupon.code}</code>
-                                                <button onClick={() => copyToClipboard(coupon.code)} className="text-gray-400 hover:text-green-600"><Copy size={16}/></button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-amber-700/70 italic text-center py-4">No active coupons right now.</p>
-                            )}
-                        </div>
-                    )}
+                    const pointsValue = usePoints ? Math.min(Math.floor(userPoints/10), subtotal) : 0;
+const grandTotal = Math.max(0, subtotal - discount - pointsValue);
 
                     {/* 3. REFERRAL SECTION */}
                     {!isEditing && (
@@ -2057,44 +2109,51 @@ const App = () => {
         }
     };
 
-    const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode) => {
-        if (!currentUser) { showNotification("Please log in to place an order.", "error"); return; }
-        if (!userProfile) { showNotification("Please wait for profile to load.", "error"); return; }
-        setIsRedirecting(true); setIsCheckoutOpen(false);
-        const grandTotal = subtotal - discount;
-        const phoneToSave = userProfile.mobile || userProfile.phoneNumber || currentUser.phoneNumber || 'N/A';
-        const nameToSave = userProfile.username || 'Customer';
-        const orderData = {
-            userId: currentUser.uid, userEmail: currentUser.email || null,
-            userName: nameToSave,
-            userPhone: phoneToSave,
-            restaurantId: selectedRestaurant.id, restaurantName: selectedRestaurant.name,
-            items: cart.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.finalPrice, size: item.selectedSize.name, addons: item.selectedAddons.map(a => a.name) })),
-            subtotal, discount, couponCode: couponCode || null, total: grandTotal, status: "awaiting_payment", arrivalTime,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(), hasReview: false,
+const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, usePoints) => { // <--- Added usePoints
+    if (!currentUser) { showNotification("Please log in to place an order.", "error"); return; }
+    if (!userProfile) { showNotification("Please wait for profile to load.", "error"); return; }
+    
+    setIsRedirecting(true); 
+    setIsCheckoutOpen(false);
+
+    try {
+        console.log("Calling secure backend to create order...");
+        
+        const orderPayload = {
+            restaurantId: selectedRestaurant.id,
+            arrivalTime: arrivalTime,
+            couponCode: couponCode || null,
+            usePoints: usePoints, // <--- Pass to backend
+            userName: userProfile?.username || 'Customer',
+            userPhone: userProfile?.mobile || currentUser.phoneNumber,
+            items: cart.map(item => ({
+                id: item.id,
+                quantity: item.quantity,
+                size: item.selectedSize.name,
+                addons: item.selectedAddons ? item.selectedAddons.map(a => a.name) : []
+            }))
         };
-        try {
-            console.log("Creating order document...");
-            const orderRef = await db.collection("orders").add(orderData);
-            console.log("Order document created:", orderRef.id);
-            if (!functionsAsia) throw new Error("Asia functions instance not available.");
-            const phonePePay = functionsAsia.httpsCallable('phonePePay');
-            console.log("Calling phonePePay function for order:", orderRef.id);
-            const response = await phonePePay({ orderId: orderRef.id });
-            console.log("phonePePay response:", response);
-            const { redirectUrl } = response.data|| {}; 
-            if (redirectUrl) { console.log("Redirecting to payment URL..."); window.location.href = redirectUrl; }
-            else { throw new Error("Could not get payment redirect URL from function response."); }
-        } catch (error) {
-            console.error("Error during payment process:", error);
-            let errorMessage = "Failed to initiate payment. Please try again.";
-            if (error.code === 'functions/unauthenticated') errorMessage = "Payment failed. Try disabling browser extensions or using a private window.";
-            else if (error.message) errorMessage = error.message;
-            else if (error.details) errorMessage = error.details;
-            showNotification(errorMessage, "error");
-            setIsRedirecting(false);
+
+        const createOrderAndPay = functionsAsia.httpsCallable('createOrderAndPay');
+        const result = await createOrderAndPay(orderPayload);
+        
+        const { redirectUrl } = result.data;
+        if (redirectUrl) {
+            window.location.href = redirectUrl;
+        } else {
+            throw new Error("No payment URL received.");
         }
-    };
+
+    } catch (error) {
+        console.error("Error during order creation:", error);
+        let errorMessage = "Failed to place order.";
+        if (error.details) errorMessage = error.details;
+        else if (error.message) errorMessage = error.message;
+        
+        showNotification(errorMessage, "error");
+        setIsRedirecting(false);
+    }
+};
 
     const handleSubmitReview = async (order, reviewData) => {
          if (!currentUser) return;

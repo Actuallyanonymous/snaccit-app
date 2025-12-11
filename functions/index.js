@@ -1,278 +1,376 @@
-// snaccit-app/functions/index.js (FINAL PAYMENT FUNCTIONS - Corrected ID)
+/**
+ * snaccit-app/functions/index.js
+ * FINAL STABLE VERSION - POINTS SYSTEM + SECURE PAYMENTS
+ */
 
-// --- Dependencies ---
-const {onRequest, onCall} = require("firebase-functions/v2/https");
-const {onDocumentWritten, onDocumentUpdated} = require("firebase-functions/v2/firestore");
+const { onCall, onRequest } = require("firebase-functions/v2/https");
+const { onDocumentWritten, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const crypto = require("crypto");
-const cors = require("cors")({origin: true});
-const {defineString, defineSecret} = require("firebase-functions/params");
+const { defineString, defineSecret } = require("firebase-functions/params");
 
-// --- Initialization ---
+// Initialize Admin SDK
 admin.initializeApp();
 const db = admin.firestore();
 
-// --- Secrets and Params ---
+// Define Configuration
 const APP_BASE_URL = defineString("APP_BASE_URL");
 const PHONEPE_MERCHANT_ID = defineSecret("PHONEPE_MERCHANT_ID");
 const PHONEPE_SALT_KEY = defineSecret("PHONEPE_SALT_KEY");
 const PHONEPE_SALT_INDEX = defineSecret("PHONEPE_SALT_INDEX");
 const PHONEPE_PAY_API_URL = "https://api.phonepe.com/apis/hermes/pg/v1/pay";
 
-
 // ======================================================================
-// === 1. PHONEPE PAYMENT INITIATOR (asia-south2) ===
+// === 1. SECURE ORDER CREATION & PAYMENT (WITH POINTS) ===
 // ======================================================================
-exports.phonePePay = onCall({ // ** MODIFIED: Changed from onRequest to onCall **
+exports.createOrderAndPay = onCall({
   region: "asia-south2",
-  secrets: [
-      PHONEPE_MERCHANT_ID,
-      PHONEPE_SALT_KEY,
-      PHONEPE_SALT_INDEX,
-  ],
+  secrets: [PHONEPE_MERCHANT_ID, PHONEPE_SALT_KEY, PHONEPE_SALT_INDEX],
   minInstances: 0,
-}, async (req) => { // ** MODIFIED: Removed req, res and cors wrapper **
-
-  // ** MODIFIED: Auth is now checked automatically **
-  if (!req.auth) {
-      // This throws an error back to the client's .catch() block
-      throw new functions.https.HttpsError(
-          'unauthenticated', 
-          'The function must be called while authenticated.'
-      );
+}, async (request) => {
+  // 1. Auth Check
+  if (!request.auth) {
+    throw new admin.functions.https.HttpsError('unauthenticated', 'Login required.');
   }
-  
+
   try {
-    const userId = req.auth.uid; // ** MODIFIED: Get UID from req.auth **
+    const userId = request.auth.uid;
+    const { 
+      restaurantId, 
+      items, 
+      couponCode, 
+      arrivalTime, 
+      userName, 
+      userPhone, 
+      usePoints 
+    } = request.data;
 
-    // ** MODIFIED: Data comes from req.data, not req.body.data **
-    const { orderId } = req.data; 
-    if (!orderId) {
-        throw new functions.https.HttpsError(
-            'invalid-argument', 
-            'Missing orderId in request.'
-        );
+    // --- A. PRICE CALCULATION (SERVER SIDE) ---
+    const restaurantRef = db.collection('restaurants').doc(restaurantId);
+    const restaurantDoc = await restaurantRef.get();
+    
+    if (!restaurantDoc.exists) {
+        throw new admin.functions.https.HttpsError('not-found', 'Restaurant not found');
     }
 
-    const orderRef = db.collection("orders").doc(orderId);
-    const orderDoc = await orderRef.get();
-    if (!orderDoc.exists) {
-        throw new functions.https.HttpsError('not-found', 'Order not found.');
-    }
-    const orderData = orderDoc.data();
-    if (orderData.userId !== userId) {
-        throw new functions.https.HttpsError(
-            'permission-denied', 
-            'Permission denied.'
-        );
+    const menuSnapshot = await restaurantRef.collection('menu').get();
+    const menuMap = {};
+    menuSnapshot.docs.forEach(doc => { 
+        menuMap[doc.id] = { id: doc.id, ...doc.data() }; 
+    });
+
+    let calculatedSubtotal = 0;
+    const secureItems = [];
+
+    // Loop through items to calculate real price
+    for (const itemRequest of items) {
+        const realItem = menuMap[itemRequest.id];
+        if (!realItem) {
+            throw new admin.functions.https.HttpsError('invalid-argument', `Item ${itemRequest.id} not found`);
+        }
+
+        const realSize = realItem.sizes.find(s => s.name === itemRequest.size);
+        if (!realSize) {
+             throw new admin.functions.https.HttpsError('invalid-argument', `Invalid size for ${realItem.name}`);
+        }
+
+        let addonsPrice = 0;
+        const validatedAddons = [];
+        
+        if (itemRequest.addons && Array.isArray(itemRequest.addons)) {
+            const availableAddons = realItem.addons || [];
+            availableAddons.forEach(a => {
+                if (itemRequest.addons.includes(a.name)) {
+                    addonsPrice += a.price;
+                    validatedAddons.push(a.name);
+                }
+            });
+        }
+
+        const finalItemPrice = realSize.price + addonsPrice;
+        calculatedSubtotal += finalItemPrice * itemRequest.quantity;
+
+        secureItems.push({
+            id: realItem.id, 
+            name: realItem.name, 
+            quantity: itemRequest.quantity,
+            price: finalItemPrice, 
+            size: itemRequest.size, 
+            addons: validatedAddons
+        });
     }
 
-    const amountToPay = orderData.total;
-    const merchantTransactionId = `SNCT_${orderId}`;
-    const merchantId = process.env.PHONEPE_MERCHANT_ID;
-    const saltKey = process.env.PHONEPE_SALT_KEY;
-    const saltIndex = process.env.PHONEPE_SALT_INDEX;
+    // --- B. POINTS LOGIC ---
+    let pointsDiscount = 0;
+    let pointsRedeemed = 0;
 
+    if (usePoints) {
+        const userDoc = await db.collection('users').doc(userId).get();
+        const availablePoints = userDoc.data().points || 0;
+        
+        if (availablePoints > 0) {
+            // Logic: 10 Points = 1 Rupee
+            const maxPointsDiscount = Math.floor(availablePoints / 10);
+            pointsDiscount = Math.min(maxPointsDiscount, calculatedSubtotal);
+            pointsRedeemed = pointsDiscount * 10;
+        }
+    }
+
+    // --- C. COUPON LOGIC ---
+    let couponDiscount = 0;
+    if (couponCode) {
+        const couponDoc = await db.collection('coupons').doc(couponCode).get();
+        if (couponDoc.exists) {
+            const coupon = couponDoc.data();
+            const now = admin.firestore.Timestamp.now();
+            
+            // Check if active, unused, not expired, and meets min order
+            const isNotExpired = !coupon.expiryDate || now < coupon.expiryDate;
+            if (coupon.isActive && !coupon.isUsed && isNotExpired && calculatedSubtotal >= coupon.minOrderValue) {
+                if (coupon.type === 'fixed') {
+                    couponDiscount = coupon.value;
+                } else if (coupon.type === 'percentage') {
+                    couponDiscount = (calculatedSubtotal * coupon.value) / 100;
+                }
+            }
+        }
+    }
+
+    const totalDiscount = pointsDiscount + couponDiscount;
+    // Prevent negative total
+    const grandTotal = Math.max(0, calculatedSubtotal - totalDiscount);
+
+    // --- D. DEDUCT POINTS & CREATE ORDER ---
+    if (pointsRedeemed > 0) {
+        await db.collection('users').doc(userId).update({
+            points: admin.firestore.FieldValue.increment(-pointsRedeemed)
+        });
+    }
+
+    const orderData = {
+        userId, 
+        userEmail: request.auth.token.email || null,
+        userName: userName || 'Customer', 
+        userPhone: userPhone || 'N/A',
+        restaurantId, 
+        restaurantName: restaurantDoc.data().name,
+        items: secureItems,
+        subtotal: calculatedSubtotal,
+        discount: totalDiscount,
+        couponCode: couponCode || null,
+        pointsRedeemed: pointsRedeemed, 
+        pointsValue: pointsDiscount,
+        total: grandTotal,
+        status: "awaiting_payment",
+        arrivalTime,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        hasReview: false,
+    };
+
+    const orderRef = await db.collection("orders").add(orderData);
+
+    // --- E. PAYMENT HANDLING ---
+    
+    // Case 1: Order is fully paid by points/coupons (Total is 0)
+    if (grandTotal === 0) {
+        await orderRef.update({ 
+            status: 'pending', 
+            paymentDetails: { method: 'points_full' } 
+        });
+        return { redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderRef.id}` };
+    }
+
+    // Case 2: PhonePe Payment Required
+    const merchantTransactionId = `SNCT_${orderRef.id}`;
+    
     const payload = {
-      merchantId, merchantTransactionId, merchantUserId: userId,
-      amount: Math.round(amountToPay * 100),
-      redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderId}`,
+      merchantId: PHONEPE_MERCHANT_ID.value(),
+      merchantTransactionId: merchantTransactionId,
+      merchantUserId: userId,
+      amount: Math.round(grandTotal * 100), // PhonePe expects paisa
+      redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderRef.id}`,
       redirectMode: "REDIRECT",
-      callbackUrl: `https://asia-south2-snaccit-7d853.cloudfunctions.net/phonePeCallback`,
-      mobileNumber: "9999999999", // You should probably get this from user's profile
-      paymentInstrument: {type: "PAY_PAGE"},
+      callbackUrl: `https://asia-south2-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/phonePeCallback`,
+      mobileNumber: userPhone || "9999999999",
+      paymentInstrument: { type: "PAY_PAGE" },
     };
 
     const base64Payload = Buffer.from(JSON.stringify(payload)).toString("base64");
-    const stringToHash = base64Payload + "/pg/v1/pay" + saltKey;
+    const stringToHash = base64Payload + "/pg/v1/pay" + PHONEPE_SALT_KEY.value();
     const sha256Hash = crypto.createHash("sha256").update(stringToHash).digest("hex");
-    const xVerify = sha256Hash + "###" + saltIndex;
+    const xVerify = sha256Hash + "###" + PHONEPE_SALT_INDEX.value();
 
-    const options = {
-      method: "POST", url: PHONEPE_PAY_API_URL,
-      headers: {"accept": "application/json", "Content-Type": "application/json", "X-VERIFY": xVerify},
-      data: {request: base64Payload},
-    };
-
-    const response = await axios.request(options);
-
-    if (response.data.success) {
-      const redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
-      await orderRef.update({merchantTransactionId});
-      
-      // ** MODIFIED: Return data directly. Firebase wraps it in { data: ... } **
-      return { redirectUrl }; 
-    } else {
-      throw new functions.https.HttpsError(
-          'internal', 
-          `PhonePe Error: ${response.data.message || "Unknown Error"}`
-      );
+    try {
+        const response = await axios.post(PHONEPE_PAY_API_URL, { request: base64Payload }, {
+            headers: { 
+                "Content-Type": "application/json", 
+                "X-VERIFY": xVerify 
+            }
+        });
+        
+        if (response.data.success) {
+            await orderRef.update({ merchantTransactionId });
+            return { redirectUrl: response.data.data.instrumentResponse.redirectInfo.url };
+        } else {
+            throw new Error(response.data.message || "Payment initiation failed");
+        }
+    } catch (paymentError) {
+        // ROLLBACK: Refund points if payment init failed
+        if(pointsRedeemed > 0) {
+            await db.collection('users').doc(userId).update({ 
+                points: admin.firestore.FieldValue.increment(pointsRedeemed) 
+            });
+        }
+        // Mark order as failed init
+        await orderRef.update({ status: 'payment_init_failed' });
+        
+        logger.error("Payment Init Error", paymentError);
+        throw new admin.functions.https.HttpsError('internal', 'Payment Gateway Error');
     }
+
   } catch (error) {
-    logger.error("Error in phonePePay onCall:", error);
-    // If it's already an HttpsError, re-throw it. Otherwise, wrap it.
-    if (error instanceof functions.https.HttpsError) {
-        throw error;
-    } else {
-        throw new functions.https.HttpsError(
-            'internal', 
-            error.message || "An internal error occurred."
-        );
-    }
+    logger.error("Create Order Error", error);
+    // Rethrow valid HttpsErrors, wrap others
+    if (error.code && error.details) throw error;
+    throw new admin.functions.https.HttpsError('internal', error.message || "Internal Server Error");
   }
 });
 
 // ======================================================================
-// === 2. PHONEPE CALLBACK HANDLER (asia-south2) ===
+// === 2. PHONEPE CALLBACK HANDLER ===
 // ======================================================================
 exports.phonePeCallback = onRequest({
   region: "asia-south2",
-  secrets: [
-    PHONEPE_SALT_KEY,
-    PHONEPE_SALT_INDEX,
-  ],
+  secrets: [PHONEPE_SALT_KEY, PHONEPE_SALT_INDEX],
 }, async (req, res) => {
   if (req.method !== "POST") {
-    res.status(405).send("Method Not Allowed");
-    return;
+      res.status(405).send("Method Not Allowed");
+      return;
   }
+
   try {
     const xVerifyHeader = req.headers["x-verify"];
     const responsePayload = req.body.response;
-    const saltKey = process.env.PHONEPE_SALT_KEY;
-    const saltIndex = process.env.PHONEPE_SALT_INDEX;
+    
+    // Use .value() for secrets
+    const saltKey = PHONEPE_SALT_KEY.value();
+    const saltIndex = PHONEPE_SALT_INDEX.value();
 
-    const calculatedHash = crypto.createHash("sha256")
-        .update(responsePayload + saltKey).digest("hex");
+    const calculatedHash = crypto.createHash("sha256").update(responsePayload + saltKey).digest("hex");
     const calculatedXVerify = calculatedHash + "###" + saltIndex;
 
     if (xVerifyHeader !== calculatedXVerify) {
-      res.status(400).send("Callback verification failed.");
-      return;
+        res.status(400).send("Verification failed");
+        return;
     }
 
-    const decodedResponse =
-      JSON.parse(Buffer.from(responsePayload, "base64").toString());
-    const merchantTransactionId = decodedResponse.data.merchantTransactionId;
-    const paymentStatus = decodedResponse.code;
+    const decoded = JSON.parse(Buffer.from(responsePayload, "base64").toString());
+    const merchantTransactionId = decoded.data.merchantTransactionId;
+    
+    // Find order by transaction ID
+    const ordersQuery = await db.collection("orders").where("merchantTransactionId", "==", merchantTransactionId).get();
 
-    const ordersQuery = db.collection("orders")
-        .where("merchantTransactionId", "==", merchantTransactionId);
-    const querySnapshot = await ordersQuery.get();
-
-    if (querySnapshot.empty) {
-      res.status(404).send("Order not found");
-      return;
+    if (ordersQuery.empty) {
+        res.status(404).send("Order not found");
+        return;
     }
 
-    const orderDoc = querySnapshot.docs[0];
-    if (paymentStatus === "PAYMENT_SUCCESS") {
-      await orderDoc.ref.update({status: "pending",
-        paymentDetails: decodedResponse.data});
+    const orderDoc = ordersQuery.docs[0];
+    const orderRef = orderDoc.ref;
+
+    if (decoded.code === "PAYMENT_SUCCESS") {
+        await orderRef.update({
+            status: "pending", 
+            paymentDetails: decoded.data
+        });
     } else {
-      await orderDoc.ref.update({status: "payment_failed",
-        paymentDetails: decodedResponse.data});
+        await orderRef.update({
+            status: "payment_failed", 
+            paymentDetails: decoded.data
+        });
     }
 
-    res.status(200).send("Callback received successfully.");
+    res.status(200).send("OK");
+
   } catch (error) {
-    logger.error("Error in PhonePe callback handler:", error);
+    logger.error("Callback Error", error);
     res.status(500).send("Internal Server Error");
   }
 });
 
 // ======================================================================
-// === 3. REFERRAL REWARD TRIGGER (asia-south2) ===
+// === 3. REFERRAL REWARDS (POINTS SYSTEM) ===
 // ======================================================================
-// MODIFIED: Now using 'onDocumentWritten' to catch NEW user creations too!
 
 exports.issueReferralRewards = onDocumentWritten({
   region: "asia-south2", 
   document: "users/{userId}",
 }, async (event) => {
-  // Safety check: if data is missing (e.g. delete event), stop.
+  // If document was deleted or doesn't exist, exit
   if (!event.data || !event.data.after.exists) return;
 
   const after = event.data.after.data();
-  // We don't strictly need 'before' for this logic, just the current state
 
-  // Check if 'referredBy' exists and we haven't issued rewards yet
+  // Logic: If user has 'referredBy' field and we haven't given rewards yet
   if (after.referredBy && !after.rewardsIssued) {
     const referrerId = after.referredBy;
     const newUserId = event.params.userId;
+    const REWARD_POINTS = 50; // 50 Points = 5 Rupees
 
-    // --- A. Coupon for the NEW USER (The Referee) ---
-    const newRefereeCode = `WELCOME-${after.myReferralCode}`;
-    
-    await db.collection("coupons").doc(newRefereeCode).set({
-        code: newRefereeCode,
-        value: 50,
-        type: "fixed",
-        minOrderValue: 150,
-        isActive: true,
-        isUsed: false,
-        assignedTo: newUserId,
-        expiryDate: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
-        description: "Referral Welcome Bonus"
+    const batch = db.batch();
+
+    // 1. Give Points to Referrer (The friend)
+    const referrerRef = db.collection("users").doc(referrerId);
+    batch.update(referrerRef, { 
+        points: admin.firestore.FieldValue.increment(REWARD_POINTS) 
     });
 
-    // --- B. Coupon for the REFERRER (The Friend) ---
-    const randomString = crypto.randomBytes(4).toString('hex').toUpperCase();
-    const newReferrerCode = `REF-${randomString}`;
-    
-    await db.collection("coupons").doc(newReferrerCode).set({
-        code: newReferrerCode,
-        value: 50,
-        type: "fixed",
-        minOrderValue: 150,
-        isActive: true,
-        isUsed: false,
-        assignedTo: referrerId,
-        expiryDate: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)),
-        description: `Bonus for referring ${after.username || 'a friend'}`
+    // 2. Give Points to New User (The referee)
+    const newUserRef = db.collection("users").doc(newUserId);
+    batch.update(newUserRef, { 
+        points: admin.firestore.FieldValue.increment(REWARD_POINTS),
+        rewardsIssued: true 
     });
 
-    // C. Mark user as rewarded
-    await event.data.after.ref.update({ rewardsIssued: true });
-
-    logger.info(`Issued unique coupons: ${newRefereeCode} and ${newReferrerCode}`);
+    await batch.commit();
+    logger.info(`Referral Success: Gave ${REWARD_POINTS} points to ${referrerId} and ${newUserId}`);
   }
 });
 
 // ======================================================================
-// === 4. COUPON STATUS MANAGER (asia-south2) ===
+// === 4. REWARD/POINT REFUND MANAGER ===
 // ======================================================================
-// Locks coupon when order is pending. Unlocks if order fails.
-
-exports.manageCouponOnOrderUpdate = onDocumentUpdated({
+exports.manageRewardsOnOrderUpdate = onDocumentUpdated({
   region: "asia-south2",
   document: "orders/{orderId}",
 }, async (event) => {
   const after = event.data.after.data();
   const before = event.data.before.data();
   
-  // If no coupon was used in this order, ignore
-  const couponCode = after.couponCode;
-  if (!couponCode) return; 
+  // Refund Points Logic
+  // If order status changes to failure, AND points were used -> Refund them.
+  const failureStatuses = ["payment_failed", "declined", "cancelled"];
+  const isNowFailed = failureStatuses.includes(after.status);
+  const wasNotFailed = !failureStatuses.includes(before.status);
 
-  // Case A: Order moved to 'pending' (Payment Success) -> LOCK COUPON
-  if (after.status === "pending" && before.status !== "pending") {
-      await db.collection("coupons").doc(couponCode).update({
-          isUsed: true,
-          usedInOrderId: event.params.orderId
+  if (after.pointsRedeemed > 0 && isNowFailed && wasNotFailed) {
+      await db.collection("users").doc(after.userId).update({
+          points: admin.firestore.FieldValue.increment(after.pointsRedeemed)
       });
-      logger.info(`Coupon ${couponCode} marked as USED for order ${event.params.orderId}`);
+      logger.info(`Refunded ${after.pointsRedeemed} points to user ${after.userId} (Order Failed)`);
   }
 
-  // Case B: Order Failed/Declined -> UNLOCK COUPON
-  const failureStatuses = ["payment_failed", "declined", "cancelled"];
-  if (failureStatuses.includes(after.status) && !failureStatuses.includes(before.status)) {
-      await db.collection("coupons").doc(couponCode).update({
-          isUsed: false, // Make it usable again
-          usedInOrderId: admin.firestore.FieldValue.delete()
-      });
-      logger.info(`Coupon ${couponCode} REACTIVATED because order failed/declined.`);
+  // Coupon Logic (Lock/Unlock)
+  if (after.couponCode) {
+      // Lock coupon on success
+      if (after.status === "pending" && before.status !== "pending") {
+          await db.collection("coupons").doc(after.couponCode).update({ isUsed: true });
+      }
+      // Unlock coupon on failure
+      if (isNowFailed && wasNotFailed) {
+          await db.collection("coupons").doc(after.couponCode).update({ isUsed: false });
+      }
   }
 });
