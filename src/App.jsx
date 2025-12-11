@@ -1650,11 +1650,10 @@ const PaymentStatusPage = ({ onGoHome }) => {
     );
 };
 
-// --- [UPDATED] Profile Page Component with Coupons ---
+// --- [FINAL CORRECTED] Profile Page Component ---
 const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) => {
     const [orders, setOrders] = useState([]);
-    const [coupons, setCoupons] = useState([]); // <--- NEW STATE for Coupons
-    const [profile, setProfile] = useState({ username: '', mobile: '', myReferralCode: '' });
+    const [profile, setProfile] = useState({ username: '', mobile: '', myReferralCode: '', points: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ username: '', mobile: '' });
@@ -1664,7 +1663,7 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
         
         setIsLoading(true);
 
-        // 1. Fetch User Profile
+        // 1. Fetch User Profile (Includes Points & Referral Code)
         const userDocRef = db.collection("users").doc(currentUser.uid);
         const unsubProfile = userDocRef.onSnapshot((doc) => {
             if (doc.exists) {
@@ -1674,22 +1673,7 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
             }
         });
 
-        // 2. Fetch User's Active Coupons (NEW)
-        const couponsQuery = db.collection("coupons")
-            .where("assignedTo", "==", currentUser.uid) // Only my coupons
-            .where("isUsed", "==", false)               // Only unused ones
-            .where("isActive", "==", true);             // Only active ones
-            
-        const unsubCoupons = couponsQuery.onSnapshot((snapshot) => {
-            const userCoupons = snapshot.docs.map(doc => ({ 
-                id: doc.id, 
-                ...doc.data(),
-                expiryDate: doc.data().expiryDate?.toDate() 
-            }));
-            setCoupons(userCoupons);
-        });
-
-        // 3. Fetch Orders
+        // 2. Fetch Orders
         const ordersQuery = db.collection("orders").where("userId", "==", currentUser.uid).orderBy("createdAt", "desc").limit(20);
         const unsubOrders = ordersQuery.onSnapshot((snapshot) => {
             const userOrders = snapshot.docs.map(doc => ({
@@ -1708,7 +1692,6 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
         return () => { 
              unsubProfile();
              unsubOrders();
-             unsubCoupons(); // Cleanup coupons listener
          };
     }, [currentUser]);
 
@@ -1745,7 +1728,7 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
         pending: 'bg-yellow-100 text-yellow-800', accepted: 'bg-blue-100 text-blue-800',
         preparing: 'bg-indigo-100 text-indigo-800', ready: 'bg-green-100 text-green-800',
         completed: 'bg-gray-100 text-gray-800', declined: 'bg-red-100 text-red-800',
-         payment_failed: 'bg-red-100 text-red-800',
+        payment_failed: 'bg-red-100 text-red-800',
     };
 
     return (
@@ -1789,15 +1772,36 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
                         </div>
                     </div>
 
-                    const pointsValue = usePoints ? Math.min(Math.floor(userPoints/10), subtotal) : 0;
-const grandTotal = Math.max(0, subtotal - discount - pointsValue);
+                    {/* 2. MY POINTS SECTION (Corrected Logic & UI) */}
+                    {!isEditing && (
+                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-[2rem] shadow-sm border border-amber-100 relative overflow-hidden">
+                            <div className="absolute -right-10 -top-10 w-32 h-32 bg-amber-200/30 rounded-full blur-2xl"></div>
+                            {/* Replaced 'Award' with simple text if icon missing, or ensure Award is imported from lucide-react */}
+                            <h2 className="text-xl font-extrabold text-amber-800 mb-4 flex items-center">✨ Snaccit Points</h2>
+                            
+                            <div className="flex flex-col items-center justify-center py-6">
+                                <div className="text-6xl font-black text-amber-500 mb-2">
+                                    {profile.points || 0}
+                                </div>
+                                <p className="text-amber-800 font-medium">Available Points</p>
+                                <p className="text-xs text-amber-600/70 mt-2">10 Points = ₹1 Discount</p>
+                            </div>
+                            
+                            <div className="bg-white/60 p-3 rounded-xl border border-amber-100 text-center">
+                                <p className="text-xs text-amber-800 font-semibold">How to use?</p>
+                                <p className="text-xs text-gray-600">Toggle "Redeem Points" at checkout for instant discounts.</p>
+                            </div>
+                        </div>
+                    )}
 
-                    {/* 3. REFERRAL SECTION */}
+                    {/* 3. REFERRAL SECTION (Corrected Text) */}
                     {!isEditing && (
                         <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-[2rem] shadow-sm border border-green-100 relative overflow-hidden">
                             <div className="absolute -right-6 -top-6 w-24 h-24 bg-green-200/50 rounded-full blur-xl"></div>
-                            <h3 className="text-green-800 font-extrabold text-lg mb-1">Refer & Earn ₹50</h3>
-                            <p className="text-green-600/80 text-sm mb-4 leading-snug">Share your code. When friends sign up and order, you both get a discount coupon!</p>
+                            <h3 className="text-green-800 font-extrabold text-lg mb-1">Refer & Earn 50 Points</h3>
+                            <p className="text-green-600/80 text-sm mb-4 leading-snug">
+                                Share your code. When a friend signs up and orders, you BOTH get <span className="font-bold">50 Points</span> (₹5)!
+                            </p>
                             
                             <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-green-200 shadow-sm">
                                 <div className="flex-grow text-center font-mono font-black text-xl text-gray-800 tracking-widest">
@@ -1838,6 +1842,8 @@ const grandTotal = Math.max(0, subtotal - discount - pointsValue);
                                     </div>
                                     <div className="flex flex-col sm:flex-row justify-between items-center mt-3">
                                         <div>
+                                            {/* Show Points or Coupon usage if present */}
+                                            {order.pointsRedeemed > 0 && <p className="text-xs text-amber-600 font-bold">Points Redeemed: {order.pointsRedeemed} (Saved ₹{order.pointsValue})</p>}
                                             {order.couponCode && <p className="text-xs text-green-600 font-bold">Coupon Applied: {order.couponCode}</p>}
                                             <span className="font-black text-xl text-gray-900">Total: ₹{order.total.toFixed(2)}</span>
                                         </div>
@@ -1860,7 +1866,6 @@ const grandTotal = Math.max(0, subtotal - discount - pointsValue);
         </div>
     );
 };
-
 // --- Review Modal Component ---
 const ReviewModal = ({ isOpen, onClose, order, onSubmitReview }) => {
 // ... (rest of the component is unchanged - long code omitted for brevity)
