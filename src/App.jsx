@@ -1569,7 +1569,7 @@ const OrderConfirmation = ({ onGoHome }) => (
     </div>
 );
 
-// --- [FIXED] Payment Status Page Component ---
+// --- [FINAL FIXED] Payment Status Page Component ---
 const PaymentStatusPage = ({ onGoHome }) => {
     const [orderStatus, setOrderStatus] = useState('awaiting_payment');
     const [orderId, setOrderId] = useState(null);
@@ -1597,10 +1597,8 @@ const PaymentStatusPage = ({ onGoHome }) => {
         });
 
         // 2. Timer for "Taking longer than usual" message (30s)
-        // We store this ID so we can clear it if success happens early
         const delayTimer = setTimeout(() => {
             setOrderStatus((currentStatus) => {
-                // Only switch to 'delayed' if we are STILL waiting
                 if (currentStatus === 'awaiting_payment') {
                     return 'delayed';
                 }
@@ -1614,13 +1612,15 @@ const PaymentStatusPage = ({ onGoHome }) => {
         };
     }, []);
 
-    // 3. NEW: Auto-redirect effect when Payment is Successful
+    // 3. Auto-redirect effect when Payment is Successful
     useEffect(() => {
-        if (orderStatus === 'pending') {
-            // If payment is successful ('pending'), wait 5 seconds then go home automatically
+        // Redirect on ANY positive status
+        const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
+        
+        if (successStatuses.includes(orderStatus)) {
             const successRedirectTimer = setTimeout(() => {
                 onGoHome();
-            }, 5000); // 5 seconds delay so they can read "Success" message
+            }, 5000); 
             return () => clearTimeout(successRedirectTimer);
         }
     }, [orderStatus, onGoHome]);
@@ -1628,11 +1628,29 @@ const PaymentStatusPage = ({ onGoHome }) => {
 
     const renderContent = () => {
         switch (orderStatus) {
-            case 'awaiting_payment': return <><Loader2 size={64} className="text-blue-500 mb-6 animate-spin" /><h1 className="text-4xl font-bold text-gray-800">Processing Payment...</h1><p className="text-lg text-gray-600 mt-4">Please wait, we are confirming your payment.</p></>;
-            case 'pending': return <><PartyPopper size={64} className="text-green-500 mb-6 animate-bounce" /><h1 className="text-4xl font-bold text-gray-800">Order Placed Successfully!</h1><p className="text-lg text-gray-600 mt-4">Redirecting you to home in a moment...</p></>;
-            case 'payment_failed': return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment Failed</h1><p className="text-lg text-gray-600 mt-4">There was an issue with your payment. Please try again.</p></>;
-            case 'delayed': return <><Clock size={64} className="text-amber-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment is Processing</h1><p className="text-lg text-gray-600 mt-4 max-w-2xl">Your payment is taking longer than usual. You can safely close this window; we will update your order status in your profile once confirmed.</p></>;
-            default: return <><Info size={64} className="text-yellow-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Something Went Wrong</h1><p className="text-lg text-gray-600 mt-4">We couldn't find your order details.</p></>;
+            case 'awaiting_payment': 
+                return <><Loader2 size={64} className="text-blue-500 mb-6 animate-spin" /><h1 className="text-4xl font-bold text-gray-800">Processing Payment...</h1><p className="text-lg text-gray-600 mt-4">Please wait, we are confirming your payment.</p></>;
+            
+            // [FIX] Group all POSITIVE statuses here
+            case 'pending': 
+            case 'accepted':
+            case 'preparing':
+            case 'ready':
+            case 'completed':
+                return <><PartyPopper size={64} className="text-green-500 mb-6 animate-bounce" /><h1 className="text-4xl font-bold text-gray-800">Order Placed Successfully!</h1><p className="text-lg text-gray-600 mt-4">Redirecting you to home in a moment...</p></>;
+            
+            case 'payment_failed': 
+                return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment Failed</h1><p className="text-lg text-gray-600 mt-4">There was an issue with your payment. Please try again.</p></>;
+            
+            case 'delayed': 
+                return <><Clock size={64} className="text-amber-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment is Processing</h1><p className="text-lg text-gray-600 mt-4 max-w-2xl">Your payment is taking longer than usual. You can safely close this window; we will update your order status in your profile once confirmed.</p></>;
+            
+            case 'declined':
+            case 'cancelled':
+                return <><XCircle size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Order Declined</h1><p className="text-lg text-gray-600 mt-4">The restaurant could not accept this order. Any payment made will be refunded.</p></>;
+
+            default: 
+                return <><Info size={64} className="text-yellow-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Something Went Wrong</h1><p className="text-lg text-gray-600 mt-4">We couldn't find your order details.</p></>;
         }
     };
 
@@ -1640,7 +1658,7 @@ const PaymentStatusPage = ({ onGoHome }) => {
         <div className="container mx-auto px-6 py-20 text-center flex flex-col items-center justify-center min-h-[60vh]">
             {renderContent()}
             <button onClick={onGoHome} className="mt-8 bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition-colors">
-                {orderStatus === 'pending' ? 'Return Home Now' : 'Go Back Home'}
+                {['pending', 'accepted', 'preparing', 'ready', 'completed'].includes(orderStatus) ? 'Return Home Now' : 'Go Back Home'}
             </button>
         </div>
     );
