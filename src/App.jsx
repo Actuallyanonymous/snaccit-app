@@ -1982,28 +1982,76 @@ const PaymentRedirectOverlay = ({ isOpen }) => {
 
 // --- Main App Component (Integrates New Modals) ---
 const App = () => {
-    // --- State ---
-    const [view, setView] = useState('home');
-    const [selectedRestaurant, setSelectedRestaurant] = useState(null);
-    const [currentUser, setCurrentUser] = useState(null);
-    const [userProfile, setUserProfile] = useState(null);
-    const [restaurants, setRestaurants] = useState([]);
-    const [isLoading, setIsLoading] = useState(true); // Loading restaurants state
-    const [cart, setCart] = useState([]);
-    const [isCartOpen, setIsCartOpen] = useState(false);
-    const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-    const [itemToCustomize, setItemToCustomize] = useState(null);
-    const [notification, setNotification] = useState({ message: '', type: '' });
-    const [scrollToSection, setScrollToSection] = useState(null);
-    const [orderToReview, setOrderToReview] = useState(null);
-    const [isRedirecting, setIsRedirecting] = useState(false);
-    const [isAuthReady, setIsAuthReady] = useState(false); // Auth loading state
-    const [isAuthModalOpen, setAuthModalOpen] = useState(false); // Used for OTP sign-up/login
-    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); // New: For choosing login method
-    const [isSetCredentialsModalOpen, setIsSetCredentialsModalOpen] = useState(false); // New: After first sign-up
-    const [newUserObject, setNewUserObject] = useState(null); // Temp store user after OTP verify
+    // --- [1] REPLACE ALL YOUR STATE DECLARATIONS WITH THIS ---
+  const [view, setView] = useState('home');
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [restaurants, setRestaurants] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [cart, setCart] = useState([]);
+  
+  // Modal States
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [itemToCustomize, setItemToCustomize] = useState(null);
+  const [notification, setNotification] = useState({ message: '', type: '' });
+  const [scrollToSection, setScrollToSection] = useState(null);
+  const [orderToReview, setOrderToReview] = useState(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  
+  // Auth States
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isSetCredentialsModalOpen, setIsSetCredentialsModalOpen] = useState(false);
+  const [newUserObject, setNewUserObject] = useState(null);
 
-    const showNotification = (message, type) => setNotification({ message, type });
+  const showNotification = (message, type) => setNotification({ message, type });
+
+  // --- [2] PASTE THIS NEW NAVIGATION LOGIC HERE ---
+  
+  // Helper to change view and update URL history
+  const navigate = (newView, restaurantData = null) => {
+      // 1. Update React State
+      setView(newView);
+      setSelectedRestaurant(restaurantData);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // 2. Update Browser URL (The Magic Part)
+      let path = '/';
+      if (newView === 'menu' && restaurantData) path = `/restaurant/${restaurantData.id}`; 
+      else if (newView === 'profile') path = '/profile';
+      else if (newView === 'privacy') path = '/privacy-policy';
+      else if (newView === 'terms') path = '/terms-of-service';
+      
+      // Push state to browser history so "Back" works
+      window.history.pushState({ view: newView, restaurant: restaurantData }, '', path);
+  };
+
+  // Listener for the Browser "Back" Button
+  useEffect(() => {
+      const handlePopState = (event) => {
+          if (event.state) {
+              // User pressed Back: Restore the previous view from history
+              setView(event.state.view || 'home');
+              setSelectedRestaurant(event.state.restaurant || null);
+          } else {
+              // Initial load or unknown state: Go Home
+              setView('home');
+              setSelectedRestaurant(null);
+          }
+      };
+
+      window.addEventListener('popstate', handlePopState);
+
+      // Set initial state on first load so we have a starting point
+      if (!window.history.state) {
+          window.history.replaceState({ view: 'home', restaurant: null }, '', window.location.pathname);
+      }
+
+      return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
     // --- Effects ---
     useEffect(() => {
@@ -2286,27 +2334,17 @@ const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, use
      };
 
     const handleRestaurantClick = (restaurant) => {
-         setSelectedRestaurant(restaurant);
-         setView('menu');
-         setCart([]);
-     };
+      navigate('menu', restaurant);
+      setCart([]); 
+  };
 
     const handleBackClick = () => {
-         setSelectedRestaurant(null);
-         setView('home');
+         window.history.back();
      };
 
     const handleGoHome = (sectionId = null) => {
-         if (view === 'home') {
-            if (sectionId) {
-                 const element = document.getElementById(sectionId);
-                 if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            } else { window.scrollTo({ top: 0, behavior: 'smooth' }); }
-         } else {
-            setView('home');
-            if (sectionId) setScrollToSection(sectionId);
-            else setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
-         }
+        navigate('home');
+      if (sectionId) setScrollToSection(sectionId);
      };
 
      // --- Auth Flow Handlers ---
@@ -2330,7 +2368,7 @@ const renderView = () => {
                 allRestaurants={restaurants} 
                 isLoading={isLoading} 
                 onRestaurantClick={handleRestaurantClick} 
-                onGoToProfile={() => setView('profile')} // <--- ADD THIS PROP
+                onGoToProfile={() => navigate('profile')} 
             />;
         // ------------------------
         
