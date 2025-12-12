@@ -985,16 +985,21 @@ const StarRating = ({ rating }) => {
     return <div className="flex">{stars}</div>;
 };
 
-// --- MenuPage Component ---
+// --- [UPDATED] MenuPage Component with Dish Search ---
 const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
     const [menuItems, setMenuItems] = useState([]);
     const [reviews, setReviews] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    
+    // 1. NEW: State for the search term
+    const [menuSearch, setMenuSearch] = useState('');
 
     useEffect(() => {
         if (!restaurant) return;
         setIsLoading(true);
+        // Reset search when opening a new restaurant
+        setMenuSearch(''); 
+
         let unsubMenu = () => {};
         let unsubReviews = () => {};
 
@@ -1002,20 +1007,18 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
             const menuCollectionRef = db.collection("restaurants").doc(restaurant.id).collection("menu");
             unsubMenu = menuCollectionRef.onSnapshot((snapshot) => {
                 const allItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Only show available items
                 const availableItems = allItems.filter(item => item.isAvailable !== false);
-                
                 setMenuItems(availableItems);
                 setIsLoading(false);
             }, (error) => {
-                console.error("Error fetching menu snapshot: ", error);
+                console.error("Error fetching menu: ", error);
                 setIsLoading(false);
             });
 
             const reviewsQuery = db.collection("reviews").where("restaurantId", "==", restaurant.id).orderBy("createdAt", "desc").limit(10);
             unsubReviews = reviewsQuery.onSnapshot((snapshot) => {
                 setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            }, (error) => {
-                 console.error("Error fetching reviews snapshot: ", error);
             });
         } catch (error) {
              console.error("Error setting up listeners:", error);
@@ -1023,19 +1026,33 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
         }
 
         return () => {
-             console.log("Cleaning up MenuPage listeners for", restaurant.id);
             unsubMenu();
             unsubReviews();
         };
     }, [restaurant]);
 
-     if (!restaurant) {
+    // 2. NEW: Filter Logic
+    const filteredItems = useMemo(() => {
+        if (!menuSearch) return menuItems;
+        const lowerTerm = menuSearch.toLowerCase();
+        return menuItems.filter(item => 
+            item.name.toLowerCase().includes(lowerTerm) || 
+            (item.description && item.description.toLowerCase().includes(lowerTerm))
+        );
+    }, [menuItems, menuSearch]);
+
+    if (!restaurant) {
          return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
-     }
+    }
 
     return (
         <div className="container mx-auto px-6 py-12 min-h-screen">
-            <button onClick={onBackClick} className="flex items-center text-gray-600 hover:text-green-600 font-semibold mb-8"><ArrowLeft className="mr-2" size={20} />Back to all restaurants</button>
+            {/* Back Button */}
+            <button onClick={onBackClick} className="flex items-center text-gray-600 hover:text-green-600 font-semibold mb-8 transition-colors">
+                <ArrowLeft className="mr-2" size={20} /> Back to all restaurants
+            </button>
+
+            {/* Restaurant Header */}
             <div className="flex flex-col md:flex-row items-center mb-12">
                 <img src={restaurant.imageUrl} alt={restaurant.name} className="w-full md:w-48 h-48 rounded-3xl object-cover shadow-lg"/>
                 <div className="md:ml-8 mt-6 md:mt-0 text-center md:text-left">
@@ -1048,7 +1065,9 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                     </div>
                 </div>
             </div>
+
             <div className="max-w-4xl mx-auto">
+                {/* Reviews Section */}
                 <div className="mb-12">
                     <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Reviews</h2>
                     {reviews.length > 0 ? (
@@ -1067,10 +1086,31 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                     ) : (<p className="text-gray-500 italic">No reviews yet.</p>)}
                 </div>
 
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Menu</h2>
-                {isLoading ? (<div className="flex justify-center"><Loader2 className="animate-spin text-green-600" size={32} /></div>) : menuItems.length > 0 ? (
+                {/* 3. NEW: Menu Header + Search Bar */}
+                <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center mb-6 gap-4">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Menu</h2>
+                    
+                    {/* Search Input */}
+                    <div className="relative w-full sm:w-64">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="text-gray-400" size={18} />
+                        </div>
+                        <input 
+                            type="text" 
+                            placeholder="Search dishes..." 
+                            value={menuSearch}
+                            onChange={(e) => setMenuSearch(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white shadow-sm"
+                        />
+                    </div>
+                </div>
+
+                {/* Menu Grid */}
+                {isLoading ? (
+                    <div className="flex justify-center"><Loader2 className="animate-spin text-green-600" size={32} /></div>
+                ) : filteredItems.length > 0 ? (
                     <div className="space-y-4">
-                        {menuItems.map((item) => (
+                        {filteredItems.map((item) => (
                             <div key={item.id} className="bg-white rounded-2xl shadow-md p-4 flex items-center justify-between transition-shadow hover:shadow-lg">
                                 <div className="flex-1 min-w-0 pr-4">
                                     <h3 className="font-bold text-lg text-gray-800">{item.name}</h3>
@@ -1092,7 +1132,18 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                             </div>
                         ))}
                     </div>
-                ) : (<p className="text-gray-500 italic">Menu not available for this restaurant.</p>)}
+                ) : (
+                    <div className="text-center py-10">
+                        {menuSearch ? (
+                            <>
+                                <Frown size={48} className="mx-auto text-gray-300 mb-2"/>
+                                <p className="text-gray-500 font-medium">No dishes match "{menuSearch}"</p>
+                            </>
+                        ) : (
+                            <p className="text-gray-500 italic">Menu not available for this restaurant.</p>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );
