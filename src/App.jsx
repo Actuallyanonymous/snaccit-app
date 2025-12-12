@@ -985,38 +985,94 @@ const StarRating = ({ rating }) => {
     return <div className="flex">{stars}</div>;
 };
 
-// --- [UPDATED] MenuPage Component with Dish Search ---
+// --- [NEW] All Reviews Modal ---
+const ReviewsListModal = ({ isOpen, onClose, restaurantId, restaurantName }) => {
+    const [reviews, setReviews] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (isOpen && restaurantId) {
+            setLoading(true);
+            // Fetch up to 50 latest reviews for the modal
+            const q = db.collection("reviews")
+                .where("restaurantId", "==", restaurantId)
+                .orderBy("createdAt", "desc")
+                .limit(50);
+            
+            const unsub = q.onSnapshot(snapshot => {
+                setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                setLoading(false);
+            });
+            return () => unsub();
+        }
+    }, [isOpen, restaurantId]);
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-[80] flex items-center justify-center p-4 backdrop-blur-sm">
+             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md h-[80vh] flex flex-col animate-fade-in-down">
+                <div className="p-5 border-b flex justify-between items-center bg-gray-50 rounded-t-2xl">
+                    <h2 className="text-xl font-bold text-gray-800">Reviews for {restaurantName}</h2>
+                    <button onClick={onClose} className="p-2 bg-white rounded-full text-gray-500 hover:text-gray-800 shadow-sm"><X size={20}/></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                    {loading ? (
+                        <div className="flex justify-center py-10"><Loader2 className="animate-spin text-green-600" size={32}/></div>
+                    ) : reviews.length > 0 ? (
+                        reviews.map(r => (
+                            <div key={r.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                                 <div className="flex justify-between items-center mb-2">
+                                    <StarRating rating={r.rating} />
+                                    <span className="text-xs text-gray-400">{r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString() : ''}</span>
+                                </div>
+                                <p className="text-gray-700 text-sm italic">"{r.text}"</p>
+                                <p className="text-xs text-gray-500 mt-2 font-bold text-right">- {r.userEmail?.split('@')[0] || 'User'}</p>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-center text-gray-500 mt-10">No reviews found.</p>
+                    )}
+                </div>
+             </div>
+        </div>
+    );
+};
+
+// --- [UPDATED] MenuPage Component (With Limited Reviews & Search) ---
 const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
     const [menuItems, setMenuItems] = useState([]);
     const [reviews, setReviews] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    
-    // 1. NEW: State for the search term
     const [menuSearch, setMenuSearch] = useState('');
+    
+    // State for the "All Reviews" modal
+    const [isAllReviewsOpen, setIsAllReviewsOpen] = useState(false);
 
     useEffect(() => {
         if (!restaurant) return;
         setIsLoading(true);
-        // Reset search when opening a new restaurant
         setMenuSearch(''); 
 
         let unsubMenu = () => {};
         let unsubReviews = () => {};
 
         try {
+            // 1. Fetch Menu
             const menuCollectionRef = db.collection("restaurants").doc(restaurant.id).collection("menu");
             unsubMenu = menuCollectionRef.onSnapshot((snapshot) => {
                 const allItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Only show available items
                 const availableItems = allItems.filter(item => item.isAvailable !== false);
                 setMenuItems(availableItems);
                 setIsLoading(false);
-            }, (error) => {
-                console.error("Error fetching menu: ", error);
-                setIsLoading(false);
             });
 
-            const reviewsQuery = db.collection("reviews").where("restaurantId", "==", restaurant.id).orderBy("createdAt", "desc").limit(10);
+            // 2. Fetch Reviews (LIMIT TO 3 for preview)
+            const reviewsQuery = db.collection("reviews")
+                .where("restaurantId", "==", restaurant.id)
+                .orderBy("createdAt", "desc")
+                .limit(3); // <--- Only fetch 3 for the main page
+            
             unsubReviews = reviewsQuery.onSnapshot((snapshot) => {
                 setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
             });
@@ -1025,13 +1081,10 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
              setIsLoading(false);
         }
 
-        return () => {
-            unsubMenu();
-            unsubReviews();
-        };
+        return () => { unsubMenu(); unsubReviews(); };
     }, [restaurant]);
 
-    // 2. NEW: Filter Logic
+    // Filter Logic for Menu Search
     const filteredItems = useMemo(() => {
         if (!menuSearch) return menuItems;
         const lowerTerm = menuSearch.toLowerCase();
@@ -1047,7 +1100,14 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
 
     return (
         <div className="container mx-auto px-6 py-12 min-h-screen">
-            {/* Back Button */}
+            {/* Inject the Modal here */}
+            <ReviewsListModal 
+                isOpen={isAllReviewsOpen} 
+                onClose={() => setIsAllReviewsOpen(false)} 
+                restaurantId={restaurant.id}
+                restaurantName={restaurant.name}
+            />
+
             <button onClick={onBackClick} className="flex items-center text-gray-600 hover:text-green-600 font-semibold mb-8 transition-colors">
                 <ArrowLeft className="mr-2" size={20} /> Back to all restaurants
             </button>
@@ -1067,9 +1127,20 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
             </div>
 
             <div className="max-w-4xl mx-auto">
-                {/* Reviews Section */}
+                {/* Reviews Section (Compact) */}
                 <div className="mb-12">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Reviews</h2>
+                    <div className="flex justify-between items-end mb-6">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Latest Reviews</h2>
+                        {reviews.length > 0 && (
+                            <button 
+                                onClick={() => setIsAllReviewsOpen(true)}
+                                className="text-green-600 font-bold text-sm hover:underline"
+                            >
+                                See all reviews
+                            </button>
+                        )}
+                    </div>
+
                     {reviews.length > 0 ? (
                         <div className="space-y-4">
                             {reviews.map(review => (
@@ -1078,7 +1149,7 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                                         <StarRating rating={review.rating} />
                                         <span className="text-xs text-gray-400">{review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : 'Date unavailable'}</span>
                                     </div>
-                                     {review.text && <p className="text-gray-600 mt-2 text-sm">{review.text}</p> }
+                                     {review.text && <p className="text-gray-600 mt-2 text-sm">"{review.text}"</p> }
                                     <p className="text-xs text-gray-500 mt-2 font-semibold">- {review.userEmail ? review.userEmail.split('@')[0] : 'Anonymous'}</p>
                                 </div>
                             ))}
@@ -1086,11 +1157,10 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                     ) : (<p className="text-gray-500 italic">No reviews yet.</p>)}
                 </div>
 
-                {/* 3. NEW: Menu Header + Search Bar */}
+                {/* Menu Section with Search */}
                 <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center mb-6 gap-4">
                     <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Menu</h2>
                     
-                    {/* Search Input */}
                     <div className="relative w-full sm:w-64">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <Search className="text-gray-400" size={18} />
