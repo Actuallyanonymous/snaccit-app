@@ -1665,7 +1665,7 @@ const PaymentStatusPage = ({ onGoHome }) => {
 };
 
 // --- [FINAL POLISHED] Profile Page Component ---
-const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) => {
+const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder, onBackClick }) => {
     const [orders, setOrders] = useState([]);
     const [profile, setProfile] = useState({ username: '', mobile: '', myReferralCode: '', points: 0 });
     const [isLoading, setIsLoading] = useState(true);
@@ -1741,6 +1741,9 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
 
     return (
         <div className="container mx-auto px-6 py-12 min-h-screen">
+            <button onClick={onBackClick} className="flex items-center text-gray-600 hover:text-green-600 font-semibold mb-6 transition-colors">
+                <ArrowLeft className="mr-2" size={20} /> Back to Home
+            </button>
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-8">My Profile</h1>
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="lg:w-1/3 space-y-8">
@@ -2379,7 +2382,7 @@ const renderView = () => {
         case 'paymentStatus': return <PaymentStatusPage onGoHome={() => handleGoHome()} />;
         case 'privacy': return <PrivacyPolicyPage />;
         case 'terms': return <TermsOfServicePage />;
-        case 'profile': return currentUser ? <ProfilePage currentUser={currentUser} showNotification={showNotification} onReorder={handleReorder} onRateOrder={setOrderToReview} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
+        case 'profile': return currentUser ? <ProfilePage currentUser={currentUser} showNotification={showNotification} onReorder={handleReorder} onRateOrder={setOrderToReview} onBackClick={handleBackClick} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
         default: return <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
     }
 };
@@ -2430,7 +2433,7 @@ const renderView = () => {
                                  <Loader2 className="animate-spin text-gray-500" size={22} />
                             ) : currentUser ? (
                                 <>
-                                    <button onClick={() => setIsCartOpen(true)} className="relative text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100">
+                                    <button onClick={() => navigate('profile')} className="relative text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100">
                                         <ShoppingCart size={22} />
                                         {cartItemCount > 0 && <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">{cartItemCount}</span>}
                                     </button>
