@@ -1694,16 +1694,20 @@ const OrderConfirmation = ({ onGoHome }) => (
 const PaymentStatusPage = ({ onGoHome }) => {
     const [orderStatus, setOrderStatus] = useState('awaiting_payment');
     const [orderId, setOrderId] = useState(null);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true); // New loading state
 
+    // 1. Wait for Auth to be ready
     useEffect(() => {
-        const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
-        if (successStatuses.includes(orderStatus)) {
-            localStorage.removeItem('snaccit_cart');
-            localStorage.removeItem('snaccit_restaurant');
-        }
-    }, [orderStatus]);
+        const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+            setIsCheckingAuth(false);
+        });
+        return () => unsubscribeAuth();
+    }, []);
 
+    // 2. Fetch Order (Only after Auth is ready)
     useEffect(() => {
+        if (isCheckingAuth) return;
+
         const params = new URLSearchParams(window.location.search);
         const currentOrderId = params.get('orderId');
         setOrderId(currentOrderId);
@@ -1715,71 +1719,67 @@ const PaymentStatusPage = ({ onGoHome }) => {
 
         const orderRef = db.collection('orders').doc(currentOrderId);
         
-        // 1. Real-time listener for status updates
-        const unsubscribe = orderRef.onSnapshot((docSnapshot) => {
+        const unsubscribeSnapshot = orderRef.onSnapshot((docSnapshot) => {
             if (docSnapshot.exists) {
-                const newStatus = docSnapshot.data().status;
-                setOrderStatus(newStatus);
+                setOrderStatus(docSnapshot.data().status);
             } else {
-                setOrderStatus('error');
+                console.error("Order not found or permission denied");
+                if (auth.currentUser) setOrderStatus('error');
             }
+        }, (error) => {
+            console.error("Firestore Error:", error);
+            if (auth.currentUser) setOrderStatus('error');
         });
 
-        // 2. Timer for "Taking longer than usual" message (30s)
+        // Fallback timeout
         const delayTimer = setTimeout(() => {
-            setOrderStatus((currentStatus) => {
-                if (currentStatus === 'awaiting_payment') {
-                    return 'delayed';
-                }
-                return currentStatus;
-            });
+            setOrderStatus((curr) => curr === 'awaiting_payment' ? 'delayed' : curr);
         }, 30000);
 
         return () => {
-            unsubscribe();
+            unsubscribeSnapshot();
             clearTimeout(delayTimer);
         };
-    }, []);
+    }, [isCheckingAuth]);
 
-    // 3. Auto-redirect effect when Payment is Successful
+    // 3. Auto-Clear Cart & Redirect
     useEffect(() => {
-        // Redirect on ANY positive status
         const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
         
         if (successStatuses.includes(orderStatus)) {
-            const successRedirectTimer = setTimeout(() => {
-                onGoHome();
-            }, 5000); 
-            return () => clearTimeout(successRedirectTimer);
+            // --- CLEAR CART HERE ---
+            console.log("Payment Success. Clearing Cart.");
+            localStorage.removeItem('snaccit_cart');
+            localStorage.removeItem('snaccit_restaurant');
+            window.dispatchEvent(new Event("storage")); // Force update
+            // -----------------------
+
+            const timer = setTimeout(() => onGoHome(), 5000);
+            return () => clearTimeout(timer);
         }
     }, [orderStatus, onGoHome]);
 
-
     const renderContent = () => {
+        if (isCheckingAuth) return <Loader2 size={64} className="text-gray-400 mb-6 animate-spin" />;
+
         switch (orderStatus) {
             case 'awaiting_payment': 
-                return <><Loader2 size={64} className="text-blue-500 mb-6 animate-spin" /><h1 className="text-4xl font-bold text-gray-800">Processing Payment...</h1><p className="text-lg text-gray-600 mt-4">Please wait, we are confirming your payment.</p></>;
-            
-            // [FIX] Group all POSITIVE statuses here
+                return <><Loader2 size={64} className="text-blue-500 mb-6 animate-spin" /><h1 className="text-4xl font-bold text-gray-800">Processing Payment...</h1><p className="text-lg text-gray-600 mt-4">Please wait...</p></>;
             case 'pending': 
             case 'accepted':
             case 'preparing':
             case 'ready':
             case 'completed':
-                return <><PartyPopper size={64} className="text-green-500 mb-6 animate-bounce" /><h1 className="text-4xl font-bold text-gray-800">Order Placed Successfully!</h1><p className="text-lg text-gray-600 mt-4">Redirecting you to home in a moment...</p></>;
-            
+                return <><PartyPopper size={64} className="text-green-500 mb-6 animate-bounce" /><h1 className="text-4xl font-bold text-gray-800">Order Placed!</h1><p className="text-lg text-gray-600 mt-4">Redirecting home...</p></>;
             case 'payment_failed': 
-                return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment Failed</h1><p className="text-lg text-gray-600 mt-4">There was an issue with your payment. Please try again.</p></>;
-            
+                return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment Failed</h1><p className="text-lg text-gray-600 mt-4">Please try again.</p></>;
             case 'delayed': 
-                return <><Clock size={64} className="text-amber-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment is Processing</h1><p className="text-lg text-gray-600 mt-4 max-w-2xl">Your payment is taking longer than usual. You can safely close this window; we will update your order status in your profile once confirmed.</p></>;
-            
+                return <><Clock size={64} className="text-amber-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment Processing</h1><p className="text-lg text-gray-600 mt-4">Taking longer than usual. You can safely close this.</p></>;
             case 'declined':
             case 'cancelled':
-                return <><XCircle size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Order Declined</h1><p className="text-lg text-gray-600 mt-4">The restaurant could not accept this order. Any payment made will be refunded.</p></>;
-
+                return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Order Declined</h1><p className="text-lg text-gray-600 mt-4">Refund initiated.</p></>;
             default: 
-                return <><Info size={64} className="text-yellow-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Something Went Wrong</h1><p className="text-lg text-gray-600 mt-4">We couldn't find your order details.</p></>;
+                return <><Info size={64} className="text-yellow-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Something Went Wrong</h1><p className="text-lg text-gray-600 mt-4">Check your profile for order status.</p></>;
         }
     };
 
