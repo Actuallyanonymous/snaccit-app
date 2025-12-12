@@ -1690,10 +1690,10 @@ const OrderConfirmation = ({ onGoHome }) => (
     </div>
 );
 
-// --- [FIXED] Payment Status Page Component ---
+// --- [FINAL ROBUST] Payment Status Page Component ---
 const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => { 
     const [orderStatus, setOrderStatus] = useState('awaiting_payment');
-    const [orderId, setOrderId] = useState(null);
+    const [debugInfo, setDebugInfo] = useState(''); // Helps us see what URL we got
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
     // 1. Wait for Auth
@@ -1708,39 +1708,52 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => {
     useEffect(() => {
         if (isCheckingAuth) return;
 
-        const params = new URLSearchParams(window.location.search);
+        const searchParams = new URLSearchParams(window.location.search);
         
-        // FIX: Check for multiple variations of the ID parameter
-        const currentOrderId = params.get('orderId') || params.get('order_id') || params.get('id');
-        
-        console.log("Payment Page Loaded. URL Search:", window.location.search);
-        console.log("Detected Order ID:", currentOrderId);
+        // DEBUG: Capture all params to help us see what PhonePe sent
+        const allParams = {};
+        for (const [key, value] of searchParams.entries()) {
+            allParams[key] = value;
+        }
+        console.log("Payment URL Params:", allParams);
+        setDebugInfo(JSON.stringify(allParams));
 
-        setOrderId(currentOrderId);
+        // STRATEGY 1: Look for direct Order ID
+        let extractedId = searchParams.get('orderId') || searchParams.get('order_id') || searchParams.get('id');
 
-        if (!currentOrderId) {
-            console.error("Error: No Order ID found in URL.");
-            setOrderStatus('missing_id'); // Specific error state
+        // STRATEGY 2: Extract from merchantTransactionId (Format: SNCT_{orderId})
+        // PhonePe often sends this param on redirect
+        if (!extractedId) {
+            const transactionId = searchParams.get('merchantTransactionId') || searchParams.get('transactionId');
+            if (transactionId && transactionId.includes('SNCT_')) {
+                extractedId = transactionId.split('SNCT_')[1];
+                console.log("Recovered Order ID from Transaction ID:", extractedId);
+            }
+        }
+
+        if (!extractedId) {
+            console.error("Critical: Could not recover Order ID from URL.");
+            setOrderStatus('missing_id');
             return;
         }
 
-        const orderRef = db.collection('orders').doc(currentOrderId);
+        // We found the ID! Now listen to the database
+        const orderRef = db.collection('orders').doc(extractedId);
         
         const unsubscribeSnapshot = orderRef.onSnapshot((docSnapshot) => {
             if (docSnapshot.exists) {
                 const data = docSnapshot.data();
-                console.log("Order status update:", data.status);
+                console.log("Firestore Status Update:", data.status);
                 setOrderStatus(data.status);
             } else {
-                console.error("Error: Order document does not exist in Firestore.");
-                setOrderStatus('not_found'); // Specific error state
+                console.error("Order document not found in Firestore.");
+                setOrderStatus('not_found');
             }
         }, (error) => {
-            console.error("Firestore Read Error:", error);
+            console.error("Firestore Error:", error);
             setOrderStatus('error');
         });
 
-        // Fallback timeout
         const delayTimer = setTimeout(() => {
             setOrderStatus((curr) => curr === 'awaiting_payment' ? 'delayed' : curr);
         }, 30000);
@@ -1756,10 +1769,8 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => {
         const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
         
         if (successStatuses.includes(orderStatus)) {
-            // Only clear cart if order is actually successful
             if (onOrderSuccess) {
-                console.log("Order successful. Clearing cart...");
-                onOrderSuccess(); 
+                onOrderSuccess(); // This clears the cart!
             }
             const timer = setTimeout(() => onGoHome(), 5000);
             return () => clearTimeout(timer);
@@ -1779,18 +1790,30 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => {
             case 'completed':
                 return <><PartyPopper size={64} className="text-green-500 mb-6 animate-bounce" /><h1 className="text-4xl font-bold text-gray-800">Order Placed!</h1><p className="text-lg text-gray-600 mt-4">Redirecting home...</p></>;
             case 'payment_failed': 
+            case 'payment_init_failed':
                 return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment Failed</h1><p className="text-lg text-gray-600 mt-4">Please try again.</p></>;
             case 'delayed': 
-                return <><Clock size={64} className="text-amber-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Processing...</h1><p className="text-lg text-gray-600 mt-4">This is taking longer than usual. Check your profile for status.</p></>;
+                return <><Clock size={64} className="text-amber-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Processing...</h1><p className="text-lg text-gray-600 mt-4">Taking longer than usual. Check your profile for updates.</p></>;
             case 'declined':
             case 'cancelled':
                 return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Order Declined</h1><p className="text-lg text-gray-600 mt-4">Refund initiated.</p></>;
             
-            // NEW SPECIFIC ERROR CASES
+            // ERROR STATES
             case 'missing_id':
-                return <><Info size={64} className="text-red-500 mb-6" /><h1 className="text-3xl font-bold text-gray-800">Order ID Missing</h1><p className="text-gray-600 mt-4">We couldn't find your order details in the link.</p></>;
+                return (
+                    <>
+                        <Info size={64} className="text-red-500 mb-6" />
+                        <h1 className="text-3xl font-bold text-gray-800">Order ID Missing</h1>
+                        <p className="text-gray-600 mt-4 mb-4">We couldn't retrieve the order details.</p>
+                        {/* Debug info shown only on error to help us fix it */}
+                        <div className="bg-gray-100 p-4 rounded text-xs text-left w-full max-w-md overflow-auto font-mono">
+                            <strong>Debug Info (Share this):</strong><br/>
+                            {debugInfo}
+                        </div>
+                    </>
+                );
             case 'not_found':
-                return <><Info size={64} className="text-orange-500 mb-6" /><h1 className="text-3xl font-bold text-gray-800">Order Not Found</h1><p className="text-gray-600 mt-4">The order ID exists but the details are missing.</p></>;
+                return <><Info size={64} className="text-orange-500 mb-6" /><h1 className="text-3xl font-bold text-gray-800">Order Not Found</h1><p className="text-gray-600 mt-4">ID found, but order document is missing.</p></>;
             
             default: 
                 return <><Info size={64} className="text-yellow-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Something Went Wrong</h1><p className="text-lg text-gray-600 mt-4">Status: {orderStatus}</p></>;
