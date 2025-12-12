@@ -1691,12 +1691,12 @@ const OrderConfirmation = ({ onGoHome }) => (
 );
 
 // --- [FINAL FIXED] Payment Status Page Component ---
-const PaymentStatusPage = ({ onGoHome }) => {
+const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => { // <--- Added onOrderSuccess prop
     const [orderStatus, setOrderStatus] = useState('awaiting_payment');
     const [orderId, setOrderId] = useState(null);
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true); // New loading state
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-    // 1. Wait for Auth to be ready
+    // 1. Wait for Auth
     useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged((user) => {
             setIsCheckingAuth(false);
@@ -1704,7 +1704,7 @@ const PaymentStatusPage = ({ onGoHome }) => {
         return () => unsubscribeAuth();
     }, []);
 
-    // 2. Fetch Order (Only after Auth is ready)
+    // 2. Fetch Order
     useEffect(() => {
         if (isCheckingAuth) return;
 
@@ -1723,7 +1723,6 @@ const PaymentStatusPage = ({ onGoHome }) => {
             if (docSnapshot.exists) {
                 setOrderStatus(docSnapshot.data().status);
             } else {
-                console.error("Order not found or permission denied");
                 if (auth.currentUser) setOrderStatus('error');
             }
         }, (error) => {
@@ -1747,17 +1746,16 @@ const PaymentStatusPage = ({ onGoHome }) => {
         const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
         
         if (successStatuses.includes(orderStatus)) {
-            // --- CLEAR CART HERE ---
-            console.log("Payment Success. Clearing Cart.");
-            localStorage.removeItem('snaccit_cart');
-            localStorage.removeItem('snaccit_restaurant');
-            window.dispatchEvent(new Event("storage")); // Force update
-            // -----------------------
+            // --- TRIGGER PARENT CLEAR FUNCTION ---
+            if (onOrderSuccess) {
+                onOrderSuccess(); // This wipes the cart from the App state immediately
+            }
+            // -------------------------------------
 
             const timer = setTimeout(() => onGoHome(), 5000);
             return () => clearTimeout(timer);
         }
-    }, [orderStatus, onGoHome]);
+    }, [orderStatus, onGoHome, onOrderSuccess]);
 
     const renderContent = () => {
         if (isCheckingAuth) return <Loader2 size={64} className="text-gray-400 mb-6 animate-spin" />;
@@ -2498,6 +2496,13 @@ const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, use
         }
     };
 
+    const handleClearCart = () => {
+        console.log("Wiping Cart State & Storage...");
+        setCart([]); // Clear React State (Immediate UI update)
+        localStorage.removeItem('snaccit_cart'); // Clear Storage
+        localStorage.removeItem('snaccit_restaurant'); // Clear Restaurant Context
+    };
+
     const handleBackClick = () => {
          window.history.back();
      };
@@ -2536,8 +2541,11 @@ const renderView = () => {
 
         // ... rest of the cases remain the same
         case 'confirmation': return <OrderConfirmation onGoHome={() => handleGoHome()} />;
-        case 'paymentStatus': return <PaymentStatusPage onGoHome={() => handleGoHome()} />;
-        case 'privacy': return <PrivacyPolicyPage />;
+        case 'paymentStatus': 
+            return <PaymentStatusPage 
+                onGoHome={() => handleGoHome()} 
+                onOrderSuccess={handleClearCart} 
+            />;
         case 'terms': return <TermsOfServicePage />;
         case 'profile': return currentUser ? <ProfilePage currentUser={currentUser} showNotification={showNotification} onReorder={handleReorder} onRateOrder={setOrderToReview} onBackClick={handleBackClick} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
         default: return <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
