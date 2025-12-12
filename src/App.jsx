@@ -1690,89 +1690,120 @@ const OrderConfirmation = ({ onGoHome }) => (
     </div>
 );
 
-// --- [FINAL ROBUST] Payment Status Page Component ---
+// --- [FINAL FAIL-SAFE] Payment Status Page Component ---
 const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => { 
     const [orderStatus, setOrderStatus] = useState('awaiting_payment');
-    const [debugInfo, setDebugInfo] = useState(''); // Helps us see what URL we got
+    const [debugInfo, setDebugInfo] = useState(''); 
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const [statusMessage, setStatusMessage] = useState('Verifying Payment...');
 
     // 1. Wait for Auth
     useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged((user) => {
             setIsCheckingAuth(false);
+            if (!user) {
+                // If not logged in and no ID, we can't do anything
+                setOrderStatus('missing_id_no_auth');
+            }
         });
         return () => unsubscribeAuth();
     }, []);
 
-    // 2. Fetch Order
+    // 2. Fetch Order (URL First -> Fallback to Latest Order)
     useEffect(() => {
         if (isCheckingAuth) return;
 
         const searchParams = new URLSearchParams(window.location.search);
         
-        // DEBUG: Capture all params to help us see what PhonePe sent
+        // Debugging
         const allParams = {};
-        for (const [key, value] of searchParams.entries()) {
-            allParams[key] = value;
-        }
-        console.log("Payment URL Params:", allParams);
+        for (const [key, value] of searchParams.entries()) { allParams[key] = value; }
         setDebugInfo(JSON.stringify(allParams));
 
-        // STRATEGY 1: Look for direct Order ID
+        // 1. Try to get ID from URL
         let extractedId = searchParams.get('orderId') || searchParams.get('order_id') || searchParams.get('id');
-
-        // STRATEGY 2: Extract from merchantTransactionId (Format: SNCT_{orderId})
-        // PhonePe often sends this param on redirect
+        
         if (!extractedId) {
             const transactionId = searchParams.get('merchantTransactionId') || searchParams.get('transactionId');
             if (transactionId && transactionId.includes('SNCT_')) {
                 extractedId = transactionId.split('SNCT_')[1];
-                console.log("Recovered Order ID from Transaction ID:", extractedId);
             }
         }
 
-        if (!extractedId) {
-            console.error("Critical: Could not recover Order ID from URL.");
-            setOrderStatus('missing_id');
-            return;
-        }
-
-        // We found the ID! Now listen to the database
-        const orderRef = db.collection('orders').doc(extractedId);
-        
-        const unsubscribeSnapshot = orderRef.onSnapshot((docSnapshot) => {
-            if (docSnapshot.exists) {
-                const data = docSnapshot.data();
-                console.log("Firestore Status Update:", data.status);
-                setOrderStatus(data.status);
-            } else {
-                console.error("Order document not found in Firestore.");
-                setOrderStatus('not_found');
-            }
-        }, (error) => {
-            console.error("Firestore Error:", error);
-            setOrderStatus('error');
-        });
-
-        const delayTimer = setTimeout(() => {
-            setOrderStatus((curr) => curr === 'awaiting_payment' ? 'delayed' : curr);
-        }, 30000);
-
-        return () => {
-            unsubscribeSnapshot();
-            clearTimeout(delayTimer);
+        // 2. Main Logic Function
+        const startListeningToOrder = (id) => {
+            console.log("Listening to Order ID:", id);
+            const orderRef = db.collection('orders').doc(id);
+            return orderRef.onSnapshot((docSnapshot) => {
+                if (docSnapshot.exists) {
+                    const data = docSnapshot.data();
+                    setOrderStatus(data.status);
+                    
+                    // Update text based on status
+                    if(data.status === 'awaiting_payment') setStatusMessage('Waiting for confirmation...');
+                    if(data.status === 'pending') setStatusMessage('Payment Received!');
+                } else {
+                    setOrderStatus('not_found');
+                }
+            }, (error) => {
+                console.error("Firestore Error:", error);
+                setOrderStatus('error');
+            });
         };
+
+        // 3. Execution
+        if (extractedId) {
+            // Case A: We found an ID in the URL
+            const unsub = startListeningToOrder(extractedId);
+            return () => unsub();
+        } else if (auth.currentUser) {
+            // Case B: No ID in URL, fetch LATEST order for this user
+            console.log("No URL ID. Fetching latest user order...");
+            setStatusMessage("Locating your order...");
+            
+            db.collection("orders")
+                .where("userId", "==", auth.currentUser.uid)
+                .orderBy("createdAt", "desc")
+                .limit(1)
+                .get()
+                .then((snapshot) => {
+                    if (!snapshot.empty) {
+                        const latestOrder = snapshot.docs[0];
+                        const latestData = latestOrder.data();
+                        
+                        // Security Check: Only use this order if it was created in the last 15 minutes
+                        const now = new Date();
+                        const orderTime = latestData.createdAt?.toDate();
+                        const diffMins = (now - orderTime) / 1000 / 60;
+
+                        if (diffMins < 15) {
+                            console.log("Found recent order:", latestOrder.id);
+                            // Start listening to this ID
+                            startListeningToOrder(latestOrder.id);
+                        } else {
+                            console.warn("Latest order is too old (" + Math.round(diffMins) + " mins). Ignoring.");
+                            setOrderStatus('missing_id');
+                        }
+                    } else {
+                        setOrderStatus('missing_id');
+                    }
+                })
+                .catch(err => {
+                    console.error("Error fetching latest order:", err);
+                    setOrderStatus('error');
+                });
+        } else {
+            setOrderStatus('missing_id');
+        }
+
     }, [isCheckingAuth]);
 
     // 3. Auto-Clear Cart & Redirect
     useEffect(() => {
         const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
-        
         if (successStatuses.includes(orderStatus)) {
-            if (onOrderSuccess) {
-                onOrderSuccess(); // This clears the cart!
-            }
-            const timer = setTimeout(() => onGoHome(), 5000);
+            if (onOrderSuccess) onOrderSuccess();
+            const timer = setTimeout(() => onGoHome(), 4000);
             return () => clearTimeout(timer);
         }
     }, [orderStatus, onGoHome, onOrderSuccess]);
@@ -1782,7 +1813,7 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => {
 
         switch (orderStatus) {
             case 'awaiting_payment': 
-                return <><Loader2 size={64} className="text-blue-500 mb-6 animate-spin" /><h1 className="text-4xl font-bold text-gray-800">Verifying Payment...</h1><p className="text-lg text-gray-600 mt-4">Please wait a moment.</p></>;
+                return <><Loader2 size={64} className="text-blue-500 mb-6 animate-spin" /><h1 className="text-3xl font-bold text-gray-800">{statusMessage}</h1><p className="text-lg text-gray-600 mt-4">Please wait...</p></>;
             case 'pending': 
             case 'accepted':
             case 'preparing':
@@ -1792,31 +1823,18 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => {
             case 'payment_failed': 
             case 'payment_init_failed':
                 return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment Failed</h1><p className="text-lg text-gray-600 mt-4">Please try again.</p></>;
-            case 'delayed': 
-                return <><Clock size={64} className="text-amber-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Processing...</h1><p className="text-lg text-gray-600 mt-4">Taking longer than usual. Check your profile for updates.</p></>;
-            case 'declined':
-            case 'cancelled':
-                return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Order Declined</h1><p className="text-lg text-gray-600 mt-4">Refund initiated.</p></>;
-            
-            // ERROR STATES
             case 'missing_id':
+            case 'missing_id_no_auth':
                 return (
                     <>
-                        <Info size={64} className="text-red-500 mb-6" />
-                        <h1 className="text-3xl font-bold text-gray-800">Order ID Missing</h1>
-                        <p className="text-gray-600 mt-4 mb-4">We couldn't retrieve the order details.</p>
-                        {/* Debug info shown only on error to help us fix it */}
-                        <div className="bg-gray-100 p-4 rounded text-xs text-left w-full max-w-md overflow-auto font-mono">
-                            <strong>Debug Info (Share this):</strong><br/>
-                            {debugInfo}
-                        </div>
+                        <Info size={64} className="text-orange-500 mb-6" />
+                        <h1 className="text-3xl font-bold text-gray-800">Status Unknown</h1>
+                        <p className="text-gray-600 mt-4">We couldn't track your payment automatically.</p>
+                        <p className="text-sm text-gray-500 mt-2">Please check "My Profile" to see if your order was placed.</p>
                     </>
                 );
-            case 'not_found':
-                return <><Info size={64} className="text-orange-500 mb-6" /><h1 className="text-3xl font-bold text-gray-800">Order Not Found</h1><p className="text-gray-600 mt-4">ID found, but order document is missing.</p></>;
-            
             default: 
-                return <><Info size={64} className="text-yellow-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Something Went Wrong</h1><p className="text-lg text-gray-600 mt-4">Status: {orderStatus}</p></>;
+                return <><Info size={64} className="text-yellow-500 mb-6" /><h1 className="text-3xl font-bold text-gray-800">Checking Status...</h1></>;
         }
     };
 
