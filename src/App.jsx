@@ -1853,46 +1853,94 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
     );
 };
 
-// --- Review Modal Component ---
+// --- [FINAL FIXED] Review Modal Component ---
 const ReviewModal = ({ isOpen, onClose, order, onSubmitReview }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
     const [rating, setRating] = useState(0);
     const [reviewText, setReviewText] = useState('');
-     if (!isOpen || !order) return null;
 
-     // Reset state when modal opens (or order changes)
-     useEffect(() => {
-         if(isOpen) {
-             setRating(0);
-             setReviewText('');
-         }
-     }, [isOpen, order]);
+    // Reset state when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setRating(0);
+            setReviewText('');
+        }
+    }, [isOpen, order]);
 
     const handleSubmit = () => {
-        if (rating === 0) { alert("Please select a star rating."); return; }
+        if (rating === 0) { 
+            alert("Please select a star rating."); 
+            return; 
+        }
         onSubmitReview(order, { rating, text: reviewText });
     };
+
+    if (!isOpen || !order) return null;
+
     return (
         <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-                <div className="p-6 border-b relative">
-                    <h2 className="text-2xl font-bold">Leave a Review</h2>
-                    <p className="text-sm text-gray-500 mt-1">For your order at {order.restaurantName}</p>
-                    <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in-down">
+                {/* Header */}
+                <div className="p-6 border-b relative bg-gray-50">
+                    <h2 className="text-2xl font-bold text-gray-800">Leave a Review</h2>
+                    <p className="text-sm text-gray-500 mt-1">For your order at <span className="font-semibold">{order.restaurantName}</span></p>
+                    <button 
+                        onClick={onClose} 
+                        className="absolute top-4 right-4 p-2 bg-white rounded-full text-gray-400 hover:text-gray-700 shadow-sm transition-colors"
+                    >
+                        <X size={20} />
+                    </button>
                 </div>
+
+                {/* Body */}
                 <div className="p-6 space-y-6">
-                    <div>
-                        <h3 className="font-semibold mb-2">Your Rating</h3>
-                        <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map(star => <button key={star} onClick={() => setRating(star)}><Star size={32} className={`cursor-pointer transition-colors ${rating >= star ? 'text-amber-400 fill-current' : 'text-gray-300'}`} /></button>)}
+                    {/* Star Rating */}
+                    <div className="text-center">
+                        <h3 className="font-semibold text-gray-700 mb-3">How was your food?</h3>
+                        <div className="flex items-center justify-center gap-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button 
+                                    key={star} 
+                                    onClick={() => setRating(star)}
+                                    className="focus:outline-none transform hover:scale-110 transition-transform"
+                                >
+                                    <Star 
+                                        size={36} 
+                                        className={`transition-colors duration-200 ${rating >= star ? 'text-amber-400 fill-current' : 'text-gray-200'}`} 
+                                    />
+                                </button>
+                            ))}
                         </div>
+                        <p className="text-sm text-amber-600 font-medium mt-2 h-5">
+                            {rating === 1 && "Terrible"}
+                            {rating === 2 && "Bad"}
+                            {rating === 3 && "Okay"}
+                            {rating === 4 && "Good"}
+                            {rating === 5 && "Excellent!"}
+                        </p>
                     </div>
+
+                    {/* Review Text */}
                     <div>
-                        <h3 className="font-semibold mb-2">Your Review (Optional)</h3>
-                        <textarea value={reviewText} onChange={(e) => setReviewText(e.target.value)} rows="4" placeholder="Tell us about your experience..." className="w-full border border-gray-300 rounded-md p-2 focus:ring-green-500 focus:border-green-500"></textarea>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Write a Review (Optional)</label>
+                        <textarea 
+                            value={reviewText} 
+                            onChange={(e) => setReviewText(e.target.value)} 
+                            rows="3" 
+                            placeholder="Tell us what you liked..." 
+                            className="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none resize-none bg-gray-50 focus:bg-white transition-colors"
+                        ></textarea>
                     </div>
                 </div>
-                <div className="p-4 bg-gray-50 rounded-b-2xl"><button onClick={handleSubmit} className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors">Submit Review</button></div>
+
+                {/* Footer */}
+                <div className="p-6 pt-0">
+                    <button 
+                        onClick={handleSubmit} 
+                        className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-3.5 rounded-xl hover:shadow-lg hover:from-green-600 hover:to-green-700 transition-all transform active:scale-95"
+                    >
+                        Submit Review
+                    </button>
+                </div>
             </div>
         </div>
     );
