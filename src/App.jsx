@@ -1690,8 +1690,8 @@ const OrderConfirmation = ({ onGoHome }) => (
     </div>
 );
 
-// --- [FINAL FIXED] Payment Status Page Component ---
-const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => { // <--- Added onOrderSuccess prop
+// --- [FIXED] Payment Status Page Component ---
+const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => { 
     const [orderStatus, setOrderStatus] = useState('awaiting_payment');
     const [orderId, setOrderId] = useState(null);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -1709,11 +1709,18 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => { // <--- Added onOr
         if (isCheckingAuth) return;
 
         const params = new URLSearchParams(window.location.search);
-        const currentOrderId = params.get('orderId');
+        
+        // FIX: Check for multiple variations of the ID parameter
+        const currentOrderId = params.get('orderId') || params.get('order_id') || params.get('id');
+        
+        console.log("Payment Page Loaded. URL Search:", window.location.search);
+        console.log("Detected Order ID:", currentOrderId);
+
         setOrderId(currentOrderId);
 
         if (!currentOrderId) {
-            setOrderStatus('error');
+            console.error("Error: No Order ID found in URL.");
+            setOrderStatus('missing_id'); // Specific error state
             return;
         }
 
@@ -1721,13 +1728,16 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => { // <--- Added onOr
         
         const unsubscribeSnapshot = orderRef.onSnapshot((docSnapshot) => {
             if (docSnapshot.exists) {
-                setOrderStatus(docSnapshot.data().status);
+                const data = docSnapshot.data();
+                console.log("Order status update:", data.status);
+                setOrderStatus(data.status);
             } else {
-                if (auth.currentUser) setOrderStatus('error');
+                console.error("Error: Order document does not exist in Firestore.");
+                setOrderStatus('not_found'); // Specific error state
             }
         }, (error) => {
-            console.error("Firestore Error:", error);
-            if (auth.currentUser) setOrderStatus('error');
+            console.error("Firestore Read Error:", error);
+            setOrderStatus('error');
         });
 
         // Fallback timeout
@@ -1746,12 +1756,11 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => { // <--- Added onOr
         const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
         
         if (successStatuses.includes(orderStatus)) {
-            // --- TRIGGER PARENT CLEAR FUNCTION ---
+            // Only clear cart if order is actually successful
             if (onOrderSuccess) {
-                onOrderSuccess(); // This wipes the cart from the App state immediately
+                console.log("Order successful. Clearing cart...");
+                onOrderSuccess(); 
             }
-            // -------------------------------------
-
             const timer = setTimeout(() => onGoHome(), 5000);
             return () => clearTimeout(timer);
         }
@@ -1762,7 +1771,7 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => { // <--- Added onOr
 
         switch (orderStatus) {
             case 'awaiting_payment': 
-                return <><Loader2 size={64} className="text-blue-500 mb-6 animate-spin" /><h1 className="text-4xl font-bold text-gray-800">Processing Payment...</h1><p className="text-lg text-gray-600 mt-4">Please wait...</p></>;
+                return <><Loader2 size={64} className="text-blue-500 mb-6 animate-spin" /><h1 className="text-4xl font-bold text-gray-800">Verifying Payment...</h1><p className="text-lg text-gray-600 mt-4">Please wait a moment.</p></>;
             case 'pending': 
             case 'accepted':
             case 'preparing':
@@ -1772,12 +1781,19 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => { // <--- Added onOr
             case 'payment_failed': 
                 return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment Failed</h1><p className="text-lg text-gray-600 mt-4">Please try again.</p></>;
             case 'delayed': 
-                return <><Clock size={64} className="text-amber-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment Processing</h1><p className="text-lg text-gray-600 mt-4">Taking longer than usual. You can safely close this.</p></>;
+                return <><Clock size={64} className="text-amber-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Processing...</h1><p className="text-lg text-gray-600 mt-4">This is taking longer than usual. Check your profile for status.</p></>;
             case 'declined':
             case 'cancelled':
                 return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Order Declined</h1><p className="text-lg text-gray-600 mt-4">Refund initiated.</p></>;
+            
+            // NEW SPECIFIC ERROR CASES
+            case 'missing_id':
+                return <><Info size={64} className="text-red-500 mb-6" /><h1 className="text-3xl font-bold text-gray-800">Order ID Missing</h1><p className="text-gray-600 mt-4">We couldn't find your order details in the link.</p></>;
+            case 'not_found':
+                return <><Info size={64} className="text-orange-500 mb-6" /><h1 className="text-3xl font-bold text-gray-800">Order Not Found</h1><p className="text-gray-600 mt-4">The order ID exists but the details are missing.</p></>;
+            
             default: 
-                return <><Info size={64} className="text-yellow-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Something Went Wrong</h1><p className="text-lg text-gray-600 mt-4">Check your profile for order status.</p></>;
+                return <><Info size={64} className="text-yellow-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Something Went Wrong</h1><p className="text-lg text-gray-600 mt-4">Status: {orderStatus}</p></>;
         }
     };
 
