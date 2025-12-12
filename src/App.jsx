@@ -1696,6 +1696,14 @@ const PaymentStatusPage = ({ onGoHome }) => {
     const [orderId, setOrderId] = useState(null);
 
     useEffect(() => {
+        const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
+        if (successStatuses.includes(orderStatus)) {
+            localStorage.removeItem('snaccit_cart');
+            localStorage.removeItem('snaccit_restaurant');
+        }
+    }, [orderStatus]);
+    
+    useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const currentOrderId = params.get('orderId');
         setOrderId(currentOrderId);
@@ -2108,12 +2116,18 @@ const PaymentRedirectOverlay = ({ isOpen }) => {
 const App = () => {
     // --- [1] REPLACE ALL YOUR STATE DECLARATIONS WITH THIS ---
   const [view, setView] = useState('home');
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [restaurants, setRestaurants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+        const savedCart = localStorage.getItem('snaccit_cart');
+        return savedCart ? JSON.parse(savedCart) : [];
+    });
+  const [selectedRestaurant, setSelectedRestaurant] = useState(() => {
+        const savedResto = localStorage.getItem('snaccit_restaurant');
+        return savedResto ? JSON.parse(savedResto) : null;
+    });
   
   // Modal States
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -2133,8 +2147,22 @@ const App = () => {
 
   const showNotification = (message, type) => setNotification({ message, type });
 
-  // --- [2] PASTE THIS NEW NAVIGATION LOGIC HERE ---
+  // --- [2] NEW NAVIGATION LOGIC ---
   
+  // --- [2] NEW EFFECT: Auto-Save Cart & Restaurant to LocalStorage ---
+    useEffect(() => {
+        // Save Cart
+        localStorage.setItem('snaccit_cart', JSON.stringify(cart));
+        
+        // Save Restaurant Context (Only if cart has items)
+        if (cart.length > 0 && selectedRestaurant) {
+            localStorage.setItem('snaccit_restaurant', JSON.stringify(selectedRestaurant));
+        } else if (cart.length === 0) {
+            // Clean up restaurant context if cart is empty to avoid stale data
+            localStorage.removeItem('snaccit_restaurant');
+        }
+    }, [cart, selectedRestaurant]);
+
   // Helper to change view and update URL history
   const navigate = (newView, restaurantData = null) => {
       // 1. Update React State
@@ -2458,9 +2486,17 @@ const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, use
      };
 
     const handleRestaurantClick = (restaurant) => {
-      navigate('menu', restaurant);
-      setCart([]); 
-  };
+        // Check if cart has items from a DIFFERENT restaurant
+        if (cart.length > 0 && selectedRestaurant && selectedRestaurant.id !== restaurant.id) {
+            if (window.confirm("Start a new basket? This will clear your current cart from " + selectedRestaurant.name)) {
+                setCart([]); // Clear old items
+                navigate('menu', restaurant);
+            }
+        } else {
+            // Same restaurant or empty cart -> Just navigate
+            navigate('menu', restaurant);
+        }
+    };
 
     const handleBackClick = () => {
          window.history.back();
