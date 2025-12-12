@@ -1702,7 +1702,7 @@ const PaymentStatusPage = ({ onGoHome }) => {
             localStorage.removeItem('snaccit_restaurant');
         }
     }, [orderStatus]);
-    
+
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const currentOrderId = params.get('orderId');
@@ -2581,21 +2581,33 @@ const renderView = () => {
              <PaymentRedirectOverlay isOpen={isRedirecting} />
 
             <div className="bg-cream-50 font-sans text-slate-800 min-h-screen flex flex-col">
+                {/* Header Section */}
                 <header className="bg-white/80 backdrop-blur-xl sticky top-0 z-30 border-b border-gray-200/80">
                     <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+                        {/* Logo goes Home */}
                         <h1 onClick={() => handleGoHome()} className="text-3xl font-bold text-green-700 tracking-tight cursor-pointer">Snaccit</h1>
+                        
                         <div className="flex items-center space-x-4">
-                            <button onClick={() => handleGoHome('restaurants')} className="text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100"><Search size={22} /></button>
+                            {/* Search Button */}
+                            <button onClick={() => handleGoHome('restaurants')} className="text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100">
+                                <Search size={22} />
+                            </button>
+
                             {!isAuthReady ? (
-                                 <Loader2 className="animate-spin text-gray-500" size={22} />
+                                <Loader2 className="animate-spin text-gray-500" size={22} />
                             ) : currentUser ? (
                                 <>
-                                    <button onClick={() => navigate('profile')} className="relative text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100">
+                                    <button onClick={() => setIsCartOpen(true)} className="relative text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100">
                                         <ShoppingCart size={22} />
                                         {cartItemCount > 0 && <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">{cartItemCount}</span>}
                                     </button>
-                                    <button onClick={() => setView('profile')} className="text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100"><User size={22} /></button>
-                                    <button onClick={handleLogout} className="inline-flex items-center text-sm font-semibold text-gray-600 hover:text-red-600 py-2 px-3 rounded-md hover:bg-gray-100">Log Out</button>                                </>
+                                    
+                                    <button onClick={() => navigate('profile')} className="text-gray-600 hover:text-green-600 p-2 rounded-full hover:bg-gray-100">
+                                        <User size={22} />
+                                    </button>
+
+                                    <button onClick={handleLogout} className="inline-flex items-center text-sm font-semibold text-gray-600 hover:text-red-600 py-2 px-3 rounded-md hover:bg-gray-100">Log Out</button>
+                                </>
                             ) : (
                                 <>
                                     <button onClick={() => setIsLoginModalOpen(true)} className="inline-flex items-center text-sm font-semibold text-gray-600 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-100">Log In</button>
