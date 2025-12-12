@@ -721,7 +721,7 @@ const TermsOfServicePage = () => {
     );
 };
 
-// --- [FINAL CORRECTED] HomePage Component ---
+// --- [FINAL REVISED] HomePage Component ---
 const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchType, setSearchType] = useState('restaurant');
@@ -869,56 +869,71 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                 </div>
             </section>
 
-            {/* 4. REFER & WIN SECTION (UPDATED: GOLDEN POINTS THEME) */}
-            <section className="relative py-20 overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800">
+            {/* 4. REFER & WIN SECTION (REDESIGNED: GOLDEN & SIMPLE) */}
+            <section className="relative py-24 overflow-hidden bg-gray-900">
+                {/* Subtle Background Pattern */}
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E")` }}></div>
                 
-                <div className="container relative mx-auto px-6 z-10 flex flex-col md:flex-row items-center justify-between gap-12">
-                    <div className="text-white text-center md:text-left md:w-1/2">
-                        <div className="inline-flex items-center gap-2 bg-yellow-500/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-yellow-500/30 mb-6">
+                {/* Golden Glow Effect */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-yellow-500/10 rounded-full blur-[120px]"></div>
+
+                <div className="container relative mx-auto px-6 z-10 flex flex-col md:flex-row items-center justify-between gap-16">
+                    
+                    {/* Text Side */}
+                    <div className="text-center md:text-left md:w-1/2">
+                        <div className="inline-flex items-center gap-2 bg-yellow-500/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-yellow-500/30 mb-6 animate-fade-in-down">
                             <Gift size={16} className="text-yellow-400" />
                             <span className="text-sm font-bold tracking-wide uppercase text-yellow-100">Snaccit Rewards</span>
                         </div>
-                        <h2 className="text-4xl md:text-5xl font-black mb-6 leading-tight">
-                            Refer a Friend.<br/><span className="text-yellow-400">Earn 50 Points.</span>
-                        </h2>
-                        <p className="text-lg text-gray-300 mb-8 leading-relaxed">
-                            It's simple: Share your code. They eat, you earn. 
-                            <br/><span className="text-white font-bold">Use points to get instant discounts on any order!</span>
-                        </p>
                         
-                        <div className="bg-gray-700/50 p-4 rounded-xl border border-gray-600 mb-8 inline-block text-left">
-                            <p className="text-sm text-gray-300 flex items-center gap-2 mb-1"><Info size={14}/> How it works</p>
-                            <p className="text-white font-medium">10 Points = ₹1 Discount. <span className="text-yellow-400 font-bold">50 Points = ₹5 OFF!</span></p>
-                        </div>
+                        <h2 className="text-4xl md:text-5xl font-black mb-6 leading-tight text-white">
+                            Refer Friends.<br/>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500">Collect Points.</span>
+                        </h2>
+                        
+                        <p className="text-lg text-gray-300 mb-10 leading-relaxed max-w-lg mx-auto md:mx-0">
+                            Grab your unique code from your Profile. Share it with your squad.
+                            When they sign up and order, <span className="text-white font-bold">you BOTH get 50 Snaccit Points instantly!</span>
+                        </p>
 
-                        <div>
-                            <button 
-                                onClick={onGoToProfile}
-                                className="bg-yellow-500 text-yellow-900 font-bold py-4 px-8 rounded-full shadow-[0_0_20px_rgba(234,179,8,0.4)] hover:shadow-xl hover:bg-yellow-400 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 mx-auto md:mx-0"
-                            >
-                                Get My Referral Code <ArrowLeft className="rotate-180" size={18} />
-                            </button>
-                        </div>
+                        <button 
+                            onClick={onGoToProfile}
+                            className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 font-extrabold py-4 px-10 rounded-full shadow-[0_0_30px_rgba(234,179,8,0.3)] hover:shadow-[0_0_40px_rgba(234,179,8,0.5)] hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 mx-auto md:mx-0 text-lg"
+                        >
+                            Get My Referral Code <ArrowLeft className="rotate-180" size={20} />
+                        </button>
                     </div>
                     
-                    {/* Visual Illustration */}
-                    <div className="md:w-1/2 flex justify-center">
-                        <div className="relative bg-gradient-to-br from-amber-100 to-white p-6 rounded-3xl shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500 max-w-sm w-full border-4 border-white">
-                             <div className="absolute -top-4 -left-4 bg-red-500 text-white font-bold px-4 py-2 rounded-lg shadow-lg rotate-[-10deg] animate-bounce">WIN POINTS</div>
-                             <div className="flex items-center gap-4 border-b border-dashed border-amber-200 pb-4 mb-4">
-                                <div className="bg-yellow-100 p-4 rounded-full"><User className="text-yellow-600" size={24}/></div>
+                    {/* Visual Card Side */}
+                    <div className="md:w-1/2 flex justify-center perspective-1000">
+                        <div className="relative bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-[2.5rem] shadow-2xl border border-gray-700/50 rotate-3 hover:rotate-0 transition-transform duration-500 max-w-sm w-full">
+                             {/* Floating Badge */}
+                             <div className="absolute -top-6 -right-6 bg-yellow-500 text-yellow-900 font-black px-6 py-3 rounded-2xl shadow-lg rotate-[10deg] animate-bounce border-4 border-gray-900">
+                                 +50 POINTS
+                             </div>
+
+                             {/* Step 1 */}
+                             <div className="flex items-start gap-5 mb-8">
+                                <div className="bg-gray-700 p-4 rounded-2xl shadow-inner">
+                                    <User className="text-yellow-400" size={28}/>
+                                </div>
                                 <div>
-                                    <p className="text-gray-900 font-bold text-lg">You & Friend</p>
-                                    <p className="text-sm text-gray-500">Both get rewards!</p>
+                                    <p className="text-white font-bold text-xl mb-1">Share Code</p>
+                                    <p className="text-sm text-gray-400">Find it in your profile.</p>
                                 </div>
                              </div>
-                             <div className="flex justify-center mb-4"><ArrowLeft className="rotate-[-90deg] text-amber-300" size={24}/></div>
-                             <div className="flex items-center gap-4 bg-yellow-50 p-4 rounded-xl border border-yellow-200">
-                                <div className="bg-white p-3 rounded-full shadow-sm"><Award className="text-yellow-500" size={24}/></div>
+
+                             {/* Connector Line */}
+                             <div className="ml-9 h-8 border-l-2 border-dashed border-gray-600 -my-4"></div>
+
+                             {/* Step 2 */}
+                             <div className="flex items-start gap-5 mt-8">
+                                <div className="bg-yellow-500/20 p-4 rounded-2xl border border-yellow-500/30">
+                                    <Award className="text-yellow-400" size={28}/>
+                                </div>
                                 <div>
-                                    <p className="font-bold text-gray-800">+50 Points Added</p>
-                                    <p className="text-xs text-yellow-700">Redeem anytime.</p>
+                                    <p className="text-white font-bold text-xl mb-1">Earn Points</p>
+                                    <p className="text-sm text-gray-400">Redeem for discounts anytime.</p>
                                 </div>
                              </div>
                         </div>
