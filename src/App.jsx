@@ -731,12 +731,8 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
     // Filter Logic
     const filteredResults = useMemo(() => {
         let restaurantsToFilter = allRestaurants;
-        
-        // Apply Filters
         if (activeFilter === 'topRated') restaurantsToFilter = restaurantsToFilter.filter(r => r.rating >= 4.5);
         if (activeFilter === 'veg') restaurantsToFilter = restaurantsToFilter.filter(r => r.isPureVeg === true);
-        
-        // Apply Search
         if (!searchTerm) return searchType === 'restaurant' ? restaurantsToFilter : [];
         
         const lowercasedSearchTerm = searchTerm.toLowerCase();
@@ -748,12 +744,8 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
         return restaurantsToFilter.filter(resto => resto.name.toLowerCase().includes(lowercasedSearchTerm) || resto.cuisine.toLowerCase().includes(lowercasedSearchTerm));
     }, [searchTerm, searchType, allRestaurants, activeFilter]);
 
-    // Show only 6 restaurants initially, or all if "Show More" is clicked
-    const displayList = (searchTerm || searchType === 'dish' || showAllRestaurants) 
-        ? filteredResults 
-        : filteredResults.slice(0, 6); 
+    const displayList = (searchTerm || searchType === 'dish' || showAllRestaurants) ? filteredResults : filteredResults.slice(0, 6); 
 
-    // Hardcoded Top Dishes (Visual Only - requires matching IDs in real DB to click)
     const topDishes = [
           { name: "Butter Chicken", restaurant: "Curry Kingdom", imageUrl: butterChickenImg },
           { name: "Margherita Pizza", restaurant: "Pizza Palace", imageUrl: pizzaImg },
@@ -762,7 +754,6 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
     ];
 
     const handleDishClick = (dish) => {
-        // Try to find the restaurant by name since we don't have IDs in the static topDishes array
         const restaurant = allRestaurants.find(r => r.name === dish.restaurant);
         if (restaurant) onRestaurantClick(restaurant);
     };
@@ -772,7 +763,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
             {/* 1. HERO SECTION */}
             <main className="relative h-[500px] flex items-center justify-center text-white overflow-hidden">
                 <div className="absolute inset-0 bg-black/50 z-10"></div>
-                <video className="absolute inset-0 w-full h-full object-cover" src={heroVideo} autoPlay loop muted playsInline />                 
+                <video className="absolute inset-0 w-full h-full object-cover" src={heroVideo} autoPlay loop muted playsInline />                  
                 <div className="relative z-20 text-center px-6">
                     <AnimatedHeroText />
                     <p className="mt-4 max-w-xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2 font-medium">
@@ -802,15 +793,10 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                                 <Search className="text-gray-400 group-focus-within:text-green-500 transition-colors" size={20} />
                             </div>
-                            <input
-                                type="text"
-                                placeholder="Search restaurants..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                            <input type="text" placeholder="Search restaurants..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full py-3 pl-12 pr-6 text-lg bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/10 transition-all"
                             />
                         </div>
-
                         <div className="flex flex-wrap justify-center gap-3">
                             <button onClick={() => setActiveFilter('all')} className={`px-5 py-2 rounded-xl font-bold text-sm border transition-all ${activeFilter === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>All</button>
                             <button onClick={() => setActiveFilter('topRated')} className={`px-5 py-2 rounded-xl font-bold text-sm border transition-all flex items-center ${activeFilter === 'topRated' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-white text-gray-600 border-gray-200 hover:border-amber-400'}`}><Award size={16} className="mr-2"/> Top Rated</button>
@@ -847,10 +833,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                     
                     {!isLoading && !searchTerm && !showAllRestaurants && filteredResults.length > 6 && (
                         <div className="mt-10 text-center">
-                             <button 
-                                 onClick={() => setShowAllRestaurants(true)}
-                                 className="group bg-white border-2 border-green-600 text-green-600 font-bold py-2 px-8 rounded-full hover:bg-green-600 hover:text-white transition-all duration-300 inline-flex items-center gap-2 shadow-sm"
-                             >
+                             <button onClick={() => setShowAllRestaurants(true)} className="group bg-white border-2 border-green-600 text-green-600 font-bold py-2 px-8 rounded-full hover:bg-green-600 hover:text-white transition-all duration-300 inline-flex items-center gap-2 shadow-sm">
                                 Show All Restaurants <ChevronDown size={18} className="group-hover:translate-y-1 transition-transform" />
                              </button>
                         </div>
@@ -858,8 +841,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                 </div>
             </section>
             
-
-            {/* 3. [RESTORED] TOP DISHES SECTION */}
+            {/* 3. TOP DISHES SECTION */}
             <section id="top-dishes" className="relative py-20 bg-white">
                 <div className="container relative mx-auto px-6 z-10">
                     <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
@@ -887,57 +869,56 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                 </div>
             </section>
 
-            {/* 4. REFER & WIN SECTION */}
-            <section className="relative py-20 overflow-hidden bg-emerald-900">
-                {/* Background Pattern */}
+            {/* 4. REFER & WIN SECTION (UPDATED: GOLDEN POINTS THEME) */}
+            <section className="relative py-20 overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800">
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E")` }}></div>
                 
                 <div className="container relative mx-auto px-6 z-10 flex flex-col md:flex-row items-center justify-between gap-12">
                     <div className="text-white text-center md:text-left md:w-1/2">
-                        <div className="inline-flex items-center gap-2 bg-yellow-400/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-yellow-400/30 mb-6">
-                            <Gift size={16} className="text-yellow-300" />
-                            <span className="text-sm font-bold tracking-wide uppercase text-yellow-100">Referral Program</span>
+                        <div className="inline-flex items-center gap-2 bg-yellow-500/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-yellow-500/30 mb-6">
+                            <Gift size={16} className="text-yellow-400" />
+                            <span className="text-sm font-bold tracking-wide uppercase text-yellow-100">Snaccit Rewards</span>
                         </div>
                         <h2 className="text-4xl md:text-5xl font-black mb-6 leading-tight">
-                            Give ₹50.<br/>Get ₹50.
+                            Refer a Friend.<br/><span className="text-yellow-400">Earn 50 Points.</span>
                         </h2>
-                        <p className="text-lg text-emerald-100 mb-8 leading-relaxed">
-                            It's simple: You refer a friend. They sign up and order. 
-                            <br/><span className="text-white font-bold">You BOTH get a ₹50 discount coupon!</span>
+                        <p className="text-lg text-gray-300 mb-8 leading-relaxed">
+                            It's simple: Share your code. They eat, you earn. 
+                            <br/><span className="text-white font-bold">Use points to get instant discounts on any order!</span>
                         </p>
                         
-                        <div className="bg-emerald-800/50 p-4 rounded-xl border border-emerald-700 mb-8 inline-block text-left">
-                            <p className="text-sm text-emerald-200 flex items-center gap-2 mb-1"><Info size={14}/> Where do I find it?</p>
-                            <p className="text-white font-medium">Your <span className="text-yellow-300 font-bold">Referral Code</span> & <span className="text-yellow-300 font-bold">Coupons</span> are located in your Profile.</p>
+                        <div className="bg-gray-700/50 p-4 rounded-xl border border-gray-600 mb-8 inline-block text-left">
+                            <p className="text-sm text-gray-300 flex items-center gap-2 mb-1"><Info size={14}/> How it works</p>
+                            <p className="text-white font-medium">10 Points = ₹1 Discount. <span className="text-yellow-400 font-bold">50 Points = ₹5 OFF!</span></p>
                         </div>
 
                         <div>
                             <button 
                                 onClick={onGoToProfile}
-                                className="bg-yellow-400 text-yellow-900 font-bold py-4 px-8 rounded-full shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:shadow-xl hover:bg-yellow-300 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 mx-auto md:mx-0"
+                                className="bg-yellow-500 text-yellow-900 font-bold py-4 px-8 rounded-full shadow-[0_0_20px_rgba(234,179,8,0.4)] hover:shadow-xl hover:bg-yellow-400 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 mx-auto md:mx-0"
                             >
-                                Go to My Profile <ArrowLeft className="rotate-180" size={18} />
+                                Get My Referral Code <ArrowLeft className="rotate-180" size={18} />
                             </button>
                         </div>
                     </div>
                     
                     {/* Visual Illustration */}
                     <div className="md:w-1/2 flex justify-center">
-                        <div className="relative bg-white p-6 rounded-3xl shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500 max-w-sm w-full">
-                             <div className="absolute -top-4 -left-4 bg-red-500 text-white font-bold px-4 py-2 rounded-lg shadow-lg rotate-[-10deg]">WIN ₹50</div>
-                             <div className="flex items-center gap-4 border-b border-dashed border-gray-200 pb-4 mb-4">
-                                <div className="bg-green-100 p-4 rounded-full"><User className="text-green-600" size={24}/></div>
+                        <div className="relative bg-gradient-to-br from-amber-100 to-white p-6 rounded-3xl shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500 max-w-sm w-full border-4 border-white">
+                             <div className="absolute -top-4 -left-4 bg-red-500 text-white font-bold px-4 py-2 rounded-lg shadow-lg rotate-[-10deg] animate-bounce">WIN POINTS</div>
+                             <div className="flex items-center gap-4 border-b border-dashed border-amber-200 pb-4 mb-4">
+                                <div className="bg-yellow-100 p-4 rounded-full"><User className="text-yellow-600" size={24}/></div>
                                 <div>
-                                    <p className="text-gray-900 font-bold text-lg">You</p>
-                                    <p className="text-sm text-gray-500">Share Code: <span className="font-mono bg-gray-100 px-1 rounded">SNAC50</span></p>
+                                    <p className="text-gray-900 font-bold text-lg">You & Friend</p>
+                                    <p className="text-sm text-gray-500">Both get rewards!</p>
                                 </div>
                              </div>
-                             <div className="flex justify-center mb-4"><ArrowLeft className="rotate-[-90deg] text-gray-300" size={24}/></div>
-                             <div className="flex items-center gap-4 bg-green-50 p-4 rounded-xl border border-green-100">
-                                <div className="bg-white p-3 rounded-full shadow-sm"><TicketPercent className="text-green-600" size={24}/></div>
+                             <div className="flex justify-center mb-4"><ArrowLeft className="rotate-[-90deg] text-amber-300" size={24}/></div>
+                             <div className="flex items-center gap-4 bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+                                <div className="bg-white p-3 rounded-full shadow-sm"><Award className="text-yellow-500" size={24}/></div>
                                 <div>
-                                    <p className="font-bold text-gray-800">Coupon Unlocked!</p>
-                                    <p className="text-xs text-green-700">₹50 off for both of you.</p>
+                                    <p className="font-bold text-gray-800">+50 Points Added</p>
+                                    <p className="text-xs text-yellow-700">Redeem anytime.</p>
                                 </div>
                              </div>
                         </div>
@@ -945,7 +926,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                 </div>
             </section>
 
-            {/* 5. FEATURES SECTION (Colorful & Bold) */}
+            {/* 5. FEATURES SECTION */}
             <section id="features" className="relative py-24 bg-gradient-to-b from-amber-50 to-white overflow-hidden">
                 <div className="absolute top-0 left-0 w-64 h-64 bg-orange-200/40 rounded-full blur-3xl mix-blend-multiply pointer-events-none"></div>
                 <div className="absolute bottom-0 right-0 w-64 h-64 bg-yellow-200/40 rounded-full blur-3xl mix-blend-multiply pointer-events-none"></div>
@@ -1650,7 +1631,7 @@ const PaymentStatusPage = ({ onGoHome }) => {
     );
 };
 
-// --- [FINAL CORRECTED] Profile Page Component ---
+// --- [FINAL POLISHED] Profile Page Component ---
 const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) => {
     const [orders, setOrders] = useState([]);
     const [profile, setProfile] = useState({ username: '', mobile: '', myReferralCode: '', points: 0 });
@@ -1660,10 +1641,8 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
 
     useEffect(() => {
         if (!currentUser) return;
-        
         setIsLoading(true);
 
-        // 1. Fetch User Profile (Includes Points & Referral Code)
         const userDocRef = db.collection("users").doc(currentUser.uid);
         const unsubProfile = userDocRef.onSnapshot((doc) => {
             if (doc.exists) {
@@ -1673,7 +1652,6 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
             }
         });
 
-        // 2. Fetch Orders
         const ordersQuery = db.collection("orders").where("userId", "==", currentUser.uid).orderBy("createdAt", "desc").limit(20);
         const unsubOrders = ordersQuery.onSnapshot((snapshot) => {
             const userOrders = snapshot.docs.map(doc => ({
@@ -1689,10 +1667,7 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
             setIsLoading(false);
         });
 
-        return () => { 
-             unsubProfile();
-             unsubOrders();
-         };
+        return () => { unsubProfile(); unsubOrders(); };
     }, [currentUser]);
 
     const handleProfileChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -1735,7 +1710,6 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
         <div className="container mx-auto px-6 py-12 min-h-screen">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-8">My Profile</h1>
             <div className="flex flex-col lg:flex-row gap-8">
-                 {/* LEFT COLUMN: Details & Rewards */}
                 <div className="lg:w-1/3 space-y-8">
                     
                     {/* 1. Personal Details Card */}
@@ -1772,35 +1746,33 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
                         </div>
                     </div>
 
-                    {/* 2. MY POINTS SECTION (Corrected Logic & UI) */}
+                    {/* 2. MY POINTS SECTION (Golden & Clean) */}
                     {!isEditing && (
-                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-[2rem] shadow-sm border border-amber-100 relative overflow-hidden">
-                            <div className="absolute -right-10 -top-10 w-32 h-32 bg-amber-200/30 rounded-full blur-2xl"></div>
-                            {/* Replaced 'Award' with simple text if icon missing, or ensure Award is imported from lucide-react */}
-                            <h2 className="text-xl font-extrabold text-amber-800 mb-4 flex items-center">✨ Snaccit Points</h2>
+                        <div className="bg-gradient-to-br from-amber-100 to-yellow-50 p-6 rounded-[2rem] shadow-sm border border-amber-200 relative overflow-hidden">
+                            <div className="absolute -right-10 -top-10 w-32 h-32 bg-yellow-300/30 rounded-full blur-2xl"></div>
+                            <h2 className="text-xl font-extrabold text-amber-900 mb-4 flex items-center">✨ Snaccit Points</h2>
                             
                             <div className="flex flex-col items-center justify-center py-6">
-                                <div className="text-6xl font-black text-amber-500 mb-2">
+                                <div className="text-6xl font-black text-amber-500 mb-2 drop-shadow-sm">
                                     {profile.points || 0}
                                 </div>
-                                <p className="text-amber-800 font-medium">Available Points</p>
-                                <p className="text-xs text-amber-600/70 mt-2">10 Points = ₹1 Discount</p>
+                                <p className="text-amber-800 font-bold text-lg">Available Points</p>
                             </div>
                             
-                            <div className="bg-white/60 p-3 rounded-xl border border-amber-100 text-center">
-                                <p className="text-xs text-amber-800 font-semibold">How to use?</p>
-                                <p className="text-xs text-gray-600">Toggle "Redeem Points" at checkout for instant discounts.</p>
+                            <div className="bg-white/80 backdrop-blur-sm p-3 rounded-xl border border-amber-100 text-center">
+                                <p className="text-xs text-amber-900 font-bold">Redeem for Instant Discounts!</p>
+                                <p className="text-xs text-amber-700/80">Toggle points at checkout to save on your order.</p>
                             </div>
                         </div>
                     )}
 
-                    {/* 3. REFERRAL SECTION (Corrected Text) */}
+                    {/* 3. REFERRAL SECTION (Updated Copy) */}
                     {!isEditing && (
                         <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-[2rem] shadow-sm border border-green-100 relative overflow-hidden">
                             <div className="absolute -right-6 -top-6 w-24 h-24 bg-green-200/50 rounded-full blur-xl"></div>
                             <h3 className="text-green-800 font-extrabold text-lg mb-1">Refer & Earn 50 Points</h3>
                             <p className="text-green-600/80 text-sm mb-4 leading-snug">
-                                Share your code. When a friend signs up and orders, you BOTH get <span className="font-bold">50 Points</span> (₹5)!
+                                Share your code. When a friend signs up and orders, you BOTH get <span className="font-bold text-green-700">50 Snaccit Points!</span>
                             </p>
                             
                             <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-green-200 shadow-sm">
@@ -1842,7 +1814,6 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
                                     </div>
                                     <div className="flex flex-col sm:flex-row justify-between items-center mt-3">
                                         <div>
-                                            {/* Show Points or Coupon usage if present */}
                                             {order.pointsRedeemed > 0 && <p className="text-xs text-amber-600 font-bold">Points Redeemed: {order.pointsRedeemed} (Saved ₹{order.pointsValue})</p>}
                                             {order.couponCode && <p className="text-xs text-green-600 font-bold">Coupon Applied: {order.couponCode}</p>}
                                             <span className="font-black text-xl text-gray-900">Total: ₹{order.total.toFixed(2)}</span>
@@ -1866,6 +1837,7 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder }) 
         </div>
     );
 };
+
 // --- Review Modal Component ---
 const ReviewModal = ({ isOpen, onClose, order, onSubmitReview }) => {
 // ... (rest of the component is unchanged - long code omitted for brevity)
