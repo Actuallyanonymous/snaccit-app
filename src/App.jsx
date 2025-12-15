@@ -650,72 +650,287 @@ const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => 
 
 // --- Privacy Policy Page ---
 const PrivacyPolicyPage = () => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
     return (
         <div className="bg-white py-16 sm:py-24">
             <div className="container mx-auto px-6">
-                <article className="prose lg:prose-lg max-w-4xl mx-auto">
-                    <h1>Privacy Policy for Snaccit</h1>
-                    <p><strong>Last Updated:</strong> [Date]</p>
-                    <p>Snaccit ("us", "we", or "our") operates the Snaccit web application (the "Service"). This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service and the choices you have associated with that data.</p>
-                    <h2>1. Information Collection and Use</h2>
-                    <p>We collect several different types of information for various purposes to provide and improve our Service to you.</p>
-                    <h3>Types of Data Collected:</h3>
-                    <ul>
-                        <li><strong>Personal Data:</strong> While using our Service, we may ask you to provide us with certain personally identifiable information ("Personal Data"). This may include: Email address, Username, Phone number, Order history, and Usage Data.</li>
-                        <li><strong>Usage Data:</strong> We collect information on how the Service is accessed and used (IP address, browser type/version, pages visited, time spent, device identifiers).</li>
+                <article className="prose lg:prose-lg max-w-4xl mx-auto text-gray-700">
+                    <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Snaccit – Privacy Policy</h1>
+                    <p className="text-gray-500 font-bold mb-8">Effective Date: ___ / ___ / 2025</p>
+                    
+                    <p>Your privacy is important to us. This Privacy Policy explains how Snaccit collects, uses, and protects your information.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">1. Information We Collect</h3>
+                    <p>We may collect the following information:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li><strong>1.1 Personal Information:</strong> Name, Email address, Mobile number, Profile details.</li>
+                        <li><strong>1.2 Usage Information:</strong> Order history, Items viewed, App/website interactions.</li>
+                        <li><strong>1.3 Technical Information:</strong> Device type, IP address, Browser/app data, Cookies.</li>
                     </ul>
-                    <h2>2. Use of Data</h2>
-                    <p>Snaccit uses the collected data to: Provide and maintain the Service; Notify you about changes; Process orders and manage your account; Send order status notifications; Provide customer support; Improve the Service; Monitor usage; Detect and address technical issues.</p>
-                    <h2>3. Data Sharing and Disclosure</h2>
-                    <p>We do not sell your Personal Data. We share information only: With Restaurants (name, order, arrival time); With Service Providers (e.g., Firebase, PhonePe) to facilitate the Service, under obligation not to disclose or use it otherwise; For Legal Requirements if necessary.</p>
-                    <h2>4. Data Security</h2>
-                    <p>We use industry-standard methods (Firebase Auth/Firestore Security Rules) but cannot guarantee absolute security as no internet transmission is 100% secure.</p>
-                    <h2>5. Your Data Rights</h2>
-                    <p>You can access, update, or request deletion of your data via your profile or by contacting us.</p>
-                    <h2>6. Children's Privacy</h2>
-                    <p>Our Service is not intended for children under 13. We do not knowingly collect their data. Contact us if you believe your child has provided data.</p>
-                    <h2>7. Changes to This Privacy Policy</h2>
-                    <p>We may update this policy. Changes are effective when posted here. Review periodically.</p>
-                    <h2>8. Contact Us</h2>
-                    <p>If you have questions, contact us at: [Your Support Email Address]</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">2. How We Use Your Information</h3>
+                    <p>We use collected information to:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>Process and manage orders</li>
+                        <li>Connect you with Vendors</li>
+                        <li>Improve app performance</li>
+                        <li>Provide customer support</li>
+                        <li>Send order updates & notifications</li>
+                        <li>Show offers and relevant promotions</li>
+                        <li>Maintain platform security</li>
+                    </ul>
+                    <p><strong>We do not sell or rent your personal information.</strong></p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">3. Sharing of Information</h3>
+                    <p>Snaccit may share information with:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li><strong>3.1 Vendors:</strong> To fulfill your order (name, phone number, order details).</li>
+                        <li><strong>3.2 Payment Gateways:</strong> For secure transactions.</li>
+                        <li><strong>3.3 Service Providers:</strong> For hosting, analytics, security, and communication services.</li>
+                        <li><strong>3.4 Legal Authorities:</strong> If required by law.</li>
+                    </ul>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">4. Data Protection</h3>
+                    <p>We implement industry-standard measures to protect your information. However, no online system is 100% secure. Snaccit is not responsible for breaches caused by Third-party services, Vendor systems, or Payment gateway failures.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">5. Cookies</h3>
+                    <p>We use cookies to improve user experience, save preferences, and collect analytics. Cookies can be disabled in browser settings.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">6. User Rights</h3>
+                    <p>You may request correction of personal information, deletion of your account, or access to your stored data. Email us at: <strong>itsnacc@gmail.com</strong></p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">7. Children’s Privacy</h3>
+                    <p>Users below 13 must use Snaccit under parental supervision.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">8. Changes to Privacy Policy</h3>
+                    <p>We may update this policy anytime. Use of Snaccit after updates means you accept the revised policy.</p>
                 </article>
             </div>
         </div>
     );
 };
 
-// --- Terms of Service Page ---
+// --- Terms of Service Page (Includes Refund Policy) ---
 const TermsOfServicePage = () => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
     return (
         <div className="bg-white py-16 sm:py-24">
             <div className="container mx-auto px-6">
-                <article className="prose lg:prose-lg max-w-4xl mx-auto">
-                    <h1>Terms of Service for Snaccit</h1>
-                    <p><strong>Last Updated:</strong> [Date]</p>
-                    <p>Welcome to Snaccit! These Terms govern your use of our web application ("Service") operated by [Your Company Name] ("us", "we"). By using the Service, you agree to these Terms. Do not use the Service if you disagree.</p>
-                    <h2>1. Accounts</h2>
-                    <p>Provide accurate, current info. You are responsible for password security and account activity. Notify us of unauthorized use.</p>
-                    <h2>2. The Service</h2>
-                    <p>Snaccit connects users with Restaurants for pre-orders. Your order contract is directly with the Restaurant. We are not responsible for food preparation or quality; the Restaurant is. We transmit orders and payments.</p>
-                    <h2>3. Orders and Payment</h2>
-                    <p>You agree to pay the full price. Payments via PhonePe. We don't store full payment details. Accepted orders generally cannot be canceled. Refunds follow our policy and PhonePe's.</p>
-                    <h2>4. User Conduct</h2>
-                    <p>Do not use the Service to: Violate laws; Harm minors; Impersonate others; Restrict others' use.</p>
-                    <h2>5. Intellectual Property</h2>
-                    <p>The Service and its original content are owned by [Your Company Name] and protected by law.</p>
-                    <h2>6. Termination</h2>
-                    <p>We may terminate your account without notice if you breach these Terms.</p>
-                    <h2>7. Limitation of Liability</h2>
-                    <p>Snaccit is not liable for indirect, incidental, or consequential damages arising from your use of the Service, conduct of third parties (including Restaurants), or unauthorized access to your data.</p>
-                    <h2>8. Governing Law</h2>
-                    <p>Terms governed by laws of [Your Country/State].</p>
-                    <h2>9. Changes</h2>
-                    <p>We may modify Terms anytime. Changes posted here. Continued use means acceptance.</p>
-                    <h2>10. Contact Us</h2>
-                    <p>Questions? Contact us at: [Your Support Email Address]</p>
+                <article className="prose lg:prose-lg max-w-4xl mx-auto text-gray-700">
+                    <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Snaccit – Terms of Service</h1>
+                    <p className="text-gray-500 font-bold mb-8">Effective Date: ___ / ___ / 2025</p>
+                    
+                    <p>Welcome to Snaccit (“Platform”, “We”, “Us”, “Our”). By accessing or using Snaccit, users (“You”, “Customer”, “Vendor”) agree to the following Terms of Service. Please read them carefully.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">1. About Snaccit</h3>
+                    <p>Snaccit is a pre-order food and dine-in platform that allows users to:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>View menus of participating restaurants/canteens (“Vendors”)</li>
+                        <li>Place orders for pickup or dine-in</li>
+                        <li>Make payments</li>
+                        <li>Earn or redeem applicable offers (if any)</li>
+                    </ul>
+                    <p>Snaccit <strong>does not cook, prepare, or deliver food</strong>. Snaccit is only a technology platform that connects Customers with Vendors.</p>
+
+                    <div className="bg-red-50 border-l-4 border-red-500 p-4 my-6">
+                        <h3 className="text-xl font-bold text-red-800 mt-0">2. No College Involvement</h3>
+                        <p className="text-red-700">If Snaccit is used inside any educational campus:</p>
+                        <ul className="list-disc pl-5 space-y-1 text-red-700">
+                            <li>The college/institution has absolutely no involvement in the Snaccit platform.</li>
+                            <li>The college does not own, manage, endorse, or control Snaccit.</li>
+                            <li>The college is not responsible for any order, payment, refund, dispute, food quality, operational issue, or any loss/damage arising from the platform.</li>
+                            <li>All responsibilities lie solely between Snaccit, Customers, and Vendors.</li>
+                        </ul>
+                        <p className="text-red-800 font-bold mt-2">This must be clearly understood before using Snaccit.</p>
+                    </div>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">3. Role of Snaccit</h3>
+                    <p>Snaccit operates as a marketplace for food ordering. Snaccit is <strong>not</strong>:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>A restaurant</li>
+                        <li>A food business operator</li>
+                        <li>A delivery service</li>
+                        <li>A guarantee provider for Vendor behavior</li>
+                    </ul>
+                    <p>All food is prepared by independent Vendors. Snaccit only provides the platform.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">4. Vendor Responsibilities</h3>
+                    <p>Each Vendor is solely responsible for:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>Preparing food, maintaining hygiene & quality, and FSSAI compliance.</li>
+                        <li>Updating menu items, prices, and availability.</li>
+                        <li>Food safety, packaging, and handling.</li>
+                        <li>Fulfillment of orders and ensuring accuracy.</li>
+                    </ul>
+                    <p>Snaccit does not verify or guarantee food taste, quality, portion size, allergens, or ingredients. Any food-related complaint must be directly addressed with the Vendor.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">5. Images & Representations</h3>
+                    <p>Images shown on Snaccit are for reference only. Actual food may vary in size, look, color, presentation, packaging, and taste. Snaccit does not guarantee that the delivered/prepared food will exactly match the images.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">6. Ordering & Payments</h3>
+                    <p>By placing an order, You agree to pay the displayed amount.</p>
+                    <p><strong>6.1 Payment Gateway:</strong> Snaccit uses third-party payment gateways. Snaccit does not store or control Your payment data. Snaccit is not responsible for payment failures, banking delays, or additional bank charges.</p>
+                    <p><strong>6.2 Order Confirmation:</strong> An order is confirmed only when Payment is successful AND Vendor accepts the order. If a Vendor rejects an order, You will be refunded as per Section 7.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">7. Cancellations, Refunds & No-Show</h3>
+                    <p>Please refer to the detailed Refund & Cancellation Policy section below.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">8. Platform Availability</h3>
+                    <p>Snaccit is in MVP (Minimum Viable Product) stage. We cannot guarantee 100% uptime, perfect accuracy, or bug-free experience. Snaccit may be unavailable for updates or maintenance.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">9. User Responsibilities</h3>
+                    <p>You agree to provide accurate information, not create fake orders, and not use abusive behavior towards Vendors or staff. Violation can result in account suspension.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">10. Liability Limitations</h3>
+                    <p>Snaccit will not be liable for any food-related illness, allergy, incorrect orders, delays, data loss, or indirect damages. To the maximum extent permitted by Indian law, Snaccit’s liability is limited to the amount you paid for that specific order only.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">11. Vendor Listings & Data</h3>
+                    <p>Menu items, prices, and availability are provided by Vendors. Snaccit does not guarantee accuracy and can update or remove any Vendor listing without notice.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">12. Data & Privacy</h3>
+                    <p>By using Snaccit, You consent to the collection of Name, Phone number, Order history, and Device information. We do not sell personal data. Snaccit will comply with Indian data regulations.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">13. Intellectual Property</h3>
+                    <p>All logos, app designs, content, and code belong to Snaccit. You cannot copy, resell, or misuse our intellectual property.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">14. Indemnity</h3>
+                    <p>You agree to indemnify Snaccit against any claim, loss, or legal dispute arising from your misuse of the platform, food disputes with Vendors, or violations of these Terms.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">15. Changes to Terms</h3>
+                    <p>Snaccit may update these Terms anytime. Continued use of Snaccit means You accept the updated Terms.</p>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-8">16. Contact</h3>
+                    <p>For queries, contact Snaccit Support:<br/>Email: <strong>itsnacc@gmail.com</strong><br/>Phone: <strong>+91-7011866944</strong></p>
+
+                    {/* --- REFUND POLICY SECTION --- */}
+                    <div className="mt-16 pt-10 border-t-4 border-gray-100">
+                        <h1 className="text-3xl font-extrabold text-gray-900 mb-6">Refund & Cancellation Policy</h1>
+                        <p className="text-gray-500 font-bold mb-6">Effective Date: ___ / ___ / 2025</p>
+                        
+                        <p>At Snaccit, we aim to provide a smooth and transparent experience for all users. This Refund & Cancellation Policy explains how cancellations and refunds are handled.</p>
+
+                        <h3 className="text-xl font-bold text-gray-900 mt-6">1. Role of Snaccit</h3>
+                        <p>Snaccit is a technology platform that connects users with independent restaurants/canteens (“Vendors”). Snaccit does not prepare food and does not control Vendor operations. All refunds are subject to Vendor policies and operational conditions.</p>
+
+                        <h3 className="text-xl font-bold text-gray-900 mt-6">2. Order Cancellation by Customer</h3>
+                        <p>Because most Vendors begin preparing food immediately:</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li>Orders may not be eligible for cancellation after being placed.</li>
+                            <li>If the Vendor has already started preparing the order, no refund will be provided.</li>
+                            <li>If preparation has not begun, the Vendor may choose to accept the cancellation.</li>
+                        </ul>
+                        <p><strong>Snaccit cannot override Vendor decisions.</strong></p>
+
+                        <h3 className="text-xl font-bold text-gray-900 mt-6">3. Order Cancellation by Vendor</h3>
+                        <p>A Vendor may cancel an order due to out-of-stock items, high demand, staff shortage, or technical issues. In such cases, a <strong>full refund</strong> will be issued to the original payment method within 10 - 20 minutes (or as per banking norms).</p>
+
+                        <h3 className="text-xl font-bold text-gray-900 mt-6">4. No-Show (Dine-In or Pickup)</h3>
+                        <p>If you fail to pick up the food or arrive for dine-in at the scheduled time: The Vendor is not obligated to refund the order, and food may not be remade or reheated.</p>
+
+                        <h3 className="text-xl font-bold text-gray-900 mt-6">5. Refund Process</h3>
+                        <p>Once approved, refunds will be initiated within 2–7 working days. Bank/UPI/card processing times may vary. Snaccit is not responsible for delays caused by banks or payment gateways.</p>
+
+                        <h3 className="text-xl font-bold text-gray-900 mt-6">6. Payment Gateway Failures</h3>
+                        <p>If money is deducted but the order is not placed, the payment gateway will auto-refund within 3–7 working days. Snaccit does not control bank-level failures.</p>
+
+                        <h3 className="text-xl font-bold text-gray-900 mt-6">7. Complaints & Disputes</h3>
+                        <p>For refund issues: <strong>itsnacc@gmail.com</strong></p>
+                        <p>For food quality complaints: Contact the Vendor directly, as they are solely responsible.</p>
+                    </div>
                 </article>
+            </div>
+        </div>
+    );
+};
+
+// ---  Contact Us Page ---
+const ContactPage = ({ showNotification }) => {
+    const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        
+        // Simulate sending
+        setTimeout(() => {
+            setIsSubmitting(false);
+            showNotification("Message sent! We'll get back to you soon.", "success");
+            setFormData({ name: '', email: '', subject: '', message: '' });
+        }, 1500);
+    };
+
+    return (
+        <div className="bg-gray-50 py-16 sm:py-24 min-h-[70vh]">
+            <div className="container mx-auto px-6 max-w-5xl">
+                <div className="text-center mb-12">
+                    <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Contact Snaccit</h1>
+                    <p className="text-lg text-gray-600">We are here to help you with orders, vendor issues, or general questions.</p>
+                </div>
+
+                <div className="bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col md:flex-row">
+                    {/* Contact Info Side */}
+                    <div className="bg-emerald-900 text-white p-10 md:w-2/5 flex flex-col justify-between">
+                        <div>
+                            <h3 className="text-2xl font-bold mb-8 text-green-400">Get in touch</h3>
+                            <div className="space-y-8">
+                                <div className="flex items-start space-x-4">
+                                    <div className="bg-white/10 p-3 rounded-xl"><Mail size={24} className="text-green-400"/></div>
+                                    <div>
+                                        <p className="font-bold text-xs opacity-70 tracking-widest uppercase mb-1">Customer & Business Support</p>
+                                        <p className="text-lg font-medium">itsnacc@gmail.com</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start space-x-4">
+                                    <div className="bg-white/10 p-3 rounded-xl"><Phone size={24} className="text-green-400"/></div>
+                                    <div>
+                                        <p className="font-bold text-xs opacity-70 tracking-widest uppercase mb-1">Phone</p>
+                                        <p className="text-lg font-medium">+91-7011866944</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start space-x-4">
+                                    <div className="bg-white/10 p-3 rounded-xl"><Clock size={24} className="text-green-400"/></div>
+                                    <div>
+                                        <p className="font-bold text-xs opacity-70 tracking-widest uppercase mb-1">Support Hours</p>
+                                        <p className="text-lg font-medium">9:00 AM – 9:00 PM</p>
+                                        <p className="text-sm opacity-80">(Mon–Sun)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-12 pt-8 border-t border-white/10">
+                            <p className="text-sm opacity-60">Vendor Partnerships? Email us at the address above.</p>
+                        </div>
+                    </div>
+
+                    {/* Form Side */}
+                    <div className="p-10 md:w-3/5">
+                        <h3 className="text-xl font-bold text-gray-800 mb-6">Send us a message</h3>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Name</label>
+                                    <input type="text" name="name" value={formData.name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none transition-all bg-gray-50 focus:bg-white"/>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Email</label>
+                                    <input type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none transition-all bg-gray-50 focus:bg-white"/>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Subject</label>
+                                <input type="text" name="subject" value={formData.subject} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none transition-all bg-gray-50 focus:bg-white"/>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Message</label>
+                                <textarea name="message" value={formData.message} onChange={handleChange} rows="4" required className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none transition-all bg-gray-50 focus:bg-white resize-none"></textarea>
+                            </div>
+                            <button type="submit" disabled={isSubmitting} className="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition-all shadow-lg hover:shadow-green-500/30 flex justify-center items-center">
+                                {isSubmitting ? <Loader2 className="animate-spin" /> : 'Send Message'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -2584,7 +2799,6 @@ const renderView = () => {
         return <div className="min-h-[calc(100vh-200px)] flex itemgit pushs-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
     }
     switch(view) {
-        // --- UPDATE THIS LINE ---
         case 'home': 
             return <HomePage 
                 allRestaurants={restaurants} 
@@ -2596,7 +2810,6 @@ const renderView = () => {
         
         case 'menu': return selectedRestaurant ? <MenuPage restaurant={selectedRestaurant} onBackClick={handleBackClick} onSelectItem={handleSelectItemForCustomization} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
 
-        // ... rest of the cases remain the same
         case 'confirmation': return <OrderConfirmation onGoHome={() => handleGoHome()} />;
         case 'paymentStatus': 
             return <PaymentStatusPage 
@@ -2604,6 +2817,8 @@ const renderView = () => {
                 onOrderSuccess={handleClearCart} 
             />;
         case 'terms': return <TermsOfServicePage />;
+        case 'privacy': return <PrivacyPolicyPage />;
+        case 'contact': return <ContactPage showNotification={showNotification} />;
         case 'profile': return currentUser ? <ProfilePage currentUser={currentUser} showNotification={showNotification} onReorder={handleReorder} onRateOrder={setOrderToReview} onBackClick={handleBackClick} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
         default: return <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
     }
@@ -2694,11 +2909,31 @@ const renderView = () => {
     <div className="container mx-auto px-6 relative z-10 text-center">
         <BrandLogo className="scale-125 origin-center mb-8" />
         <p className="text-green-200/80 text-lg max-w-md mx-auto mb-12 font-medium leading-relaxed">Skip the wait. Savor the moment. The future of dining is here.</p>
+        
+        {/* --- UPDATED LINKS SECTION --- */}
         <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-12">
-            <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); setView('terms'); window.history.pushState({}, '', '/terms-of-service'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">Terms of Service<span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span></a>
-            <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); setView('privacy'); window.history.pushState({}, '', '/privacy-policy'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">Privacy Policy<span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span></a>
-            <a href="#" className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">Contact Us<span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span></a>
+            
+            {/* Terms Link */}
+            <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); navigate('terms'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">
+                Terms of Service
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span>
+            </a>
+
+            {/* Privacy Link */}
+            <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); navigate('privacy'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">
+                Privacy Policy
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span>
+            </a>
+
+            {/* Contact Link (FIXED: Now routes to 'contact' view) */}
+            <a href="/contact" onClick={(e) => { e.preventDefault(); navigate('contact'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">
+                Contact Us
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span>
+            </a>
+            
         </div>
+        {/* ----------------------------- */}
+
         <div className="border-t border-green-800/50 pt-8">
             <p className="text-green-300/60 text-sm font-medium">© 2024 Snaccit Inc. All rights reserved. Crafted with hunger.</p>
         </div>
