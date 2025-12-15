@@ -841,7 +841,7 @@ const TermsOfServicePage = () => {
     );
 };
 
-// ---  Contact Us Page ---
+// --- [REAL] Contact Us Page (Saves to DB) ---
 const ContactPage = ({ showNotification }) => {
     const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -852,17 +852,29 @@ const ContactPage = ({ showNotification }) => {
         e.preventDefault();
         setIsSubmitting(true);
         
-        // Simulate sending
-        setTimeout(() => {
-            setIsSubmitting(false);
+        try {
+            // Save to Firestore
+            await db.collection('contact_messages').add({
+                ...formData,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                status: 'unread' // Mark as unread so you see it as new in Admin
+            });
+
             showNotification("Message sent! We'll get back to you soon.", "success");
-            setFormData({ name: '', email: '', subject: '', message: '' });
-        }, 1500);
+            setFormData({ name: '', email: '', subject: '', message: '' }); // Clear form
+        } catch (error) {
+            console.error("Error sending message:", error);
+            showNotification("Failed to send message. Please try again.", "error");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
+    // ... (The rest of the return JSX remains exactly the same as before)
     return (
         <div className="bg-gray-50 py-16 sm:py-24 min-h-[70vh]">
             <div className="container mx-auto px-6 max-w-5xl">
+                {/* ... (Keep the rest of the UI code identical to previous version) ... */}
                 <div className="text-center mb-12">
                     <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Contact Snaccit</h1>
                     <p className="text-lg text-gray-600">We are here to help you with orders, vendor issues, or general questions.</p>
