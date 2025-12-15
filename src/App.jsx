@@ -7,7 +7,7 @@ import {
     ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, 
     Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, 
     Search, Star, Award, User, Info, Bell, Loader2, Frown, Copy, TicketPercent,
-    Gift, ChevronDown 
+    Gift, ChevronDown, Mail, Phone
 } from 'lucide-react';
 import 'firebase/compat/auth'; // Ensure Auth compat is imported
 import { auth, db, functionsAsia, messaging } from './firebase'; 
