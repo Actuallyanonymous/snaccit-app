@@ -984,23 +984,32 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
     return (
         <>
             {/* 1. HERO SECTION */}
-            <main className="relative h-[500px] flex items-center justify-center text-white overflow-hidden">
-                <div className="absolute inset-0 bg-black/50 z-10"></div>
-                <video className="absolute inset-0 w-full h-full object-cover" src={heroVideo} autoPlay loop muted playsInline />                  
-                <div className="relative z-20 text-center px-6">
-                    <AnimatedHeroText />
-                    <p className="mt-4 max-w-xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2 font-medium">
-                        Pre-order now. Arrive later. Eat instantly.
-                    </p>
-                    <div className="mt-8 slide-in-2">
-                        <button onClick={() => {
-                            document.getElementById('restaurants')?.scrollIntoView({ behavior: 'smooth' });
-                        }} className="bg-white text-green-700 font-extrabold py-3 px-8 rounded-full hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:scale-105 transition-all duration-300 shadow-lg text-lg">
-                            Order Now
-                        </button>
+            <main className="relative h-[550px] flex items-center justify-center text-white overflow-hidden">
+                <div className="absolute inset-0 bg-black/40 z-10"></div>
+                {/* Add a gradient at the bottom to blend with the white page */}
+                <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-stone-50 to-transparent z-20"></div>
+                
+                <video className="absolute inset-0 w-full h-full object-cover scale-105" src={heroVideo} autoPlay loop muted playsInline />                  
+                
+                <div className="relative z-30 text-center px-6 max-w-3xl mx-auto">
+                    <div className="bg-white/10 backdrop-blur-md border border-white/20 p-8 md:p-12 rounded-[2.5rem] shadow-2xl">
+                        <AnimatedHeroText />
+                        <p className="mt-6 text-lg md:text-xl text-gray-100 font-medium leading-relaxed">
+                            Skip the line. Order ahead. <br/>
+                            <span className="text-green-300 font-bold">Your food is ready when you are.</span>
+                        </p>
+                        <div className="mt-8 flex justify-center">
+                            <button onClick={() => {
+                                document.getElementById('restaurants')?.scrollIntoView({ behavior: 'smooth' });
+                            }} className="bg-green-500 text-white font-black py-4 px-10 rounded-full hover:bg-green-400 hover:scale-105 transition-all duration-300 shadow-[0_0_40px_rgba(34,197,94,0.4)] text-lg flex items-center gap-2">
+                                <Utensils size={20} /> Order Now
+                            </button>
+                        </div>
                     </div>
                 </div>
             </main>
+
+            {/* 2. RESTAURANTS SECTION */}
 
             {/* 2. RESTAURANTS SECTION */}
             <section id="restaurants" className="relative py-16 bg-gray-50/50">
@@ -1033,23 +1042,51 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                             <div className="col-span-full text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
                         ) : (
                             displayList.map((item) => (
-                                <div key={item.id} onClick={() => onRestaurantClick(item)} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
-                                    <div className="relative h-44 overflow-hidden">
-                                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                        {item.rating >= 4.5 && <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-amber-600 text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm flex items-center"><Star size={10} className="mr-1 fill-current"/> Top Rated</div>}
-                                    </div>
-                                    <div className="p-5 flex flex-col flex-grow">
-                                        <div className="flex justify-between items-start mb-1">
-                                            <h4 className="text-lg font-bold text-gray-900 line-clamp-1">{item.name}</h4>
-                                            {item.rating && <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded flex items-center"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
-                                        </div>
-                                        <p className="text-gray-500 text-sm font-medium mb-3 line-clamp-1">{item.cuisine}</p>
-                                        <div className="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
-                                            <span className="text-gray-900 font-bold text-sm">{item.price}</span>
-                                            <span className="text-green-600 text-xs font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1" size={14}/></span>
-                                        </div>
-                                    </div>
-                                </div>
+                                <div key={item.id} onClick={() => onRestaurantClick(item)} className="group relative bg-white rounded-[2rem] shadow-sm hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-500 cursor-pointer h-full flex flex-col overflow-hidden transform hover:-translate-y-2">
+    
+    {/* Image Container */}
+    <div className="relative h-56 overflow-hidden">
+        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+        
+        {/* Gradient Overlay for text readability if needed, or just style */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60"></div>
+
+        {/* Rating Badge - Floating */}
+        {item.rating && (
+            <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
+                <Star size={14} className="text-amber-400 fill-current" />
+                <span className="text-xs font-bold text-gray-800">{item.rating.toFixed(1)}</span>
+            </div>
+        )}
+
+        {/* Top Rated Badge */}
+        {item.rating >= 4.5 && (
+            <div className="absolute top-4 right-4 bg-amber-400 text-white text-[10px] font-extrabold px-3 py-1 rounded-full shadow-lg uppercase tracking-wider">
+                Top Rated
+            </div>
+        )}
+    </div>
+
+    {/* Content */}
+    <div className="p-6 flex flex-col flex-grow">
+        <div className="flex justify-between items-start mb-2">
+            <h4 className="text-xl font-extrabold text-gray-900 line-clamp-1 group-hover:text-green-600 transition-colors">
+                {item.name}
+            </h4>
+        </div>
+        
+        <p className="text-stone-500 text-sm font-medium mb-4 line-clamp-1 flex items-center gap-1">
+            <ChefHat size={14} /> {item.cuisine}
+        </p>
+
+        <div className="mt-auto flex justify-between items-center border-t border-dashed border-gray-100 pt-4">
+            <span className="text-gray-900 font-black text-lg">{item.price}</span>
+            <span className="w-8 h-8 bg-green-50 text-green-600 rounded-full flex items-center justify-center group-hover:bg-green-500 group-hover:text-white transition-all duration-300">
+                <ArrowLeft className="rotate-180" size={16}/>
+            </span>
+        </div>
+    </div>
+</div>
                             ))
                         )}
                     </div>
@@ -1404,25 +1441,52 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                 ) : filteredItems.length > 0 ? (
                     <div className="space-y-4">
                         {filteredItems.map((item) => (
-                            <div key={item.id} className="bg-white rounded-2xl shadow-md p-4 flex items-center justify-between transition-shadow hover:shadow-lg">
-                                <div className="flex-1 min-w-0 pr-4">
-                                    <h3 className="font-bold text-lg text-gray-800">{item.name}</h3>
-                                     {item.description && <p className="text-gray-600 text-sm mt-1">{item.description}</p>}
-                                    <span className="font-semibold text-md text-gray-800 mt-2 block">
-                                         {item.sizes && item.sizes.length > 0 ? `₹${item.sizes[0].price}${item.sizes.length > 1 ? '+' : ''}` : 'Price unavailable'}
-                                    </span>
-                                </div>
-                                <div className="ml-4 flex-shrink-0">
-                                    <div className="relative w-24 h-24">
-                                        <img src={item.imageUrl || 'https://placehold.co/100x100/cccccc/ffffff?text=Food'} alt={item.name} className="w-full h-full rounded-lg object-cover"/>
-                                         {item.sizes && item.sizes.length > 0 && (
-                                            <button onClick={() => onSelectItem(item)} className="absolute -bottom-2 -right-2 bg-white text-green-700 p-1 rounded-full shadow-md hover:bg-green-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1">
-                                                <PlusCircle size={28}/>
-                                            </button>
-                                         )}
-                                    </div>
-                                </div>
-                            </div>
+                            <div key={item.id} className="bg-white rounded-[1.5rem] p-4 flex gap-4 transition-all duration-300 hover:shadow-lg border border-transparent hover:border-green-100 group">
+    {/* Image - Larger and Square */}
+    <div className="relative w-28 h-28 flex-shrink-0">
+        <img 
+            src={item.imageUrl || 'https://placehold.co/100x100/cccccc/ffffff?text=Yum'} 
+            alt={item.name} 
+            className="w-full h-full rounded-2xl object-cover shadow-md group-hover:scale-105 transition-transform duration-500"
+        />
+        {/* Quick Add Button overlay on Image for Mobile */}
+        {item.sizes && item.sizes.length > 0 && (
+            <button 
+                onClick={(e) => { e.stopPropagation(); onSelectItem(item); }} 
+                className="absolute -bottom-3 -right-3 bg-white text-green-600 p-2 rounded-full shadow-lg border border-gray-100 hover:bg-green-600 hover:text-white transition-all active:scale-90"
+            >
+                <Plus size={20} strokeWidth={3} />
+            </button>
+        )}
+    </div>
+
+    {/* Text Info */}
+    <div className="flex-1 flex flex-col justify-center min-w-0">
+        <div className="flex justify-between items-start">
+            <h3 className="font-bold text-lg text-gray-900 leading-tight mb-1">{item.name}</h3>
+            {item.isVeg !== undefined && (
+                <div className={`w-4 h-4 border ${item.isVeg ? 'border-green-600' : 'border-red-600'} flex items-center justify-center p-[2px] rounded-sm flex-shrink-0 ml-2`}>
+                    <div className={`w-full h-full rounded-full ${item.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></div>
+                </div>
+            )}
+        </div>
+        
+        {item.description && (
+            <p className="text-gray-500 text-xs line-clamp-2 leading-relaxed mb-3">{item.description}</p>
+        )}
+
+        <div className="mt-auto flex items-center gap-2">
+            <span className="font-black text-gray-800 text-lg">
+                {item.sizes && item.sizes.length > 0 ? `₹${item.sizes[0].price}` : 'N/A'}
+            </span>
+            {item.sizes && item.sizes.length > 1 && (
+                <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                    Customizable
+                </span>
+            )}
+        </div>
+    </div>
+</div>
                         ))}
                     </div>
                 ) : (
@@ -2868,7 +2932,7 @@ const renderView = () => {
              <ReviewModal isOpen={!!orderToReview} onClose={() => setOrderToReview(null)} order={orderToReview} onSubmitReview={handleSubmitReview} />
              <PaymentRedirectOverlay isOpen={isRedirecting} />
 
-            <div className="bg-cream-50 font-sans text-slate-800 min-h-screen flex flex-col">
+                <div className="bg-stone-50 min-h-screen flex flex-col font-sans selection:bg-orange-200 selection:text-orange-900">
                 {/* Header Section */}
                 <header className="bg-white/80 backdrop-blur-xl sticky top-0 z-30 border-b border-gray-200/80">
                     <div className="container mx-auto px-6 py-4 flex justify-between items-center">
@@ -2947,9 +3011,32 @@ const renderView = () => {
         </div>
     </div>
 </footer>
+
+{/* Floating Mobile Cart Button */}
+{cart.length > 0 && !isCartOpen && !isCheckoutOpen && (
+    <div className="fixed bottom-6 left-6 right-6 z-50 md:hidden animate-fade-in-up">
+        <button 
+            onClick={() => setIsCartOpen(true)}
+            className="w-full bg-green-900 text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center backdrop-blur-md bg-opacity-90 border border-green-700/50"
+        >
+            <div className="flex items-center gap-3">
+                <div className="bg-green-500 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">
+                    {cartItemCount}
+                </div>
+                <div className="text-left">
+                    <p className="text-xs text-green-300 font-medium uppercase tracking-wider">Total</p>
+                    <p className="font-bold text-lg leading-none">View Cart</p>
+                </div>
+            </div>
+            <span className="font-bold text-xl">₹{cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0).toFixed(0)}</span>
+        </button>
+    </div>
+)}
             </div>
         </>
     );
+
+
 };
 
 export default App;
