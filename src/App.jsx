@@ -1,8 +1,6 @@
-// App.jsx (Full, Unabbreviated Version with Email-Only Login)
 import firebase from 'firebase/compat/app';
 import React, { useState, useEffect, useMemo } from 'react';
 import { requestCustomerNotificationPermission } from './firebaseMessaging';
-// Update this line at the top of your file:
 import { 
     ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, 
     Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, 
@@ -23,7 +21,6 @@ import burgerImg from './assets/vegan-burger.png';
 
 // --- Notification Component ---
 const Notification = ({ message, type, onDismiss }) => {
-// ... (rest of the component is unchanged)
     if (!message) return null;
     const baseClasses = "fixed top-5 right-5 p-4 rounded-lg shadow-lg flex items-center z-[100] animate-fade-in-down";
     const typeClasses = {
@@ -62,7 +59,6 @@ const BrandLogo = ({ className = "" }) => (
 
 // --- Animated Hero Text ---
 const AnimatedHeroText = () => (
-// ... (rest of the component is unchanged)
     <>
         <style>{`
             @keyframes slide-in { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
