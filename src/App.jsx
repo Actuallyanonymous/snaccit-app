@@ -18,6 +18,26 @@ import pizzaImg from './assets/marg-pizza.png';
 import sushiImg from './assets/sushi-platter.png';
 import burgerImg from './assets/vegan-burger.png';
 
+// 1. Define this component
+const GlobalStyles = () => (
+    <style>{`
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fade-in-up 0.6s ease-out forwards;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        /* Hide scrollbar for cleaner UI */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    `}</style>
+);
 
 // --- Notification Component ---
 const Notification = ({ message, type, onDismiss }) => {
@@ -42,16 +62,14 @@ const Notification = ({ message, type, onDismiss }) => {
     );
 };
 
-// --- Brand Logo Component ---
 const BrandLogo = ({ className = "" }) => (
-    <div className={`inline-flex items-center justify-center space-x-4 ${className}`}>
-        <div className="bg-gradient-to-br from-green-400 to-green-600 text-white p-3 rounded-2xl shadow-lg transform -rotate-12 hover:rotate-0 transition-transform duration-300">
-            <Utensils size={28} strokeWidth={2.5} />
+    <div className={`inline-flex items-center justify-center space-x-3 ${className}`}>
+        <div className="bg-gradient-to-tr from-emerald-500 to-teal-400 text-white p-2.5 rounded-xl shadow-lg shadow-emerald-200 transform -rotate-6 hover:rotate-0 transition-transform duration-300">
+            <Utensils size={24} strokeWidth={2.5} />
         </div>
         <div className="text-left">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white drop-shadow-sm leading-none">
-                Snaccit
-                <span className="text-green-400">.</span> 
+            <h1 className="text-3xl font-black tracking-tighter text-gray-800 leading-none">
+                Snaccit<span className="text-orange-500 text-4xl">.</span> 
             </h1>
         </div>
     </div>
@@ -1032,7 +1050,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                         {isLoading ? (
                             <div className="col-span-full text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
                         ) : (
-                            displayList.map((item) => (
+                            List.map((item) => (
                                 <div key={item.id} onClick={() => onRestaurantClick(item)} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
                                     <div className="relative h-44 overflow-hidden">
                                         <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -1045,7 +1063,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                                         </div>
                                         <p className="text-gray-500 text-sm font-medium mb-3 line-clamp-1">{item.cuisine}</p>
                                         <div className="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
-                                            <span className="text-gray-900 font-bold text-sm">{item.price}</span>
+                                    display        <span className="text-gray-900 font-bold text-sm">{item.price}</span>
                                             <span className="text-green-600 text-xs font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1" size={14}/></span>
                                         </div>
                                     </div>
@@ -1404,26 +1422,34 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                 ) : filteredItems.length > 0 ? (
                     <div className="space-y-4">
                         {filteredItems.map((item) => (
-                            <div key={item.id} className="bg-white rounded-2xl shadow-md p-4 flex items-center justify-between transition-shadow hover:shadow-lg">
-                                <div className="flex-1 min-w-0 pr-4">
-                                    <h3 className="font-bold text-lg text-gray-800">{item.name}</h3>
-                                     {item.description && <p className="text-gray-600 text-sm mt-1">{item.description}</p>}
-                                    <span className="font-semibold text-md text-gray-800 mt-2 block">
-                                         {item.sizes && item.sizes.length > 0 ? `₹${item.sizes[0].price}${item.sizes.length > 1 ? '+' : ''}` : 'Price unavailable'}
-                                    </span>
-                                </div>
-                                <div className="ml-4 flex-shrink-0">
-                                    <div className="relative w-24 h-24">
-                                        <img src={item.imageUrl || 'https://placehold.co/100x100/cccccc/ffffff?text=Food'} alt={item.name} className="w-full h-full rounded-lg object-cover"/>
-                                         {item.sizes && item.sizes.length > 0 && (
-                                            <button onClick={() => onSelectItem(item)} className="absolute -bottom-2 -right-2 bg-white text-green-700 p-1 rounded-full shadow-md hover:bg-green-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1">
-                                                <PlusCircle size={28}/>
-                                            </button>
-                                         )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+    <div key={item.id} className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 hover:border-orange-200 hover:shadow-lg transition-all flex gap-4 group">
+        
+        {/* Item Image */}
+        <div className="w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-100 relative">
+            <img src={item.imageUrl || 'https://placehold.co/200'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={item.name}/>
+        </div>
+
+        {/* Item Details */}
+        <div className="flex-grow flex flex-col justify-between py-1">
+            <div>
+                <h3 className="font-bold text-lg text-gray-800 leading-tight mb-1">{item.name}</h3>
+                <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{item.description}</p>
+            </div>
+            
+            <div className="flex justify-between items-end mt-2">
+                <div className="text-lg font-black text-gray-900">
+                    {/* Show base price */}
+                    ₹{item.sizes && item.sizes.length > 0 ? item.sizes[0].price : item.price || 0}
+                </div>
+                
+                {/* Custom Add Button */}
+                <button onClick={() => onSelectItem(item)} className="bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white font-bold py-2 px-5 rounded-xl transition-all shadow-sm text-sm flex items-center gap-1">
+                    ADD <PlusCircle size={14} />
+                </button>
+            </div>
+        </div>
+    </div>
+))}
                     </div>
                 ) : (
                     <div className="text-center py-10">
@@ -1444,7 +1470,7 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
 
 // --- Item Customization Modal ---
 const ItemCustomizationModal = ({ isOpen, onClose, item, onConfirmAddToCart }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
+
     if (!isOpen || !item) return null;
     const initialSize = item.sizes && item.sizes.length > 0 ? item.sizes[0] : null;
     const [selectedSize, setSelectedSize] = useState(initialSize);
@@ -1491,7 +1517,7 @@ const ItemCustomizationModal = ({ isOpen, onClose, item, onConfirmAddToCart }) =
 
     return (
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+            <div className="bg-white/95 backdrop-blur-xl w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/50 animate-fade-in-up">
                 <div className="p-6 border-b relative">
                     <h2 className="text-xl font-bold">{item.name}</h2>
                     {item.description && <p className="text-sm text-gray-500 mt-1">{item.description}</p>}
