@@ -1050,7 +1050,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                         {isLoading ? (
                             <div className="col-span-full text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
                         ) : (
-                            List.map((item) => (
+                            displayList.map((item) => (
                                 <div key={item.id} onClick={() => onRestaurantClick(item)} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
                                     <div className="relative h-44 overflow-hidden">
                                         <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
