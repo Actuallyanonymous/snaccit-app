@@ -18,9 +18,11 @@ import pizzaImg from './assets/marg-pizza.png';
 import sushiImg from './assets/sushi-platter.png';
 import burgerImg from './assets/vegan-burger.png';
 
-// 1. Define this component
+
 const GlobalStyles = () => (
     <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&display=swap');
+
         @keyframes fade-in-up {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -33,7 +35,11 @@ const GlobalStyles = () => (
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
-        /* Hide scrollbar for cleaner UI */
+        /* Custom Font Class */
+        .font-baloo {
+            font-family: 'Baloo 2', cursive;
+        }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     `}</style>
@@ -68,7 +74,8 @@ const BrandLogo = ({ className = "" }) => (
             <Utensils size={24} strokeWidth={2.5} />
         </div>
         <div className="text-left">
-            <h1 className="text-3xl font-black tracking-tighter text-gray-800 leading-none">
+            {/* Added 'font-baloo' class here 👇 */}
+            <h1 className="text-3xl font-black tracking-tighter text-gray-800 leading-none font-baloo">
                 Snaccit<span className="text-orange-500 text-4xl">.</span> 
             </h1>
         </div>
@@ -97,8 +104,7 @@ const AnimatedHeroText = () => (
 
 // --- Authentication Modal Component (Detects New User) ---
 const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
-// ... (Full component code as provided in previous response) ...
+
     const [phoneNumber, setPhoneNumber] = useState('');
     const [otp, setOtp] = useState('');
     const [error, setError] = useState('');
@@ -410,8 +416,8 @@ const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
 
 // --- [MODIFIED] Login Modal (Email/Password ONLY) ---
 const LoginModal = ({ isOpen, onClose, showNotification }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
-    // Note: onSelectOtpLogin prop is no longer needed
+
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -1046,31 +1052,49 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                     </div>
 
                     {/* Restaurant Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-                        {isLoading ? (
-                            <div className="col-span-full text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
-                        ) : (
-                            displayList.map((item) => (
-                                <div key={item.id} onClick={() => onRestaurantClick(item)} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
-                                    <div className="relative h-44 overflow-hidden">
-                                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                        {item.rating >= 4.5 && <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-amber-600 text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm flex items-center"><Star size={10} className="mr-1 fill-current"/> Top Rated</div>}
-                                    </div>
-                                    <div className="p-5 flex flex-col flex-grow">
-                                        <div className="flex justify-between items-start mb-1">
-                                            <h4 className="text-lg font-bold text-gray-900 line-clamp-1">{item.name}</h4>
-                                            {item.rating && <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded flex items-center"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
-                                        </div>
-                                        <p className="text-gray-500 text-sm font-medium mb-3 line-clamp-1">{item.cuisine}</p>
-                                        <div className="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
-                                    display        <span className="text-gray-900 font-bold text-sm">{item.price}</span>
-                                            <span className="text-green-600 text-xs font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1" size={14}/></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
+                    {/* Restaurant Grid */}
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+    {isLoading ? (
+        <div className="col-span-full text-center py-20">
+            <Loader2 className="animate-spin mx-auto text-green-600" size={40} />
+        </div>
+    ) : (
+        displayList.map((item) => (
+            <div key={item.id} onClick={() => onRestaurantClick(item)} 
+                 className="group bg-white rounded-[2rem] shadow-sm hover:shadow-2xl hover:shadow-orange-500/10 border border-gray-100 overflow-hidden cursor-pointer transition-all duration-500 hover:-translate-y-2 h-full flex flex-col">
+                
+                {/* Image Container with Gradient Overlay */}
+                <div className="relative h-56 overflow-hidden">
+                    <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80"></div>
+                    
+                    {/* Rating Badge */}
+                    {item.rating >= 4.0 && (
+                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-xs font-bold text-orange-600 flex items-center shadow-sm">
+                            <Star size={12} className="fill-current mr-1"/> {item.rating.toFixed(1)}
+                        </div>
+                    )}
+                    
+                    {/* Text Overlay */}
+                    <div className="absolute bottom-4 left-4 text-white">
+                        <h3 className="text-xl font-bold leading-tight mb-1">{item.name}</h3>
+                        <p className="text-sm text-gray-200 opacity-90">{item.cuisine}</p>
                     </div>
+                </div>
+
+                {/* Card Footer */}
+                <div className="p-5 flex justify-between items-center mt-auto">
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                        <Clock size={14} /> 15-20 min
+                    </div>
+                    <span className="text-emerald-600 font-bold text-sm group-hover:underline flex items-center bg-emerald-50 px-3 py-1.5 rounded-full transition-colors group-hover:bg-emerald-100">
+                        View Menu <ArrowLeft size={16} className="rotate-180 ml-1 group-hover:translate-x-1 transition-transform"/>
+                    </span>
+                </div>
+            </div>
+        ))
+    )}
+</div>
                     
                     {!isLoading && !searchTerm && !showAllRestaurants && filteredResults.length > 6 && (
                         <div className="mt-10 text-center">
@@ -1571,7 +1595,7 @@ const ItemCustomizationModal = ({ isOpen, onClose, item, onConfirmAddToCart }) =
 
 // --- Cart Sidebar Component ---
 const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
+
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
 
     return (
@@ -2899,7 +2923,7 @@ const renderView = () => {
                 <header className="bg-white/80 backdrop-blur-xl sticky top-0 z-30 border-b border-gray-200/80">
                     <div className="container mx-auto px-6 py-4 flex justify-between items-center">
                         {/* Logo goes Home */}
-                        <h1 onClick={() => handleGoHome()} className="text-3xl font-bold text-green-700 tracking-tight cursor-pointer">Snaccit</h1>
+                        <h1 onClick={() => handleGoHome()} className="text-4xl font-bold text-green-700 tracking-tight cursor-pointer font-baloo">Snaccit</h1>
                         
                         <div className="flex items-center space-x-4">
                             {/* Search Button */}
