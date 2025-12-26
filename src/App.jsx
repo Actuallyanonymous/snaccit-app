@@ -1245,7 +1245,7 @@ const StarRating = ({ rating }) => {
     return <div className="flex">{stars}</div>;
 };
 
-// --- [NEW] All Reviews Modal ---
+// --- [NEW] All Reviews Modal (Corrected for V8/Compat) ---
 const ReviewsListModal = ({ isOpen, onClose, restaurantId, restaurantName }) => {
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -1253,7 +1253,7 @@ const ReviewsListModal = ({ isOpen, onClose, restaurantId, restaurantName }) => 
     useEffect(() => {
         if (isOpen && restaurantId) {
             setLoading(true);
-            // Fetch up to 50 latest reviews for the modal
+            // Uses db.collection (V8) correctly
             const q = db.collection("reviews")
                 .where("restaurantId", "==", restaurantId)
                 .orderBy("createdAt", "desc")
@@ -1299,7 +1299,7 @@ const ReviewsListModal = ({ isOpen, onClose, restaurantId, restaurantName }) => 
     );
 };
 
-// --- [UPDATED] MenuPage Component (With Limited Reviews & Search) ---
+// --- [UPDATED] MenuPage Component (Corrected for V8/Compat) ---
 const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
     const [menuItems, setMenuItems] = useState([]);
     const [reviews, setReviews] = useState([]);
@@ -1318,7 +1318,7 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
         let unsubReviews = () => {};
 
         try {
-            // 1. Fetch Menu
+            // 1. Fetch Menu (V8 Syntax)
             const menuCollectionRef = db.collection("restaurants").doc(restaurant.id).collection("menu");
             unsubMenu = menuCollectionRef.onSnapshot((snapshot) => {
                 const allItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1327,11 +1327,11 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                 setIsLoading(false);
             });
 
-            // 2. Fetch Reviews (LIMIT TO 3 for preview)
+            // 2. Fetch Reviews (V8 Syntax)
             const reviewsQuery = db.collection("reviews")
                 .where("restaurantId", "==", restaurant.id)
                 .orderBy("createdAt", "desc")
-                .limit(3); // <--- Only fetch 3 for the main page
+                .limit(3);
             
             unsubReviews = reviewsQuery.onSnapshot((snapshot) => {
                 setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -1360,7 +1360,6 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
 
     return (
         <div className="container mx-auto px-6 py-12 min-h-screen">
-            {/* Inject the Modal here */}
             <ReviewsListModal 
                 isOpen={isAllReviewsOpen} 
                 onClose={() => setIsAllReviewsOpen(false)} 
@@ -1377,7 +1376,7 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                 <img src={restaurant.imageUrl} alt={restaurant.name} className="w-full md:w-48 h-48 rounded-3xl object-cover shadow-lg"/>
                 <div className="md:ml-8 mt-6 md:mt-0 text-center md:text-left">
                     <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800">{restaurant.name}</h1>
-                    <p className="text-lg sm:text-xl text-gray-500 mt-2">{restaurant.cuisine}</p>
+                    <p className="text-lg sm:text-xl text-stone-500 mt-2 flex items-center justify-center md:justify-start gap-2"><ChefHat size={20}/> {restaurant.cuisine}</p>
                     <div className="mt-4 flex flex-col sm:flex-row justify-center md:justify-start items-center space-y-2 sm:space-y-0 sm:space-x-3">
                         <span className="text-amber-500 font-bold flex items-center text-lg"><Star size={20} className="mr-1 fill-current"/>{restaurant.rating ? restaurant.rating.toFixed(1) : 'New'} ({restaurant.reviewCount || 0} reviews)</span>
                         <span className="text-gray-400 hidden sm:inline">|</span>
@@ -1404,7 +1403,7 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                     {reviews.length > 0 ? (
                         <div className="space-y-4">
                             {reviews.map(review => (
-                                <div key={review.id} className="bg-white p-4 rounded-lg shadow-sm border">
+                                <div key={review.id} className="bg-white p-4 rounded-lg shadow-sm border border-stone-100">
                                     <div className="flex justify-between items-center mb-1">
                                         <StarRating rating={review.rating} />
                                         <span className="text-xs text-gray-400">{review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : 'Date unavailable'}</span>
@@ -1435,58 +1434,58 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                     </div>
                 </div>
 
-                {/* Menu Grid */}
+                {/* Menu Grid - THE NEW APPETIZING DESIGN */}
                 {isLoading ? (
                     <div className="flex justify-center"><Loader2 className="animate-spin text-green-600" size={32} /></div>
                 ) : filteredItems.length > 0 ? (
                     <div className="space-y-4">
                         {filteredItems.map((item) => (
                             <div key={item.id} className="bg-white rounded-[1.5rem] p-4 flex gap-4 transition-all duration-300 hover:shadow-lg border border-transparent hover:border-green-100 group">
-    {/* Image - Larger and Square */}
-    <div className="relative w-28 h-28 flex-shrink-0">
-        <img 
-            src={item.imageUrl || 'https://placehold.co/100x100/cccccc/ffffff?text=Yum'} 
-            alt={item.name} 
-            className="w-full h-full rounded-2xl object-cover shadow-md group-hover:scale-105 transition-transform duration-500"
-        />
-        {/* Quick Add Button overlay on Image for Mobile */}
-        {item.sizes && item.sizes.length > 0 && (
-            <button 
-                onClick={(e) => { e.stopPropagation(); onSelectItem(item); }} 
-                className="absolute -bottom-3 -right-3 bg-white text-green-600 p-2 rounded-full shadow-lg border border-gray-100 hover:bg-green-600 hover:text-white transition-all active:scale-90"
-            >
-                <Plus size={20} strokeWidth={3} />
-            </button>
-        )}
-    </div>
+                                {/* Image - Larger and Square */}
+                                <div className="relative w-28 h-28 flex-shrink-0">
+                                    <img 
+                                        src={item.imageUrl || 'https://placehold.co/100x100/cccccc/ffffff?text=Yum'} 
+                                        alt={item.name} 
+                                        className="w-full h-full rounded-2xl object-cover shadow-md group-hover:scale-105 transition-transform duration-500"
+                                    />
+                                    {/* Quick Add Button overlay on Image for Mobile */}
+                                    {item.sizes && item.sizes.length > 0 && (
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); onSelectItem(item); }} 
+                                            className="absolute -bottom-3 -right-3 bg-white text-green-600 p-2 rounded-full shadow-lg border border-gray-100 hover:bg-green-600 hover:text-white transition-all active:scale-90"
+                                        >
+                                            <Plus size={20} strokeWidth={3} />
+                                        </button>
+                                    )}
+                                </div>
 
-    {/* Text Info */}
-    <div className="flex-1 flex flex-col justify-center min-w-0">
-        <div className="flex justify-between items-start">
-            <h3 className="font-bold text-lg text-gray-900 leading-tight mb-1">{item.name}</h3>
-            {item.isVeg !== undefined && (
-                <div className={`w-4 h-4 border ${item.isVeg ? 'border-green-600' : 'border-red-600'} flex items-center justify-center p-[2px] rounded-sm flex-shrink-0 ml-2`}>
-                    <div className={`w-full h-full rounded-full ${item.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></div>
-                </div>
-            )}
-        </div>
-        
-        {item.description && (
-            <p className="text-gray-500 text-xs line-clamp-2 leading-relaxed mb-3">{item.description}</p>
-        )}
+                                {/* Text Info */}
+                                <div className="flex-1 flex flex-col justify-center min-w-0">
+                                    <div className="flex justify-between items-start">
+                                        <h3 className="font-bold text-lg text-gray-900 leading-tight mb-1">{item.name}</h3>
+                                        {item.isVeg !== undefined && (
+                                            <div className={`w-4 h-4 border ${item.isVeg ? 'border-green-600' : 'border-red-600'} flex items-center justify-center p-[2px] rounded-sm flex-shrink-0 ml-2`}>
+                                                <div className={`w-full h-full rounded-full ${item.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {item.description && (
+                                        <p className="text-gray-500 text-xs line-clamp-2 leading-relaxed mb-3">{item.description}</p>
+                                    )}
 
-        <div className="mt-auto flex items-center gap-2">
-            <span className="font-black text-gray-800 text-lg">
-                {item.sizes && item.sizes.length > 0 ? `₹${item.sizes[0].price}` : 'N/A'}
-            </span>
-            {item.sizes && item.sizes.length > 1 && (
-                <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
-                    Customizable
-                </span>
-            )}
-        </div>
-    </div>
-</div>
+                                    <div className="mt-auto flex items-center gap-2">
+                                        <span className="font-black text-gray-800 text-lg">
+                                            {item.sizes && item.sizes.length > 0 ? `₹${item.sizes[0].price}` : 'N/A'}
+                                        </span>
+                                        {item.sizes && item.sizes.length > 1 && (
+                                            <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                                                Customizable
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         ))}
                     </div>
                 ) : (
@@ -1508,7 +1507,6 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
 
 // --- Item Customization Modal ---
 const ItemCustomizationModal = ({ isOpen, onClose, item, onConfirmAddToCart }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
     if (!isOpen || !item) return null;
     const initialSize = item.sizes && item.sizes.length > 0 ? item.sizes[0] : null;
     const [selectedSize, setSelectedSize] = useState(initialSize);
@@ -2868,8 +2866,7 @@ const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, use
 
 const renderView = () => {
     if (!isAuthReady || (view !== 'home' && view !== 'privacy' && view !== 'terms' && isLoading)) {
-        return <div className="min-h-[calc(100vh-200px)] flex itemgit pushs-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
-    }
+        return <div className="min-h-[calc(100vh-200px)] flex items-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;    }
     switch(view) {
         case 'home': 
             return <HomePage 
