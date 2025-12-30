@@ -1988,7 +1988,7 @@ const OrderConfirmation = ({ onGoHome }) => (
 );
 
 // --- [FINAL FAIL-SAFE] Payment Status Page Component ---
-const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => { 
+const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
     const [orderStatus, setOrderStatus] = useState('awaiting_payment');
     const [debugInfo, setDebugInfo] = useState(''); 
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -2113,18 +2113,18 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => {
         switch (orderStatus) {
             case 'awaiting_payment': 
                 return <><Loader2 size={64} className="text-blue-500 mb-6 animate-spin" /><h1 className="text-3xl font-bold text-gray-800">{statusMessage}</h1><p className="text-lg text-gray-600 mt-4">Please wait...</p></>;
-            case 'pending': 
+            case 'pending': 
             case 'accepted':
             case 'preparing':
             case 'ready':
             case 'completed':
                 return (
-        <>
-            <PartyPopper size={64} className="text-green-500 mb-6 animate-bounce" />
-            <h1 className="text-4xl font-bold text-gray-800">Order Placed!</h1>
-            <p className="text-lg text-gray-600 mt-4">Redirecting to your order history...</p> 
-        </>
-    );
+                    <>
+                        <PartyPopper size={64} className="text-green-500 mb-6 animate-bounce" />
+                        <h1 className="text-4xl font-bold text-gray-800">Order Placed!</h1>
+                        <p className="text-lg text-gray-600 mt-4">Redirecting to your order history...</p>
+                    </>
+                );
             case 'payment_failed': 
             case 'payment_init_failed':
                 return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment Failed</h1><p className="text-lg text-gray-600 mt-4">Please try again.</p></>;
