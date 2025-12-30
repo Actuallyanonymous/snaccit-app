@@ -1306,7 +1306,7 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
             // 1. Fetch Menu
             const menuCollectionRef = db.collection("restaurants").doc(restaurant.id).collection("menu");
             unsubMenu = menuCollectionRef.onSnapshot((snapshot) => {
-                const allItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const allItems = snapshot.docs.map(doc => ({ id: doc.id, restaurantId: restaurant.id, ...doc.data() }));
                 const availableItems = allItems.filter(item => item.isAvailable !== false);
                 setMenuItems(availableItems);
                 setIsLoading(false);
@@ -2884,15 +2884,20 @@ const renderView = () => {
     onCheckout={() => {
         let activeResto = selectedRestaurant;
 
-        // If context was lost (e.g., hard refresh on Home), try to find it in the global list
+        // If context is missing, find the restaurant using the ID saved in the cart items
         if (!activeResto && cart.length > 0) {
             const restoIdFromCart = cart[0].restaurantId;
+            // Search through the global restaurants list we fetched at app startup
             activeResto = restaurants.find(r => r.id === restoIdFromCart);
-            if (activeResto) setSelectedRestaurant(activeResto);
+            
+            if (activeResto) {
+                console.log("Recovered restaurant context:", activeResto.name);
+                setSelectedRestaurant(activeResto);
+            }
         }
 
         if (!activeResto) {
-            showNotification("Please go back to a restaurant menu to select arrival time.", "error");
+            showNotification("Please go back to the restaurant's menu to proceed.", "error");
             setIsCartOpen(false);
             return;
         }
