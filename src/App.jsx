@@ -1574,8 +1574,7 @@ const ItemCustomizationModal = ({ isOpen, onClose, item, onConfirmAddToCart }) =
 };
 
 // --- Cart Sidebar Component ---
-const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
+const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, selectedRestaurant, onGoToMenu }) => {
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
 
     return (
@@ -1583,9 +1582,30 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout }) =>
             <div className={`fixed inset-0 bg-black/60 z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={onClose}></div>
             <div className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="flex flex-col h-full">
-                    <div className="p-6 border-b flex justify-between items-center"><h2 className="text-xl font-bold text-gray-800">Your Order</h2><button onClick={onClose} className="text-gray-500 hover:text-gray-800"><X size={24} /></button></div>
+                    {/* --- UPDATED HEADER --- */}
+                    <div className="p-6 border-b">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-gray-800">Your Order</h2>
+                            <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
+                        </div>
+                        
+                        {/* New "Back to Menu" Link */}
+                        {selectedRestaurant && cart.length > 0 && (
+                            <button 
+                                onClick={() => { onGoToMenu(selectedRestaurant); onClose(); }}
+                                className="flex items-center text-green-600 hover:text-green-700 text-sm font-bold mt-2 transition-colors group"
+                            >
+                                <ArrowLeft size={16} className="mr-1 group-hover:-translate-x-1 transition-transform" /> 
+                                Back to {selectedRestaurant.name} Menu
+                            </button>
+                        )}
+                    </div>
+                    {/* ---------------------- */}
+
                     <div className="flex-grow p-4 sm:p-6 overflow-y-auto">
-                        {cart.length === 0 ? (<p className="text-gray-500 text-center mt-8 italic">Your cart is empty.</p>) : (
+                        {cart.length === 0 ? (
+                            <p className="text-gray-500 text-center mt-8 italic">Your cart is empty.</p>
+                        ) : (
                             <div className="space-y-4">
                                 {cart.map(item => (
                                     <div key={item.cartItemId} className="flex items-start border-b pb-3 last:border-b-0">
@@ -1608,7 +1628,10 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout }) =>
                     </div>
                     {cart.length > 0 && (
                         <div className="p-4 sm:p-6 border-t bg-gray-50">
-                            <div className="flex justify-between items-center mb-4"><span className="text-md font-semibold text-gray-800">Subtotal</span><span className="text-lg font-bold text-gray-900">₹{subtotal.toFixed(2)}</span></div>
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-md font-semibold text-gray-800">Subtotal</span>
+                                <span className="text-lg font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
+                            </div>
                             <button onClick={onCheckout} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 text-md">
                                 Choose Arrival Time
                             </button>
@@ -2881,23 +2904,19 @@ const renderView = () => {
     onClose={() => setIsCartOpen(false)} 
     cart={cart} 
     onUpdateQuantity={handleUpdateQuantity} 
+    selectedRestaurant={selectedRestaurant}
+    onGoToMenu={(resto) => navigate('menu', resto)}
     onCheckout={() => {
         let activeResto = selectedRestaurant;
 
-        // If context is missing, find the restaurant using the ID saved in the cart items
         if (!activeResto && cart.length > 0) {
             const restoIdFromCart = cart[0].restaurantId;
-            // Search through the global restaurants list we fetched at app startup
             activeResto = restaurants.find(r => r.id === restoIdFromCart);
-            
-            if (activeResto) {
-                console.log("Recovered restaurant context:", activeResto.name);
-                setSelectedRestaurant(activeResto);
-            }
+            if (activeResto) setSelectedRestaurant(activeResto);
         }
 
         if (!activeResto) {
-            showNotification("Please go back to the restaurant's menu to proceed.", "error");
+            showNotification("Please select a restaurant menu to select arrival time.", "error");
             setIsCartOpen(false);
             return;
         }
