@@ -1,5 +1,5 @@
 import firebase from 'firebase/compat/app';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { requestCustomerNotificationPermission } from './firebaseMessaging';
 import { 
     ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, 
@@ -1978,7 +1978,6 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
 
 // --- Order Confirmation Component ---
 const OrderConfirmation = ({ onGoHome }) => (
-// ... (rest of the component is unchanged)
     <div className="container mx-auto px-6 py-20 text-center flex flex-col items-center justify-center min-h-[60vh]">
         <PartyPopper size={64} className="text-green-500 mb-6" />
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">Order Placed Successfully!</h1>
@@ -1990,34 +1989,26 @@ const OrderConfirmation = ({ onGoHome }) => (
 // --- [FINAL FAIL-SAFE] Payment Status Page Component ---
 const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
     const [orderStatus, setOrderStatus] = useState('awaiting_payment');
-    const [debugInfo, setDebugInfo] = useState(''); 
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [statusMessage, setStatusMessage] = useState('Verifying Payment...');
+    
+    // Use a ref to ensure redirect logic only runs ONCE
+    const redirectTriggered = useRef(false);
 
-    // 1. Wait for Auth
+    // 1. Auth Listener
     useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged((user) => {
             setIsCheckingAuth(false);
-            if (!user) {
-                // If not logged in and no ID, we can't do anything
-                setOrderStatus('missing_id_no_auth');
-            }
+            if (!user) setOrderStatus('missing_id_no_auth');
         });
         return () => unsubscribeAuth();
     }, []);
 
-    // 2. Fetch Order (URL First -> Fallback to Latest Order)
+    // 2. Fetch Order Status
     useEffect(() => {
         if (isCheckingAuth) return;
 
         const searchParams = new URLSearchParams(window.location.search);
-        
-        // Debugging
-        const allParams = {};
-        for (const [key, value] of searchParams.entries()) { allParams[key] = value; }
-        setDebugInfo(JSON.stringify(allParams));
-
-        // 1. Try to get ID from URL
         let extractedId = searchParams.get('orderId') || searchParams.get('order_id') || searchParams.get('id');
         
         if (!extractedId) {
@@ -2027,37 +2018,22 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
             }
         }
 
-        // 2. Main Logic Function
         const startListeningToOrder = (id) => {
-            console.log("Listening to Order ID:", id);
-            const orderRef = db.collection('orders').doc(id);
-            return orderRef.onSnapshot((docSnapshot) => {
+            return db.collection('orders').doc(id).onSnapshot((docSnapshot) => {
                 if (docSnapshot.exists) {
                     const data = docSnapshot.data();
                     setOrderStatus(data.status);
-                    
-                    // Update text based on status
                     if(data.status === 'awaiting_payment') setStatusMessage('Waiting for confirmation...');
                     if(data.status === 'pending') setStatusMessage('Payment Received!');
                 } else {
                     setOrderStatus('not_found');
                 }
-            }, (error) => {
-                console.error("Firestore Error:", error);
-                setOrderStatus('error');
             });
         };
 
-        // 3. Execution
         if (extractedId) {
-            // Case A: We found an ID in the URL
-            const unsub = startListeningToOrder(extractedId);
-            return () => unsub();
+            return startListeningToOrder(extractedId);
         } else if (auth.currentUser) {
-            // Case B: No ID in URL, fetch LATEST order for this user
-            console.log("No URL ID. Fetching latest user order...");
-            setStatusMessage("Locating your order...");
-            
             db.collection("orders")
                 .where("userId", "==", auth.currentUser.uid)
                 .orderBy("createdAt", "desc")
@@ -2066,103 +2042,59 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
                 .then((snapshot) => {
                     if (!snapshot.empty) {
                         const latestOrder = snapshot.docs[0];
-                        const latestData = latestOrder.data();
-                        
-                        // Security Check: Only use this order if it was created in the last 15 minutes
-                        const now = new Date();
-                        const orderTime = latestData.createdAt?.toDate();
-                        const diffMins = (now - orderTime) / 1000 / 60;
-
-                        if (diffMins < 15) {
-                            console.log("Found recent order:", latestOrder.id);
-                            // Start listening to this ID
-                            startListeningToOrder(latestOrder.id);
-                        } else {
-                            console.warn("Latest order is too old (" + Math.round(diffMins) + " mins). Ignoring.");
-                            setOrderStatus('missing_id');
-                        }
-                    } else {
-                        setOrderStatus('missing_id');
-                    }
-                })
-                .catch(err => {
-                    console.error("Error fetching latest order:", err);
-                    setOrderStatus('error');
+                        const diffMins = (new Date() - latestOrder.data().createdAt?.toDate()) / 1000 / 60;
+                        if (diffMins < 15) startListeningToOrder(latestOrder.id);
+                        else setOrderStatus('missing_id');
+                    } else setOrderStatus('missing_id');
                 });
-        } else {
-            setOrderStatus('missing_id');
         }
-
     }, [isCheckingAuth]);
 
-    // 3. Auto-Clear Cart & Redirect
-    uuseEffect(() => {
-    const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
-    
-    // Only proceed if the status is successful
-    if (successStatuses.includes(orderStatus)) {
+    // 3. SUCCESS REDIRECT LOGIC (Fixed Typo & Loop)
+    useEffect(() => {
+        const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
         
-        // FLAG CHECK: Ensure this logic only runs ONCE per mount
-        // We use a local variable to prevent the loop during re-renders
-        let isProcessed = false;
-
-        if (!isProcessed) {
-            console.log("Payment successful! Starting 4s redirect timer...");
+        if (successStatuses.includes(orderStatus) && !redirectTriggered.current) {
+            // Mark as triggered immediately to prevent the infinite loop
+            redirectTriggered.current = true;
             
-            // 1. Clear the cart (This triggers the App re-render)
-            if (onOrderSuccess) {
-                onOrderSuccess();
-            }
+            console.log("Success detected. Clearing cart and starting 4s timer...");
+            
+            // Clear the cart in the parent App state
+            if (onOrderSuccess) onOrderSuccess();
 
-            // 2. Set the redirect timer
             const timer = setTimeout(() => {
-                console.log("Timer finished. Navigating to profile...");
+                console.log("Timer up. Redirecting to profile...");
                 if (onGoToProfile) onGoToProfile();
             }, 4000);
 
-            isProcessed = true;
-
-            return () => {
-                console.log("Cleaning up redirect timer.");
-                clearTimeout(timer);
-            };
+            return () => clearTimeout(timer);
         }
-    }
-}, [orderStatus]);
+    }, [orderStatus, onOrderSuccess, onGoToProfile]);
 
     const renderContent = () => {
         if (isCheckingAuth) return <Loader2 size={64} className="text-gray-400 mb-6 animate-spin" />;
 
+        const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
+        if (successStatuses.includes(orderStatus)) {
+            return (
+                <>
+                    <PartyPopper size={64} className="text-green-500 mb-6 animate-bounce" />
+                    <h1 className="text-4xl font-bold text-gray-800">Order Placed!</h1>
+                    <p className="text-lg text-gray-600 mt-4">Redirecting to your order history in a few seconds...</p>
+                </>
+            );
+        }
+
         switch (orderStatus) {
             case 'awaiting_payment': 
-                return <><Loader2 size={64} className="text-blue-500 mb-6 animate-spin" /><h1 className="text-3xl font-bold text-gray-800">{statusMessage}</h1><p className="text-lg text-gray-600 mt-4">Please wait...</p></>;
-            case 'pending': 
-            case 'accepted':
-            case 'preparing':
-            case 'ready':
-            case 'completed':
-                return (
-                    <>
-                        <PartyPopper size={64} className="text-green-500 mb-6 animate-bounce" />
-                        <h1 className="text-4xl font-bold text-gray-800">Order Placed!</h1>
-                        <p className="text-lg text-gray-600 mt-4">Redirecting to your order history...</p>
-                    </>
-                );
+                return <><Loader2 size={64} className="text-blue-500 mb-6 animate-spin" /><h1 className="text-3xl font-bold text-gray-800">{statusMessage}</h1></>;
             case 'payment_failed': 
-            case 'payment_init_failed':
-                return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment Failed</h1><p className="text-lg text-gray-600 mt-4">Please try again.</p></>;
+                return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment Failed</h1></>;
             case 'missing_id':
-            case 'missing_id_no_auth':
-                return (
-                    <>
-                        <Info size={64} className="text-orange-500 mb-6" />
-                        <h1 className="text-3xl font-bold text-gray-800">Status Unknown</h1>
-                        <p className="text-gray-600 mt-4">We couldn't track your payment automatically.</p>
-                        <p className="text-sm text-gray-500 mt-2">Please check "My Profile" to see if your order was placed.</p>
-                    </>
-                );
+                return <><Info size={64} className="text-orange-500 mb-6" /><h1 className="text-3xl font-bold text-gray-800">Status Unknown</h1><p className="text-gray-500">Check "My Profile" to verify your order.</p></>;
             default: 
-                return <><Info size={64} className="text-yellow-500 mb-6" /><h1 className="text-3xl font-bold text-gray-800">Checking Status...</h1></>;
+                return <><Loader2 size={64} className="text-gray-400 mb-6 animate-spin" /><h1 className="text-3xl font-bold text-gray-800">Verifying...</h1></>;
         }
     };
 
@@ -2170,7 +2102,7 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
         <div className="container mx-auto px-6 py-20 text-center flex flex-col items-center justify-center min-h-[60vh]">
             {renderContent()}
             <button onClick={onGoHome} className="mt-8 bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition-colors">
-                {['pending', 'accepted', 'preparing', 'ready', 'completed'].includes(orderStatus) ? 'Return Home Now' : 'Go Back Home'}
+                Return Home Now
             </button>
         </div>
     );
