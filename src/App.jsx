@@ -2097,15 +2097,31 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
 
     // 3. Auto-Clear Cart & Redirect
     useEffect(() => {
-        const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
-        if (successStatuses.includes(orderStatus)) {
-            if (onOrderSuccess) onOrderSuccess();
-            const timer = setTimeout(() => {
-                if (onGoToProfile) onGoToProfile();
-            }, 4000);
-            return () => clearTimeout(timer);
-        }
-    }, [orderStatus, onGoToProfile, onOrderSuccess]);
+    const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
+    
+    if (successStatuses.includes(orderStatus)) {
+        console.log("Payment successful! Status:", orderStatus, "Starting 4s redirect timer...");
+        
+        // 1. Clear the cart immediately
+        if (onOrderSuccess) onOrderSuccess();
+
+        // 2. Set the auto-redirect timer
+        const timer = setTimeout(() => {
+            console.log("Timer finished. Navigating to profile...");
+            if (onGoToProfile) {
+                onGoToProfile();
+            } else {
+                // Fail-safe if prop is missing
+                window.location.href = '/profile';
+            }
+        }, 4000);
+
+        return () => {
+            console.log("Cleaning up redirect timer.");
+            clearTimeout(timer);
+        };
+    }
+}, [orderStatus, onGoToProfile, onOrderSuccess]);
 
     const renderContent = () => {
         if (isCheckingAuth) return <Loader2 size={64} className="text-gray-400 mb-6 animate-spin" />;
