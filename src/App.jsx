@@ -2096,32 +2096,39 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
     }, [isCheckingAuth]);
 
     // 3. Auto-Clear Cart & Redirect
-    useEffect(() => {
+    uuseEffect(() => {
     const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
     
+    // Only proceed if the status is successful
     if (successStatuses.includes(orderStatus)) {
-        console.log("Payment successful! Status:", orderStatus, "Starting 4s redirect timer...");
         
-        // 1. Clear the cart immediately
-        if (onOrderSuccess) onOrderSuccess();
+        // FLAG CHECK: Ensure this logic only runs ONCE per mount
+        // We use a local variable to prevent the loop during re-renders
+        let isProcessed = false;
 
-        // 2. Set the auto-redirect timer
-        const timer = setTimeout(() => {
-            console.log("Timer finished. Navigating to profile...");
-            if (onGoToProfile) {
-                onGoToProfile();
-            } else {
-                // Fail-safe if prop is missing
-                window.location.href = '/profile';
+        if (!isProcessed) {
+            console.log("Payment successful! Starting 4s redirect timer...");
+            
+            // 1. Clear the cart (This triggers the App re-render)
+            if (onOrderSuccess) {
+                onOrderSuccess();
             }
-        }, 4000);
 
-        return () => {
-            console.log("Cleaning up redirect timer.");
-            clearTimeout(timer);
-        };
+            // 2. Set the redirect timer
+            const timer = setTimeout(() => {
+                console.log("Timer finished. Navigating to profile...");
+                if (onGoToProfile) onGoToProfile();
+            }, 4000);
+
+            isProcessed = true;
+
+            return () => {
+                console.log("Cleaning up redirect timer.");
+                clearTimeout(timer);
+            };
+        }
     }
-}, [orderStatus, onGoToProfile, onOrderSuccess]);
+}, [orderStatus]);
 
     const renderContent = () => {
         if (isCheckingAuth) return <Loader2 size={64} className="text-gray-400 mb-6 animate-spin" />;
