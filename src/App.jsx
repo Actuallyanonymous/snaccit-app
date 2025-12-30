@@ -978,10 +978,14 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
         
         const lowercasedSearchTerm = searchTerm.toLowerCase();
         if (searchType === 'dish') {
-            return restaurantsToFilter.flatMap(resto => 
-                (resto.menu || []).map(item => ({ ...item, restaurantId: resto.id, restaurantName: resto.name, restaurantCuisine: resto.cuisine, restaurantImageUrl: resto.imageUrl }))
-            ).filter(item => item.name.toLowerCase().includes(lowercasedSearchTerm));
-        }
+    return restaurantsToFilter.flatMap(resto => 
+        (resto.menu || []).map(item => ({ 
+            ...item, 
+            restaurantId: resto.id, // CRITICAL: This allows the cart to know its origin
+            restaurantName: resto.name 
+        }))
+    ).filter(item => item.name.toLowerCase().includes(lowercasedSearchTerm));
+}
         return restaurantsToFilter.filter(resto => resto.name.toLowerCase().includes(lowercasedSearchTerm) || resto.cuisine.toLowerCase().includes(lowercasedSearchTerm));
     }, [searchTerm, searchType, allRestaurants, activeFilter]);
 
@@ -2468,22 +2472,22 @@ const App = () => {
     }, [cart, selectedRestaurant]);
 
   // Helper to change view and update URL history
-  const navigate = (newView, restaurantData = null) => {
-      // 1. Update React State
-      setView(newView);
-      setSelectedRestaurant(restaurantData);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  const navigate = (newView, restaurantData) => {
+    setView(newView);
+    if (restaurantData !== undefined) {
+        setSelectedRestaurant(restaurantData);
+    }
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      // 2. Update Browser URL (The Magic Part)
-      let path = '/';
-      if (newView === 'menu' && restaurantData) path = `/restaurant/${restaurantData.id}`; 
-      else if (newView === 'profile') path = '/profile';
-      else if (newView === 'privacy') path = '/privacy-policy';
-      else if (newView === 'terms') path = '/terms-of-service';
-      
-      // Push state to browser history so "Back" works
-      window.history.pushState({ view: newView, restaurant: restaurantData }, '', path);
-  };
+    let path = '/';
+    if (newView === 'menu' && restaurantData) path = `/restaurant/${restaurantData.id}`; 
+    else if (newView === 'profile') path = '/profile';
+    else if (newView === 'privacy') path = '/privacy-policy';
+    else if (newView === 'terms') path = '/terms-of-service';
+    
+    window.history.pushState({ view: newView, restaurant: restaurantData || selectedRestaurant }, '', path);
+};
 
   // Listener for the Browser "Back" Button
   useEffect(() => {
@@ -2878,13 +2882,20 @@ const renderView = () => {
     cart={cart} 
     onUpdateQuantity={handleUpdateQuantity} 
     onCheckout={() => {
-        // --- THIS CHECK PREVENTS THE CRASH ---
-        if (!selectedRestaurant) {
-            showNotification("Please go back to the restaurant's menu to proceed to checkout.", "error");
-            setIsCartOpen(false); // Close the cart
-            return; // Stop
+        let activeResto = selectedRestaurant;
+
+        // If context was lost (e.g., hard refresh on Home), try to find it in the global list
+        if (!activeResto && cart.length > 0) {
+            const restoIdFromCart = cart[0].restaurantId;
+            activeResto = restaurants.find(r => r.id === restoIdFromCart);
+            if (activeResto) setSelectedRestaurant(activeResto);
         }
-        // --- END CHECK ---
+
+        if (!activeResto) {
+            showNotification("Please go back to a restaurant menu to select arrival time.", "error");
+            setIsCartOpen(false);
+            return;
+        }
 
         setIsCartOpen(false); 
         setIsCheckoutOpen(true); 
