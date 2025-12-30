@@ -2100,10 +2100,10 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => {
         const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
         if (successStatuses.includes(orderStatus)) {
             if (onOrderSuccess) onOrderSuccess();
-            const timer = setTimeout(() => onGoHome(), 4000);
+            const timer = setTimeout(() => onGoToProfile(), 4000);
             return () => clearTimeout(timer);
         }
-    }, [orderStatus, onGoHome, onOrderSuccess]);
+    }, [orderStatus, onGoToProfile, onOrderSuccess]);
 
     const renderContent = () => {
         if (isCheckingAuth) return <Loader2 size={64} className="text-gray-400 mb-6 animate-spin" />;
@@ -2116,7 +2116,13 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => {
             case 'preparing':
             case 'ready':
             case 'completed':
-                return <><PartyPopper size={64} className="text-green-500 mb-6 animate-bounce" /><h1 className="text-4xl font-bold text-gray-800">Order Placed!</h1><p className="text-lg text-gray-600 mt-4">Redirecting home...</p></>;
+                return (
+        <>
+            <PartyPopper size={64} className="text-green-500 mb-6 animate-bounce" />
+            <h1 className="text-4xl font-bold text-gray-800">Order Placed!</h1>
+            <p className="text-lg text-gray-600 mt-4">Redirecting to your order history...</p> 
+        </>
+    );
             case 'payment_failed': 
             case 'payment_init_failed':
                 return <><Frown size={64} className="text-red-500 mb-6" /><h1 className="text-4xl font-bold text-gray-800">Payment Failed</h1><p className="text-lg text-gray-600 mt-4">Please try again.</p></>;
@@ -2896,7 +2902,8 @@ const renderView = () => {
         case 'paymentStatus': 
             return <PaymentStatusPage 
                 onGoHome={() => handleGoHome()} 
-                onOrderSuccess={handleClearCart} 
+                onOrderSuccess={handleClearCart}
+                onGoToProfile={() => navigate('profile')}
             />;
         case 'terms': return <TermsOfServicePage />;
         case 'privacy': return <PrivacyPolicyPage />;
