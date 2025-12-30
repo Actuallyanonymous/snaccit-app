@@ -1067,7 +1067,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                                         </div>
                                         <p className="text-gray-500 text-sm font-medium mb-3 line-clamp-1">{item.cuisine}</p>
                                         <div className="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
-                                    display        <span className="text-gray-900 font-bold text-sm">{item.price}</span>
+                                            <span className="text-gray-900 font-bold text-sm">{item.price}</span>
                                             <span className="text-green-600 text-xs font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1" size={14}/></span>
                                         </div>
                                     </div>
