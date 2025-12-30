@@ -2100,7 +2100,9 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess }) => {
         const successStatuses = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
         if (successStatuses.includes(orderStatus)) {
             if (onOrderSuccess) onOrderSuccess();
-            const timer = setTimeout(() => onGoToProfile(), 4000);
+            const timer = setTimeout(() => {
+                if (onGoToProfile) onGoToProfile();
+            }, 4000);
             return () => clearTimeout(timer);
         }
     }, [orderStatus, onGoToProfile, onOrderSuccess]);
@@ -2884,7 +2886,7 @@ const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, use
 
 const renderView = () => {
     if (!isAuthReady || (view !== 'home' && view !== 'privacy' && view !== 'terms' && isLoading)) {
-        return <div className="min-h-[calc(100vh-200px)] flex itemgit pushs-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
+        return <div className="min-h-[calc(100vh-200px)] flex items-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
     }
     switch(view) {
         case 'home': 
