@@ -1574,7 +1574,7 @@ const ItemCustomizationModal = ({ isOpen, onClose, item, onConfirmAddToCart }) =
 };
 
 // --- Cart Sidebar Component ---
-const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, selectedRestaurant, onGoToMenu }) => {
+const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, selectedRestaurant, onGoToMenu, onClear }) => {
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
 
     return (
@@ -1582,29 +1582,49 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
             <div className={`fixed inset-0 bg-black/60 z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={onClose}></div>
             <div className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="flex flex-col h-full">
-                    {/* --- UPDATED HEADER --- */}
+                    {/* --- UPDATED HEADER WITH CLEAR OPTION --- */}
                     <div className="p-6 border-b">
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center mb-2">
                             <h2 className="text-xl font-bold text-gray-800">Your Order</h2>
                             <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
                         </div>
                         
-                        {/* New "Back to Menu" Link */}
-                        {selectedRestaurant && cart.length > 0 && (
-                            <button 
-                                onClick={() => { onGoToMenu(selectedRestaurant); onClose(); }}
-                                className="flex items-center text-green-600 hover:text-green-700 text-sm font-bold mt-2 transition-colors group"
-                            >
-                                <ArrowLeft size={16} className="mr-1 group-hover:-translate-x-1 transition-transform" /> 
-                                Back to {selectedRestaurant.name} Menu
-                            </button>
-                        )}
+                        <div className="flex justify-between items-center">
+                            {/* "Back to Menu" Link */}
+                            {selectedRestaurant && cart.length > 0 ? (
+                                <button 
+                                    onClick={() => { onGoToMenu(selectedRestaurant); onClose(); }}
+                                    className="flex items-center text-green-600 hover:text-green-700 text-sm font-bold transition-colors group"
+                                >
+                                    <ArrowLeft size={16} className="mr-1 group-hover:-translate-x-1 transition-transform" /> 
+                                    Back to {selectedRestaurant.name}
+                                </button>
+                            ) : <div></div>}
+
+                            {/* New "Clear Cart" Button */}
+                            {cart.length > 0 && (
+                                <button 
+                                    onClick={() => { 
+                                        if(window.confirm("Are you sure you want to clear your entire cart?")) { 
+                                            onClear(); 
+                                            onClose(); 
+                                        } 
+                                    }}
+                                    className="text-[10px] font-black text-red-400 hover:text-red-600 uppercase tracking-widest transition-colors"
+                                >
+                                    Clear Cart
+                                </button>
+                            )}
+                        </div>
                     </div>
-                    {/* ---------------------- */}
+                    {/* ----------------------------------------- */}
 
                     <div className="flex-grow p-4 sm:p-6 overflow-y-auto">
                         {cart.length === 0 ? (
-                            <p className="text-gray-500 text-center mt-8 italic">Your cart is empty.</p>
+                            <div className="flex flex-col items-center justify-center h-full text-center">
+                                <ShoppingCart size={48} className="text-gray-200 mb-4" />
+                                <p className="text-gray-500 italic">Your cart is empty.</p>
+                            </div>
                         ) : (
                             <div className="space-y-4">
                                 {cart.map(item => (
@@ -1617,22 +1637,23 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
                                             <p className="text-sm text-gray-700 font-bold mt-1">₹{item.finalPrice.toFixed(2)}</p>
                                         </div>
                                         <div className="flex items-center flex-shrink-0">
-                                            <button onClick={() => onUpdateQuantity(item.cartItemId, item.quantity - 1)} className="text-gray-500 hover:text-red-600 p-1 rounded-full"><MinusCircle size={20}/></button>
-                                            <span className="w-8 text-center font-semibold text-sm mx-1">{item.quantity}</span>
-                                            <button onClick={() => onUpdateQuantity(item.cartItemId, item.quantity + 1)} className="text-gray-500 hover:text-green-600 p-1 rounded-full"><PlusCircle size={20}/></button>
+                                            <button onClick={() => onUpdateQuantity(item.cartItemId, item.quantity - 1)} className="text-gray-400 hover:text-red-500 p-1 transition-colors"><MinusCircle size={20}/></button>
+                                            <span className="w-8 text-center font-bold text-sm mx-1 text-gray-700">{item.quantity}</span>
+                                            <button onClick={() => onUpdateQuantity(item.cartItemId, item.quantity + 1)} className="text-gray-400 hover:text-green-600 p-1 transition-colors"><PlusCircle size={20}/></button>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         )}
                     </div>
+
                     {cart.length > 0 && (
                         <div className="p-4 sm:p-6 border-t bg-gray-50">
                             <div className="flex justify-between items-center mb-4">
                                 <span className="text-md font-semibold text-gray-800">Subtotal</span>
                                 <span className="text-lg font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
                             </div>
-                            <button onClick={onCheckout} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 text-md">
+                            <button onClick={onCheckout} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-4 rounded-2xl hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 text-md">
                                 Choose Arrival Time
                             </button>
                         </div>
@@ -2906,6 +2927,9 @@ const renderView = () => {
     onUpdateQuantity={handleUpdateQuantity} 
     selectedRestaurant={selectedRestaurant}
     onGoToMenu={(resto) => navigate('menu', resto)}
+    // --- ADD THE CLEAR HANDLER HERE ---
+    onClear={handleClearCart} 
+    // ----------------------------------
     onCheckout={() => {
         let activeResto = selectedRestaurant;
 
