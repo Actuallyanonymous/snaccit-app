@@ -1679,117 +1679,103 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
     );
 };
 
-// --- Time Slot Picker Component ---
+// --- Updated TimeSlotPicker Component (Free Selection with 15-min Buffer) ---
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
-    const generateTimeSlots = (openingTimeStr, closingTimeStr) => {
-        if (!openingTimeStr || !closingTimeStr) return [];
-
-        const slots = [];
-        const now = new Date();
-        const intervalMinutes = 15;
-        // Minimum time to prepare first specific slot (e.g., 15 mins from now)
-        const minimumLeadTimeMinutes = 15;
-
-        // Parse opening and closing times into today's date objects
-        const [openHours, openMinutes] = openingTimeStr.split(':').map(Number);
-        const openingTime = new Date();
-        openingTime.setHours(openHours, openMinutes, 0, 0);
-
-        const [closeHours, closeMinutes] = closingTimeStr.split(':').map(Number);
-        const closingTime = new Date();
-        closingTime.setHours(closeHours, closeMinutes, 0, 0);
-
-        // If it's already past closing time today, show nothing.
-        if (now >= closingTime) {
-             return [];
-        }
-
-        // --- 1. ALWAYS Add the distinct "ASAP" option first ---
-        // This sends the literal string 'ASAP' as the arrival time value.
-        slots.push({ display: 'ASAP', value: 'ASAP' });
-
-
-        // --- 2. Generate specific future time slots ---
-        // Calculate start time for numerical slots: Now + lead time...
-        let startTime = new Date(now.getTime() + minimumLeadTimeMinutes * 60000);
-
-        // ...rounded up to the next 15-minute interval mark.
-        const minutes = startTime.getMinutes();
-        const remainder = minutes % intervalMinutes;
-        if (remainder !== 0) {
-            // Add minutes to reach the next interval mark, reset seconds
-            startTime.setMinutes(minutes + (intervalMinutes - remainder), 0, 0);
-        } else {
-            // Already on an interval mark, just clean up seconds
-            startTime.setSeconds(0, 0);
-        }
-
-        // Ensure the first numerical slot doesn't start *before* opening time.
-        // If calculated start time is too early, bump it to opening time.
-        if (startTime < openingTime) {
-            startTime = openingTime;
-        }
-
-        // Loop to generate numerical slots until closing time
-        while (startTime < closingTime) {
-            const displayFormat = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            // Add the numerical slot
-            slots.push({ display: displayFormat, value: displayFormat });
-            // Move to next interval
-            startTime.setMinutes(startTime.getMinutes() + intervalMinutes);
-        }
-
-        return slots;
+    
+    // Helper to format Date object to "HH:MM" for the time input
+    const formatToTimeInput = (date) => {
+        return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
     };
 
-    const timeSlots = useMemo(() => generateTimeSlots(restaurant?.openingTime, restaurant?.closingTime), [restaurant]);
+    // Calculate the minimum allowed time (Now + 15 minutes)
+    const minAllowedTime = useMemo(() => {
+        const now = new Date();
+        const minTime = new Date(now.getTime() + 15 * 60000); // Current time + 15 mins
+        
+        // Handle Restaurant Opening Time constraint
+        if (restaurant?.openingTime) {
+            const [oH, oM] = restaurant.openingTime.split(':').map(Number);
+            const openDate = new Date();
+            openDate.setHours(oH, oM, 0, 0);
+            return minTime < openDate ? openDate : minTime;
+        }
+        return minTime;
+    }, [restaurant]);
+
+    const handleTimeInputChange = (e) => {
+        const selectedVal = e.target.value; // Format is "HH:MM" (24h)
+        if (!selectedVal) return;
+
+        // Convert 24h input to the "12:00 PM" format used in your DB/App
+        const [hours, minutes] = selectedVal.split(':');
+        const date = new Date();
+        date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        
+        const formattedTime = date.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit', 
+            hour12: true 
+        });
+        
+        onTimeSelect(formattedTime);
+    };
 
     if (!restaurant?.openingTime || !restaurant?.closingTime) {
-        return <div className="text-center p-4 bg-yellow-50 text-yellow-700 rounded-lg border border-yellow-200"><p className="font-semibold">Restaurant hours not set.</p><p className="text-sm">Pre-orders unavailable.</p></div>;
-    }
-
-    if (timeSlots.length === 0) {
-        return <div className="text-center p-4 bg-red-50 text-red-700 rounded-lg border border-red-200"><p className="font-semibold">Sorry, restaurant is closed for pre-orders now.</p><p className="text-sm">Hours: {restaurant.openingTime} - {restaurant.closingTime}</p></div>;
+        return (
+            <div className="text-center p-4 bg-yellow-50 text-yellow-700 rounded-lg border border-yellow-200">
+                <p className="font-semibold">Restaurant hours not set.</p>
+            </div>
+        );
     }
 
     return (
-        <div>
-            <label className="block text-gray-700 text-sm font-bold mb-3 flex items-center"><Clock className="inline mr-2" size={16} />Estimated Arrival Time</label>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
-                {timeSlots.map((slot, index) => {
-                    // Special styling for the ASAP button (the first one)
-                    const isASAP = index === 0 && slot.display === 'ASAP';
-                    const isSelected = selectedTime === slot.value;
+        <div className="space-y-4">
+            <label className="block text-gray-700 text-sm font-bold mb-3 flex items-center">
+                <Clock className="inline mr-2" size={16} /> Select Arrival Time
+            </label>
 
-                    let buttonClasses = `p-2 sm:p-3 text-sm sm:text-base rounded-lg font-semibold text-center transition-all duration-200 border-2 focus:outline-none focus:ring-1 focus:ring-green-500 `;
+            <div className="flex flex-col sm:flex-row gap-4">
+                {/* ASAP Button */}
+                <button
+                    type="button"
+                    onClick={() => onTimeSelect('ASAP')}
+                    className={`flex-1 py-4 px-6 rounded-2xl font-bold border-2 transition-all ${
+                        selectedTime === 'ASAP' 
+                        ? 'bg-green-600 text-white border-green-600 shadow-lg' 
+                        : 'bg-green-50 text-green-700 border-green-200 hover:border-green-400'
+                    }`}
+                >
+                    ASAP
+                    <span className="block text-[10px] opacity-80 font-normal">Ready in ~15-20 mins</span>
+                </button>
 
-                    if (isSelected) {
-                        buttonClasses += `bg-green-600 text-white border-green-600 shadow-md ring-2 ring-green-300 ring-offset-1 `;
-                    } else if (isASAP) {
-                        // Distinct style for unselected ASAP button
-                        buttonClasses += `bg-green-50 text-green-800 border-green-300 hover:border-green-500 hover:bg-green-100 `;
-                    } else {
-                        buttonClasses += `bg-white text-gray-700 border-gray-200 hover:border-green-400 hover:text-green-700 `;
-                    }
-
-                    return (
-                        <button
-                            type="button"
-                            key={slot.value} // Use the time value as the key
-                            onClick={() => onTimeSelect(slot.value)}
-                            className={buttonClasses}
-                        >
-                            {slot.display}
-                        </button>
-                    );
-                })}
+                {/* Custom Time Picker */}
+                <div className="flex-1 relative">
+                    <input
+                        type="time"
+                        min={formatToTimeInput(minAllowedTime)}
+                        max={restaurant.closingTime}
+                        onChange={handleTimeInputChange}
+                        className={`w-full py-4 px-6 rounded-2xl font-bold border-2 outline-none transition-all appearance-none ${
+                            selectedTime !== 'ASAP' && selectedTime !== ''
+                            ? 'border-green-600 bg-white text-gray-900 ring-2 ring-green-100'
+                            : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                        }`}
+                    />
+                    <div className="absolute top-1/2 right-4 -translate-y-1/2 pointer-events-none text-gray-400">
+                        <ChevronDown size={18} />
+                    </div>
+                    {selectedTime !== 'ASAP' && selectedTime !== '' && (
+                        <p className="text-[10px] text-green-600 mt-1 ml-2 font-bold uppercase tracking-tight">
+                            Selected: {selectedTime}
+                        </p>
+                    )}
+                </div>
             </div>
-            {/* Helper text to show the actual time for ASAP */}
-            {selectedTime && timeSlots[0]?.display === 'ASAP' && selectedTime === timeSlots[0].value && (
-                 <p className="text-xs text-green-600 mt-2 ml-1">
-                    Goal arrival time: <strong>{selectedTime}</strong>
-                </p>
-            )}
+
+            <p className="text-[11px] text-gray-400 text-center italic">
+                Note: Orders must be placed at least 15 minutes before arrival.
+            </p>
         </div>
     );
 };
