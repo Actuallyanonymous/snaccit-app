@@ -1006,23 +1006,38 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
     return (
         <>
             {/* 1. HERO SECTION */}
-            <main className="relative h-[500px] flex items-center justify-center text-white overflow-hidden">
-                <div className="absolute inset-0 bg-black/50 z-10"></div>
-                <video className="absolute inset-0 w-full h-full object-cover" src={heroVideo} autoPlay loop muted playsInline />                  
-                <div className="relative z-20 text-center px-6">
-                    <AnimatedHeroText />
-                    <p className="mt-4 max-w-xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2 font-medium">
-                        Pre-order now. Arrive later. Eat instantly.
-                    </p>
-                    <div className="mt-8 slide-in-2">
-                        <button onClick={() => {
-                            document.getElementById('restaurants')?.scrollIntoView({ behavior: 'smooth' });
-                        }} className="bg-white text-green-700 font-extrabold py-3 px-8 rounded-full hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:scale-105 transition-all duration-300 shadow-lg text-lg">
-                            Order Now
-                        </button>
-                    </div>
-                </div>
-            </main>
+<main className="relative h-[500px] flex items-center justify-center text-white overflow-hidden">
+    <div className="absolute inset-0 bg-black/50 z-10"></div>
+    <video className="absolute inset-0 w-full h-full object-cover" src={heroVideo} autoPlay loop muted playsInline />                  
+    <div className="relative z-20 text-center px-6">
+        <AnimatedHeroText />
+        <p className="mt-4 max-w-xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2 font-medium">
+            Pre-order now. Arrive later. Eat instantly.
+        </p>
+        
+        {/* Updated Button Container */}
+        <div className="mt-8 slide-in-2 flex flex-col sm:flex-row items-center justify-center gap-6">
+            <button onClick={() => {
+                document.getElementById('restaurants')?.scrollIntoView({ behavior: 'smooth' });
+            }} className="bg-white text-green-700 font-extrabold py-3 px-10 rounded-full hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:scale-105 transition-all duration-300 shadow-lg text-lg">
+                Order Now
+            </button>
+
+            <a 
+                href="https://play.google.com/store/apps/details?id=com.snaccit.app&hl=en" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:scale-105 transition-transform duration-300"
+            >
+                <img 
+                    alt='Get it on Google Play' 
+                    src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' 
+                    className="h-16 md:h-20"
+                />
+            </a>
+        </div>
+    </div>
+</main>
 
             {/* 2. RESTAURANTS SECTION */}
             <section id="restaurants" className="relative py-16 bg-gray-50/50">
@@ -2964,35 +2979,42 @@ const renderView = () => {
     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-[800px] h-[400px] bg-green-600/20 rounded-[100%] blur-[100px] pointer-events-none"></div>
 
     <div className="container mx-auto px-6 relative z-10 text-center">
-        <BrandLogo className="scale-125 origin-center mb-8" />
-        <p className="text-green-200/80 text-lg max-w-md mx-auto mb-12 font-medium leading-relaxed">Skip the wait. Savor the moment. The future of dining is here.</p>
+        <BrandLogo className="scale-125 origin-center mb-6" />
+        <p className="text-green-200/80 text-lg max-w-md mx-auto mb-8 font-medium leading-relaxed">Skip the wait. Savor the moment.</p>
         
-        {/* --- UPDATED LINKS SECTION --- */}
+        {/* Download App Badge in Footer */}
+        <div className="mb-12 flex justify-center">
+            <a 
+                href="https://play.google.com/store/apps/details?id=com.snaccit.app&hl=en" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group"
+            >
+                <img 
+                    alt='Get it on Google Play' 
+                    src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' 
+                    className="h-14 opacity-80 group-hover:opacity-100 transition-opacity"
+                />
+            </a>
+        </div>
+
         <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-12">
-            
-            {/* Terms Link */}
             <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); navigate('terms'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">
                 Terms of Service
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span>
             </a>
-
-            {/* Privacy Link */}
             <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); navigate('privacy'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">
                 Privacy Policy
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span>
             </a>
-
-            {/* Contact Link (FIXED: Now routes to 'contact' view) */}
             <a href="/contact" onClick={(e) => { e.preventDefault(); navigate('contact'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">
                 Contact Us
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span>
             </a>
-            
         </div>
-        {/* ----------------------------- */}
 
         <div className="border-t border-green-800/50 pt-8">
-            <p className="text-green-300/60 text-sm font-medium">© 2024 Snaccit Inc. All rights reserved. Crafted with hunger.</p>
+            <p className="text-green-300/60 text-sm font-medium">© 2026 Snaccit Inc. All rights reserved.</p>
         </div>
     </div>
 </footer>
