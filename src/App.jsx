@@ -1679,16 +1679,18 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
     );
 };
 
-// --- [PERFORMANCE OPTIMIZED] iOS-Style Continuous Scroll Picker ---
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Clock } from 'lucide-react';
+
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
     const [mode, setMode] = useState(selectedTime === 'ASAP' ? 'ASAP' : 'custom');
 
     const Wheel = ({ options, value, onChange, label }) => {
         const scrollRef = useRef(null);
+        const isManualScroll = useRef(false);
         const itemHeight = 40; 
-        const [internalValue, setInternalValue] = useState(value);
 
-        // Initialize position
+        // Set initial position ONLY ONCE on mount
         useEffect(() => {
             if (scrollRef.current) {
                 const index = options.indexOf(value);
@@ -1696,47 +1698,48 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
             }
         }, []);
 
-        // Detect when scroll stops to update parent state
         const handleScroll = () => {
-            if (!scrollRef.current) return;
+            // If the change was triggered by React re-rendering, ignore it
+            if (!isManualScroll.current) return;
+
             const scrollTop = scrollRef.current.scrollTop;
             const index = Math.round(scrollTop / itemHeight);
             const safeIndex = Math.max(0, Math.min(index, options.length - 1));
             const newVal = options[safeIndex];
 
-            // Only update internal visual state to prevent flickering
-            if (newVal !== internalValue) {
-                setInternalValue(newVal);
-                // Debounce the parent update so it doesn't stutter
-                const timer = setTimeout(() => onChange(newVal), 100);
-                return () => clearTimeout(timer);
+            if (newVal !== value) {
+                onChange(newVal);
             }
         };
 
         return (
             <div className="flex flex-col items-center">
                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{label}</span>
-                <div className="relative h-[120px] w-16 bg-gray-100/50 rounded-2xl border border-gray-200/50 shadow-inner overflow-hidden">
-                    {/* The "Selection Glass" */}
+                <div className="relative h-[120px] w-16 bg-gray-100 rounded-2xl border border-gray-200 shadow-inner overflow-hidden">
                     <div className="absolute top-1/2 left-0 w-full h-10 -translate-y-1/2 border-y border-green-500/30 pointer-events-none bg-white/40 z-10" />
                     
                     <div 
                         ref={scrollRef}
                         onScroll={handleScroll}
-                        className="h-full overflow-y-scroll no-scrollbar snap-y snap-mandatory overscroll-contain"
+                        // Detect when the user is actually touching/scrolling
+                        onMouseEnter={() => { isManualScroll.current = true; }}
+                        onMouseLeave={() => { isManualScroll.current = false; }}
+                        onTouchStart={() => { isManualScroll.current = true; }}
+                        onTouchEnd={() => { isManualScroll.current = false; }}
+                        className="h-full overflow-y-scroll no-scrollbar snap-y snap-mandatory"
                     >
-                        <div className="h-10" /> {/* Spacer */}
+                        <div className="h-10" /> 
                         {options.map((opt) => (
                             <div
                                 key={opt}
-                                className={`h-10 flex items-center justify-center snap-center transition-all duration-300 ${
-                                    internalValue === opt ? 'text-green-600 font-black text-xl' : 'text-gray-300 text-sm'
+                                className={`h-10 flex items-center justify-center snap-center transition-all duration-200 ${
+                                    value === opt ? 'text-green-600 font-black text-xl' : 'text-gray-300 text-sm'
                                 }`}
                             >
                                 {opt}
                             </div>
                         ))}
-                        <div className="h-10" /> {/* Spacer */}
+                        <div className="h-10" />
                     </div>
                 </div>
             </div>
@@ -1744,19 +1747,17 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
     };
 
     // --- INITIALIZATION ---
-    const getInitialTime = () => {
+    const initial = useMemo(() => {
         const now = new Date();
         const future = new Date(now.getTime() + 15 * 60000);
         let h24 = future.getHours();
-        let h12 = h24 % 12 || 12;
         return {
-            h: h12.toString(),
+            h: (h24 % 12 || 12).toString(),
             m: future.getMinutes().toString().padStart(2, '0'),
             p: h24 >= 12 ? 'PM' : 'AM'
         };
-    };
+    }, []);
 
-    const initial = useMemo(() => getInitialTime(), []);
     const [h, setH] = useState(initial.h);
     const [m, setM] = useState(initial.m);
     const [p, setP] = useState(initial.p);
@@ -1767,22 +1768,22 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
     }, [h, m, p, mode]);
 
     return (
-        <div className="w-full max-w-sm mx-auto">
+        <div className="w-full max-w-sm mx-auto p-1">
             <style>{`
                 .no-scrollbar::-webkit-scrollbar { display: none; }
                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-                /* Smooth momentum scroll for iOS/Webkit */
-                .overscroll-contain { -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
             `}</style>
             
-            <div className="bg-gray-100 p-1.5 rounded-2xl flex gap-1 mb-8">
+            <div className="bg-gray-100 p-1.5 rounded-2xl flex gap-1 mb-8 border border-gray-200">
                 <button onClick={() => setMode('ASAP')} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${mode === 'ASAP' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500'}`}>ASAP</button>
                 <button onClick={() => setMode('custom')} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${mode === 'custom' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500'}`}>Custom Time</button>
             </div>
 
             {mode === 'ASAP' ? (
                 <div className="text-center py-6 animate-fade-in-up">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-3"><Clock className="text-green-600 animate-pulse" size={28} /></div>
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-3 shadow-inner">
+                        <Clock className="text-green-600 animate-pulse" size={28} />
+                    </div>
                     <h3 className="text-lg font-black text-gray-800">Fastest Prep</h3>
                     <p className="text-gray-500 text-xs">Ready in ~15 mins</p>
                 </div>
@@ -1792,7 +1793,7 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
                     <span className="text-2xl font-black text-gray-200 mt-6">:</span>
                     <Wheel label="Min" options={Array.from({length: 60}, (_, i) => i.toString().padStart(2, '0'))} value={m} onChange={setM} />
                     <div className="w-2" />
-                    <Wheel label="AM/PM" options={['AM', 'PM']} value={p} onChange={setP} />
+                    <Wheel label="Period" options={['AM', 'PM']} value={p} onChange={setP} />
                 </div>
             )}
         </div>
