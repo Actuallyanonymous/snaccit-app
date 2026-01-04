@@ -1679,105 +1679,105 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
     );
 };
 
-// --- Updated TimeSlotPicker Component (Free Selection with 15-min Buffer) ---
+// --- [REDESIGNED] iOS-Style Sleek Time Picker ---
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
-    
-    // Helper to format Date object to "HH:MM" for the time input
-    const formatToTimeInput = (date) => {
-        return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-    };
+  const [mode, setMode] = useState(selectedTime === 'ASAP' ? 'ASAP' : 'custom');
+  
+  // Internal state for the wheels
+  const [h, setH] = useState('12');
+  const [m, setM] = useState('00');
+  const [p, setP] = useState('PM');
 
-    // Calculate the minimum allowed time (Now + 15 minutes)
-    const minAllowedTime = useMemo(() => {
-        const now = new Date();
-        const minTime = new Date(now.getTime() + 15 * 60000); // Current time + 15 mins
-        
-        // Handle Restaurant Opening Time constraint
-        if (restaurant?.openingTime) {
-            const [oH, oM] = restaurant.openingTime.split(':').map(Number);
-            const openDate = new Date();
-            openDate.setHours(oH, oM, 0, 0);
-            return minTime < openDate ? openDate : minTime;
-        }
-        return minTime;
-    }, [restaurant]);
+  // Generate valid hours/mins based on 15-min lead time
+  const getMinTime = () => new Date(new Date().getTime() + 15 * 60000);
 
-    const handleTimeInputChange = (e) => {
-        const selectedVal = e.target.value; // Format is "HH:MM" (24h)
-        if (!selectedVal) return;
-
-        // Convert 24h input to the "12:00 PM" format used in your DB/App
-        const [hours, minutes] = selectedVal.split(':');
-        const date = new Date();
-        date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        
-        const formattedTime = date.toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
-            minute: '2-digit', 
-            hour12: true 
-        });
-        
-        onTimeSelect(formattedTime);
-    };
-
-    if (!restaurant?.openingTime || !restaurant?.closingTime) {
-        return (
-            <div className="text-center p-4 bg-yellow-50 text-yellow-700 rounded-lg border border-yellow-200">
-                <p className="font-semibold">Restaurant hours not set.</p>
-            </div>
-        );
+  useEffect(() => {
+    if (mode === 'ASAP') {
+      onTimeSelect('ASAP');
+    } else {
+      onTimeSelect(`${h}:${m} ${p}`);
     }
+  }, [h, m, p, mode]);
 
-    return (
-        <div className="space-y-4">
-            <label className="block text-gray-700 text-sm font-bold mb-3 flex items-center">
-                <Clock className="inline mr-2" size={16} /> Select Arrival Time
-            </label>
+  const hours = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
-            <div className="flex flex-col sm:flex-row gap-4">
-                {/* ASAP Button */}
-                <button
-                    type="button"
-                    onClick={() => onTimeSelect('ASAP')}
-                    className={`flex-1 py-4 px-6 rounded-2xl font-bold border-2 transition-all ${
-                        selectedTime === 'ASAP' 
-                        ? 'bg-green-600 text-white border-green-600 shadow-lg' 
-                        : 'bg-green-50 text-green-700 border-green-200 hover:border-green-400'
-                    }`}
-                >
-                    ASAP
-                    <span className="block text-[10px] opacity-80 font-normal">Ready in ~15-20 mins</span>
-                </button>
+  const Wheel = ({ options, value, onChange, label }) => (
+    <div className="flex flex-col items-center">
+      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{label}</span>
+      <div className="relative h-32 w-16 overflow-y-scroll no-scrollbar snap-y snap-mandatory bg-gray-50 rounded-2xl border border-gray-100 shadow-inner">
+        <div className="h-10" /> {/* Spacer */}
+        {options.map((opt) => (
+          <div
+            key={opt}
+            onClick={() => onChange(opt)}
+            className={`h-10 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 ${
+              value === opt ? 'text-green-600 font-black text-xl' : 'text-gray-300 text-sm'
+            }`}
+          >
+            {opt}
+          </div>
+        ))}
+        <div className="h-10" /> {/* Spacer */}
+        {/* Selection Highlight Bar */}
+        <div className="absolute top-1/2 left-0 w-full h-10 -translate-y-1/2 border-y-2 border-green-500/20 pointer-events-none bg-green-50/30" />
+      </div>
+    </div>
+  );
 
-                {/* Custom Time Picker */}
-                <div className="flex-1 relative">
-                    <input
-                        type="time"
-                        min={formatToTimeInput(minAllowedTime)}
-                        max={restaurant.closingTime}
-                        onChange={handleTimeInputChange}
-                        className={`w-full py-4 px-6 rounded-2xl font-bold border-2 outline-none transition-all appearance-none ${
-                            selectedTime !== 'ASAP' && selectedTime !== ''
-                            ? 'border-green-600 bg-white text-gray-900 ring-2 ring-green-100'
-                            : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
-                        }`}
-                    />
-                    <div className="absolute top-1/2 right-4 -translate-y-1/2 pointer-events-none text-gray-400">
-                        <ChevronDown size={18} />
-                    </div>
-                    {selectedTime !== 'ASAP' && selectedTime !== '' && (
-                        <p className="text-[10px] text-green-600 mt-1 ml-2 font-bold uppercase tracking-tight">
-                            Selected: {selectedTime}
-                        </p>
-                    )}
-                </div>
-            </div>
+  return (
+    <div className="w-full max-w-sm mx-auto p-1">
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
+      
+      {/* Mode Switcher (ASAP vs Custom) */}
+      <div className="bg-gray-100 p-1.5 rounded-2xl flex gap-1 mb-6">
+        <button
+          onClick={() => setMode('ASAP')}
+          className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${
+            mode === 'ASAP' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          ASAP
+        </button>
+        <button
+          onClick={() => setMode('custom')}
+          className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${
+            mode === 'custom' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Specific Time
+        </button>
+      </div>
 
-            <p className="text-[11px] text-gray-400 text-center italic">
-                Note: Orders must be placed at least 15 minutes before arrival.
-            </p>
+      {mode === 'ASAP' ? (
+        <div className="text-center py-10 animate-fade-in-up">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
+            <Clock className="text-green-600 animate-pulse" size={32} />
+          </div>
+          <h3 className="text-xl font-black text-gray-800">Fastest Possible</h3>
+          <p className="text-gray-500 text-sm mt-1">Ready in ~15-20 mins</p>
         </div>
-    );
+      ) : (
+        <div className="flex justify-center items-end gap-3 animate-fade-in-up">
+          <Wheel label="Hour" options={hours} value={h} onChange={setH} />
+          <div className="pb-12 text-2xl font-black text-gray-300">:</div>
+          <Wheel label="Min" options={minutes} value={m} onChange={setM} />
+          <div className="w-4" />
+          <Wheel label="AM/PM" options={['AM', 'PM']} value={p} onChange={setP} />
+        </div>
+      )}
+
+      {/* Logic for 15-min warning */}
+      {mode === 'custom' && (
+        <p className="mt-6 text-center text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
+          Current Lead Time: <span className="text-orange-500">15 Minutes Minimum</span>
+        </p>
+      )}
+    </div>
+  );
 };
 
 // --- Updated CheckoutModal Component (With Strict Time Validation) ---
