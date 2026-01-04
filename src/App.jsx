@@ -1679,105 +1679,119 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
     );
 };
 
-// --- [REDESIGNED] iOS-Style Sleek Time Picker ---
+// --- [FIXED] High-Performance iOS-Style Time Picker ---
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
-  const [mode, setMode] = useState(selectedTime === 'ASAP' ? 'ASAP' : 'custom');
-  
-  // Internal state for the wheels
-  const [h, setH] = useState('12');
-  const [m, setM] = useState('00');
-  const [p, setP] = useState('PM');
+    const [mode, setMode] = useState(selectedTime === 'ASAP' ? 'ASAP' : 'custom');
 
-  // Generate valid hours/mins based on 15-min lead time
-  const getMinTime = () => new Date(new Date().getTime() + 15 * 60000);
+    const Wheel = ({ options, value, onChange, label }) => {
+        const scrollRef = useRef(null);
+        const itemHeight = 40; // Matching the h-10 class (40px)
 
-  useEffect(() => {
-    if (mode === 'ASAP') {
-      onTimeSelect('ASAP');
-    } else {
-      onTimeSelect(`${h}:${m} ${p}`);
-    }
-  }, [h, m, p, mode]);
+        // Handle scroll to detect center item
+        const handleScroll = () => {
+            if (!scrollRef.current) return;
+            const scrollTop = scrollRef.current.scrollTop;
+            const index = Math.round(scrollTop / itemHeight);
+            const safeIndex = Math.max(0, Math.min(index, options.length - 1));
+            
+            if (options[safeIndex] !== value) {
+                onChange(options[safeIndex]);
+            }
+        };
 
-  const hours = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+        // Sync initial scroll position or manual changes
+        useEffect(() => {
+            if (scrollRef.current) {
+                const index = options.indexOf(value);
+                if (index !== -1) {
+                    scrollRef.current.scrollTop = index * itemHeight;
+                }
+            }
+        }, []); // Run once on mount
 
-  const Wheel = ({ options, value, onChange, label }) => (
-    <div className="flex flex-col items-center">
-      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{label}</span>
-      <div className="relative h-32 w-16 overflow-y-scroll no-scrollbar snap-y snap-mandatory bg-gray-50 rounded-2xl border border-gray-100 shadow-inner">
-        <div className="h-10" /> {/* Spacer */}
-        {options.map((opt) => (
-          <div
-            key={opt}
-            onClick={() => onChange(opt)}
-            className={`h-10 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 ${
-              value === opt ? 'text-green-600 font-black text-xl' : 'text-gray-300 text-sm'
-            }`}
-          >
-            {opt}
-          </div>
-        ))}
-        <div className="h-10" /> {/* Spacer */}
-        {/* Selection Highlight Bar */}
-        <div className="absolute top-1/2 left-0 w-full h-10 -translate-y-1/2 border-y-2 border-green-500/20 pointer-events-none bg-green-50/30" />
-      </div>
-    </div>
-  );
+        return (
+            <div className="flex flex-col items-center">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{label}</span>
+                <div className="relative h-[120px] w-16 bg-gray-50 rounded-2xl border border-gray-100 shadow-inner overflow-hidden">
+                    {/* Selection Highlight Bar */}
+                    <div className="absolute top-1/2 left-0 w-full h-10 -translate-y-1/2 border-y-2 border-green-500/20 pointer-events-none bg-green-50/40 z-10" />
+                    
+                    <div 
+                        ref={scrollRef}
+                        onScroll={handleScroll}
+                        className="h-full overflow-y-scroll no-scrollbar snap-y snap-mandatory px-2"
+                    >
+                        <div className="h-10" /> {/* Top Spacer */}
+                        {options.map((opt) => (
+                            <div
+                                key={opt}
+                                className={`h-10 flex items-center justify-center snap-center transition-all duration-300 ${
+                                    value === opt ? 'text-green-600 font-black text-xl scale-110' : 'text-gray-300 text-sm scale-90'
+                                }`}
+                            >
+                                {opt}
+                            </div>
+                        ))}
+                        <div className="h-10" /> {/* Bottom Spacer */}
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
-  return (
-    <div className="w-full max-w-sm mx-auto p-1">
-      <style>{`
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
-      
-      {/* Mode Switcher (ASAP vs Custom) */}
-      <div className="bg-gray-100 p-1.5 rounded-2xl flex gap-1 mb-6">
-        <button
-          onClick={() => setMode('ASAP')}
-          className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${
-            mode === 'ASAP' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          ASAP
-        </button>
-        <button
-          onClick={() => setMode('custom')}
-          className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${
-            mode === 'custom' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Specific Time
-        </button>
-      </div>
+    const hours = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+    const periods = ['AM', 'PM'];
 
-      {mode === 'ASAP' ? (
-        <div className="text-center py-10 animate-fade-in-up">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
-            <Clock className="text-green-600 animate-pulse" size={32} />
-          </div>
-          <h3 className="text-xl font-black text-gray-800">Fastest Possible</h3>
-          <p className="text-gray-500 text-sm mt-1">Ready in ~15-20 mins</p>
+    // State for selected components
+    const [h, setH] = useState('12');
+    const [m, setM] = useState('00');
+    const [p, setP] = useState('PM');
+
+    // Sync back to Parent
+    useEffect(() => {
+        if (mode === 'ASAP') {
+            onTimeSelect('ASAP');
+        } else {
+            onTimeSelect(`${h}:${m} ${p}`);
+        }
+    }, [h, m, p, mode]);
+
+    return (
+        <div className="w-full max-w-sm mx-auto">
+            <style>{`
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
+            
+            <div className="bg-gray-100 p-1.5 rounded-2xl flex gap-1 mb-8">
+                <button onClick={() => setMode('ASAP')} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${mode === 'ASAP' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500'}`}>
+                    ASAP
+                </button>
+                <button onClick={() => setMode('custom')} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${mode === 'custom' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500'}`}>
+                    Custom Time
+                </button>
+            </div>
+
+            {mode === 'ASAP' ? (
+                <div className="text-center py-6 animate-fade-in-up">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-3">
+                        <Clock className="text-green-600" size={28} />
+                    </div>
+                    <h3 className="text-lg font-black text-gray-800">ASAP Mode</h3>
+                    <p className="text-gray-500 text-xs">Priority preparation (~15m)</p>
+                </div>
+            ) : (
+                <div className="flex justify-center items-center gap-2 animate-fade-in-up">
+                    <Wheel label="Hrs" options={hours} value={h} onChange={setH} />
+                    <span className="text-2xl font-black text-gray-200 mt-6">:</span>
+                    <Wheel label="Min" options={minutes} value={m} onChange={setM} />
+                    <div className="w-2" />
+                    <Wheel label="AM/PM" options={periods} value={p} onChange={setP} />
+                </div>
+            )}
         </div>
-      ) : (
-        <div className="flex justify-center items-end gap-3 animate-fade-in-up">
-          <Wheel label="Hour" options={hours} value={h} onChange={setH} />
-          <div className="pb-12 text-2xl font-black text-gray-300">:</div>
-          <Wheel label="Min" options={minutes} value={m} onChange={setM} />
-          <div className="w-4" />
-          <Wheel label="AM/PM" options={['AM', 'PM']} value={p} onChange={setP} />
-        </div>
-      )}
-
-      {/* Logic for 15-min warning */}
-      {mode === 'custom' && (
-        <p className="mt-6 text-center text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
-          Current Lead Time: <span className="text-orange-500">15 Minutes Minimum</span>
-        </p>
-      )}
-    </div>
-  );
+    );
 };
 
 // --- Updated CheckoutModal Component (With Strict Time Validation) ---
