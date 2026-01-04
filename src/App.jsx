@@ -1679,133 +1679,118 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
     );
 };
 
-// --- [FIXED] Robust iOS-Style Time Picker ---
+// --- [PERFORMANCE OPTIMIZED] iOS-Style Continuous Scroll Picker ---
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
     const [mode, setMode] = useState(selectedTime === 'ASAP' ? 'ASAP' : 'custom');
 
     const Wheel = ({ options, value, onChange, label }) => {
         const scrollRef = useRef(null);
         const itemHeight = 40; 
+        const [internalValue, setInternalValue] = useState(value);
 
-        // Set initial scroll position correctly on mount
+        // Initialize position
         useEffect(() => {
-            const index = options.indexOf(value);
-            if (index !== -1 && scrollRef.current) {
-                // Use a small timeout to ensure DOM is ready
-                const timer = setTimeout(() => {
-                    scrollRef.current.scrollTop = index * itemHeight;
-                }, 50);
-                return () => clearTimeout(timer);
+            if (scrollRef.current) {
+                const index = options.indexOf(value);
+                scrollRef.current.scrollTop = index * itemHeight;
             }
         }, []);
 
+        // Detect when scroll stops to update parent state
         const handleScroll = () => {
             if (!scrollRef.current) return;
             const scrollTop = scrollRef.current.scrollTop;
             const index = Math.round(scrollTop / itemHeight);
             const safeIndex = Math.max(0, Math.min(index, options.length - 1));
-            
-            if (options[safeIndex] !== value) {
-                onChange(options[safeIndex]);
+            const newVal = options[safeIndex];
+
+            // Only update internal visual state to prevent flickering
+            if (newVal !== internalValue) {
+                setInternalValue(newVal);
+                // Debounce the parent update so it doesn't stutter
+                const timer = setTimeout(() => onChange(newVal), 100);
+                return () => clearTimeout(timer);
             }
         };
 
         return (
             <div className="flex flex-col items-center">
                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{label}</span>
-                <div className="relative h-[120px] w-16 bg-gray-50 rounded-2xl border border-gray-100 shadow-inner overflow-hidden">
-                    {/* Selection Highlight Bar */}
-                    <div className="absolute top-1/2 left-0 w-full h-10 -translate-y-1/2 border-y-2 border-green-500/20 pointer-events-none bg-green-50/40 z-10" />
+                <div className="relative h-[120px] w-16 bg-gray-100/50 rounded-2xl border border-gray-200/50 shadow-inner overflow-hidden">
+                    {/* The "Selection Glass" */}
+                    <div className="absolute top-1/2 left-0 w-full h-10 -translate-y-1/2 border-y border-green-500/30 pointer-events-none bg-white/40 z-10" />
                     
                     <div 
                         ref={scrollRef}
                         onScroll={handleScroll}
-                        className="h-full overflow-y-scroll no-scrollbar snap-y snap-mandatory"
-                        style={{ scrollBehavior: 'auto' }} // Changed to auto to prevent locking
+                        className="h-full overflow-y-scroll no-scrollbar snap-y snap-mandatory overscroll-contain"
                     >
-                        <div className="h-10" /> {/* Top Spacer */}
+                        <div className="h-10" /> {/* Spacer */}
                         {options.map((opt) => (
                             <div
                                 key={opt}
                                 className={`h-10 flex items-center justify-center snap-center transition-all duration-300 ${
-                                    value === opt ? 'text-green-600 font-black text-xl scale-110' : 'text-gray-300 text-sm'
+                                    internalValue === opt ? 'text-green-600 font-black text-xl' : 'text-gray-300 text-sm'
                                 }`}
                             >
                                 {opt}
                             </div>
                         ))}
-                        <div className="h-10" /> {/* Bottom Spacer */}
+                        <div className="h-10" /> {/* Spacer */}
                     </div>
                 </div>
             </div>
         );
     };
 
-    // --- LOGIC TO GET CURRENT TIME + 15 MIN BUFFER ---
+    // --- INITIALIZATION ---
     const getInitialTime = () => {
         const now = new Date();
-        const future = new Date(now.getTime() + 15 * 60000); // Current + 15 mins
-        let hours24 = future.getHours();
-        let mins = future.getMinutes();
-        
-        const period = hours24 >= 12 ? 'PM' : 'AM';
-        let hours12 = hours24 % 12;
-        hours12 = hours12 ? hours12 : 12; // Handle midnight/noon
-
+        const future = new Date(now.getTime() + 15 * 60000);
+        let h24 = future.getHours();
+        let h12 = h24 % 12 || 12;
         return {
-            h: hours12.toString(),
-            m: mins.toString().padStart(2, '0'),
-            p: period
+            h: h12.toString(),
+            m: future.getMinutes().toString().padStart(2, '0'),
+            p: h24 >= 12 ? 'PM' : 'AM'
         };
     };
 
-    // Use a ref for initial state so it doesn't re-calculate on every render
-    const initialTime = useMemo(() => getInitialTime(), []);
-
-    const [h, setH] = useState(initialTime.h);
-    const [m, setM] = useState(initialTime.m);
-    const [p, setP] = useState(initialTime.p);
-
-    const hours = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-    const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+    const initial = useMemo(() => getInitialTime(), []);
+    const [h, setH] = useState(initial.h);
+    const [m, setM] = useState(initial.m);
+    const [p, setP] = useState(initial.p);
 
     useEffect(() => {
-        if (mode === 'ASAP') {
-            onTimeSelect('ASAP');
-        } else {
-            onTimeSelect(`${h}:${m} ${p}`);
-        }
+        if (mode === 'ASAP') onTimeSelect('ASAP');
+        else onTimeSelect(`${h}:${m} ${p}`);
     }, [h, m, p, mode]);
 
     return (
-        <div className="w-full max-w-sm mx-auto p-1">
+        <div className="w-full max-w-sm mx-auto">
             <style>{`
                 .no-scrollbar::-webkit-scrollbar { display: none; }
                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+                /* Smooth momentum scroll for iOS/Webkit */
+                .overscroll-contain { -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
             `}</style>
             
             <div className="bg-gray-100 p-1.5 rounded-2xl flex gap-1 mb-8">
-                <button onClick={() => setMode('ASAP')} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${mode === 'ASAP' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500'}`}>
-                    ASAP
-                </button>
-                <button onClick={() => setMode('custom')} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${mode === 'custom' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500'}`}>
-                    Custom Time
-                </button>
+                <button onClick={() => setMode('ASAP')} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${mode === 'ASAP' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500'}`}>ASAP</button>
+                <button onClick={() => setMode('custom')} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${mode === 'custom' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500'}`}>Custom Time</button>
             </div>
 
             {mode === 'ASAP' ? (
                 <div className="text-center py-6 animate-fade-in-up">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-3">
-                        <Clock className="text-green-600 animate-pulse" size={28} />
-                    </div>
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-3"><Clock className="text-green-600 animate-pulse" size={28} /></div>
                     <h3 className="text-lg font-black text-gray-800">Fastest Prep</h3>
                     <p className="text-gray-500 text-xs">Ready in ~15 mins</p>
                 </div>
             ) : (
-                <div className="flex justify-center items-center gap-2 animate-fade-in-up">
-                    <Wheel label="Hrs" options={hours} value={h} onChange={setH} />
+                <div className="flex justify-center items-center gap-3">
+                    <Wheel label="Hrs" options={['1','2','3','4','5','6','7','8','9','10','11','12']} value={h} onChange={setH} />
                     <span className="text-2xl font-black text-gray-200 mt-6">:</span>
-                    <Wheel label="Min" options={minutes} value={m} onChange={setM} />
+                    <Wheel label="Min" options={Array.from({length: 60}, (_, i) => i.toString().padStart(2, '0'))} value={m} onChange={setM} />
                     <div className="w-2" />
                     <Wheel label="AM/PM" options={['AM', 'PM']} value={p} onChange={setP} />
                 </div>
