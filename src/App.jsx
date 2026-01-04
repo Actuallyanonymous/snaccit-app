@@ -1679,12 +1679,6 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
     );
 };
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Clock } from 'lucide-react';
-
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Clock } from 'lucide-react';
-
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
     const [mode, setMode] = useState(selectedTime === 'ASAP' ? 'ASAP' : 'custom');
 
