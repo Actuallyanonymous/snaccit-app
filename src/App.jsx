@@ -1679,152 +1679,154 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
     );
 };
 
-// --- Updated TimeSlotPicker Component (Free Selection with 15-min Buffer) ---
+// --- Time Slot Picker Component ---
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
-    
-    // Helper to format Date object to "HH:MM" for the time input
-    const formatToTimeInput = (date) => {
-        return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-    };
+    const generateTimeSlots = (openingTimeStr, closingTimeStr) => {
+        if (!openingTimeStr || !closingTimeStr) return [];
 
-    // Calculate the minimum allowed time (Now + 15 minutes)
-    const minAllowedTime = useMemo(() => {
+        const slots = [];
         const now = new Date();
-        const minTime = new Date(now.getTime() + 15 * 60000); // Current time + 15 mins
-        
-        // Handle Restaurant Opening Time constraint
-        if (restaurant?.openingTime) {
-            const [oH, oM] = restaurant.openingTime.split(':').map(Number);
-            const openDate = new Date();
-            openDate.setHours(oH, oM, 0, 0);
-            return minTime < openDate ? openDate : minTime;
+        const intervalMinutes = 15;
+        // Minimum time to prepare first specific slot (e.g., 15 mins from now)
+        const minimumLeadTimeMinutes = 15;
+
+        // Parse opening and closing times into today's date objects
+        const [openHours, openMinutes] = openingTimeStr.split(':').map(Number);
+        const openingTime = new Date();
+        openingTime.setHours(openHours, openMinutes, 0, 0);
+
+        const [closeHours, closeMinutes] = closingTimeStr.split(':').map(Number);
+        const closingTime = new Date();
+        closingTime.setHours(closeHours, closeMinutes, 0, 0);
+
+        // If it's already past closing time today, show nothing.
+        if (now >= closingTime) {
+             return [];
         }
-        return minTime;
-    }, [restaurant]);
 
-    const handleTimeInputChange = (e) => {
-        const selectedVal = e.target.value; // Format is "HH:MM" (24h)
-        if (!selectedVal) return;
+        // --- 1. ALWAYS Add the distinct "ASAP" option first ---
+        // This sends the literal string 'ASAP' as the arrival time value.
+        slots.push({ display: 'ASAP', value: 'ASAP' });
 
-        // Convert 24h input to the "12:00 PM" format used in your DB/App
-        const [hours, minutes] = selectedVal.split(':');
-        const date = new Date();
-        date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        
-        const formattedTime = date.toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
-            minute: '2-digit', 
-            hour12: true 
-        });
-        
-        onTimeSelect(formattedTime);
+
+        // --- 2. Generate specific future time slots ---
+        // Calculate start time for numerical slots: Now + lead time...
+        let startTime = new Date(now.getTime() + minimumLeadTimeMinutes * 60000);
+
+        // ...rounded up to the next 15-minute interval mark.
+        const minutes = startTime.getMinutes();
+        const remainder = minutes % intervalMinutes;
+        if (remainder !== 0) {
+            // Add minutes to reach the next interval mark, reset seconds
+            startTime.setMinutes(minutes + (intervalMinutes - remainder), 0, 0);
+        } else {
+            // Already on an interval mark, just clean up seconds
+            startTime.setSeconds(0, 0);
+        }
+
+        // Ensure the first numerical slot doesn't start *before* opening time.
+        // If calculated start time is too early, bump it to opening time.
+        if (startTime < openingTime) {
+            startTime = openingTime;
+        }
+
+        // Loop to generate numerical slots until closing time
+        while (startTime < closingTime) {
+            const displayFormat = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            // Add the numerical slot
+            slots.push({ display: displayFormat, value: displayFormat });
+            // Move to next interval
+            startTime.setMinutes(startTime.getMinutes() + intervalMinutes);
+        }
+
+        return slots;
     };
+
+    const timeSlots = useMemo(() => generateTimeSlots(restaurant?.openingTime, restaurant?.closingTime), [restaurant]);
 
     if (!restaurant?.openingTime || !restaurant?.closingTime) {
-        return (
-            <div className="text-center p-4 bg-yellow-50 text-yellow-700 rounded-lg border border-yellow-200">
-                <p className="font-semibold">Restaurant hours not set.</p>
-            </div>
-        );
+        return <div className="text-center p-4 bg-yellow-50 text-yellow-700 rounded-lg border border-yellow-200"><p className="font-semibold">Restaurant hours not set.</p><p className="text-sm">Pre-orders unavailable.</p></div>;
+    }
+
+    if (timeSlots.length === 0) {
+        return <div className="text-center p-4 bg-red-50 text-red-700 rounded-lg border border-red-200"><p className="font-semibold">Sorry, restaurant is closed for pre-orders now.</p><p className="text-sm">Hours: {restaurant.openingTime} - {restaurant.closingTime}</p></div>;
     }
 
     return (
-        <div className="space-y-4">
-            <label className="block text-gray-700 text-sm font-bold mb-3 flex items-center">
-                <Clock className="inline mr-2" size={16} /> Select Arrival Time
-            </label>
+        <div>
+            <label className="block text-gray-700 text-sm font-bold mb-3 flex items-center"><Clock className="inline mr-2" size={16} />Estimated Arrival Time</label>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
+                {timeSlots.map((slot, index) => {
+                    // Special styling for the ASAP button (the first one)
+                    const isASAP = index === 0 && slot.display === 'ASAP';
+                    const isSelected = selectedTime === slot.value;
 
-            <div className="flex flex-col sm:flex-row gap-4">
-                {/* ASAP Button */}
-                <button
-                    type="button"
-                    onClick={() => onTimeSelect('ASAP')}
-                    className={`flex-1 py-4 px-6 rounded-2xl font-bold border-2 transition-all ${
-                        selectedTime === 'ASAP' 
-                        ? 'bg-green-600 text-white border-green-600 shadow-lg' 
-                        : 'bg-green-50 text-green-700 border-green-200 hover:border-green-400'
-                    }`}
-                >
-                    ASAP
-                    <span className="block text-[10px] opacity-80 font-normal">Ready in ~15-20 mins</span>
-                </button>
+                    let buttonClasses = `p-2 sm:p-3 text-sm sm:text-base rounded-lg font-semibold text-center transition-all duration-200 border-2 focus:outline-none focus:ring-1 focus:ring-green-500 `;
 
-                {/* Custom Time Picker */}
-                <div className="flex-1 relative">
-                    <input
-                        type="time"
-                        min={formatToTimeInput(minAllowedTime)}
-                        max={restaurant.closingTime}
-                        onChange={handleTimeInputChange}
-                        className={`w-full py-4 px-6 rounded-2xl font-bold border-2 outline-none transition-all appearance-none ${
-                            selectedTime !== 'ASAP' && selectedTime !== ''
-                            ? 'border-green-600 bg-white text-gray-900 ring-2 ring-green-100'
-                            : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
-                        }`}
-                    />
-                    <div className="absolute top-1/2 right-4 -translate-y-1/2 pointer-events-none text-gray-400">
-                        <ChevronDown size={18} />
-                    </div>
-                    {selectedTime !== 'ASAP' && selectedTime !== '' && (
-                        <p className="text-[10px] text-green-600 mt-1 ml-2 font-bold uppercase tracking-tight">
-                            Selected: {selectedTime}
-                        </p>
-                    )}
-                </div>
+                    if (isSelected) {
+                        buttonClasses += `bg-green-600 text-white border-green-600 shadow-md ring-2 ring-green-300 ring-offset-1 `;
+                    } else if (isASAP) {
+                        // Distinct style for unselected ASAP button
+                        buttonClasses += `bg-green-50 text-green-800 border-green-300 hover:border-green-500 hover:bg-green-100 `;
+                    } else {
+                        buttonClasses += `bg-white text-gray-700 border-gray-200 hover:border-green-400 hover:text-green-700 `;
+                    }
+
+                    return (
+                        <button
+                            type="button"
+                            key={slot.value} // Use the time value as the key
+                            onClick={() => onTimeSelect(slot.value)}
+                            className={buttonClasses}
+                        >
+                            {slot.display}
+                        </button>
+                    );
+                })}
             </div>
-
-            <p className="text-[11px] text-gray-400 text-center italic">
-                Note: Orders must be placed at least 15 minutes before arrival.
-            </p>
+            {/* Helper text to show the actual time for ASAP */}
+            {selectedTime && timeSlots[0]?.display === 'ASAP' && selectedTime === timeSlots[0].value && (
+                 <p className="text-xs text-green-600 mt-2 ml-1">
+                    Goal arrival time: <strong>{selectedTime}</strong>
+                </p>
+            )}
         </div>
     );
 };
 
-// --- Updated CheckoutModal Component (With Strict Time Validation) ---
+// --- Checkout Modal Component (With Points Redemption) ---
 const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
     const [arrivalTime, setArrivalTime] = useState('');
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
     
+    // Coupon State
     const [couponCode, setCouponCode] = useState('');
-    const [discount, setDiscount] = useState(0); 
+    const [discount, setDiscount] = useState(0); // Coupon discount amount
     const [couponError, setCouponError] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [isValidating, setIsValidating] = useState(false);
 
+    // Points State (NEW)
     const [usePoints, setUsePoints] = useState(false);
     const [userPoints, setUserPoints] = useState(0);
 
+    // Calculate Subtotal
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
 
-    // --- NEW: TIME VALIDATION LOGIC ---
-    const isTimeValid = useMemo(() => {
-        if (!arrivalTime) return false;
-        if (arrivalTime === 'ASAP') return true;
-
-        // Convert "4:30 PM" format back to a Date object for comparison
-        const [time, modifier] = arrivalTime.split(' ');
-        let [hours, minutes] = time.split(':').map(Number);
-        
-        if (modifier === 'PM' && hours < 12) hours += 12;
-        if (modifier === 'AM' && hours === 12) hours = 0;
-
-        const selectedDate = new Date();
-        selectedDate.setHours(hours, minutes, 0, 0);
-
-        const minBufferTime = new Date(new Date().getTime() + 15 * 60000);
-        
-        return selectedDate >= minBufferTime;
-    }, [arrivalTime]);
-
+    // Calculate Points Value (10 Points = 1 Rupee)
+    // Logic: If toggle ON, discount is points/10, but cannot exceed the remaining subtotal
     const pointsDiscountValue = useMemo(() => {
         if (!usePoints || userPoints <= 0) return 0;
         const potentialDiscount = Math.floor(userPoints / 10);
+        // Ensure we don't discount more than the subtotal (after coupon)
         const remainingToPay = Math.max(0, subtotal - discount); 
         return Math.min(potentialDiscount, remainingToPay);
     }, [usePoints, userPoints, subtotal, discount]);
 
+    // Final Total Calculation
     const grandTotal = Math.max(0, subtotal - discount - pointsDiscountValue);
 
+    // Reset state when modal opens
     useEffect(() => {
         if (isOpen) {
             setArrivalTime(''); 
@@ -1835,9 +1837,12 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
             setUsePoints(false);
             setIsPlacingOrder(false);
 
+            // Fetch User Points
             if (auth.currentUser) {
                 db.collection("users").doc(auth.currentUser.uid).get().then(doc => {
-                    if(doc.exists) setUserPoints(doc.data().points || 0);
+                    if(doc.exists) {
+                        setUserPoints(doc.data().points || 0);
+                    }
                 }).catch(err => console.error("Error fetching points:", err));
             }
         }
@@ -1847,9 +1852,12 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
         if (!couponCode) return;
         setIsValidating(true);
         setCouponError('');
+        setDiscount(0);
+        setAppliedCoupon(null);
         try {
             const code = couponCode.toUpperCase();
-            const couponSnap = await db.collection("coupons").doc(code).get();
+            const couponRef = db.collection("coupons").doc(code);
+            const couponSnap = await couponRef.get();
             
             if (!couponSnap.exists) {
                 setCouponError("Invalid coupon code.");
@@ -1858,24 +1866,45 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
             const coupon = couponSnap.data();
             const now = new Date();
             
-            if (!coupon.isActive || coupon.isUsed) setCouponError("Coupon inactive or used.");
-            else if (coupon.expiryDate && now > coupon.expiryDate.toDate()) setCouponError("Expired.");
-            else if (subtotal < coupon.minOrderValue) setCouponError(`Min order ₹${coupon.minOrderValue}`);
+            // --- VALIDATION LOGIC ---
+            if (!coupon.isActive) { 
+                setCouponError("This coupon is no longer active."); 
+            }
+            else if (coupon.isUsed) { 
+                 setCouponError("This coupon has already been used."); 
+            }
+            else if (coupon.assignedTo && coupon.assignedTo !== auth.currentUser?.uid) {
+                setCouponError("This coupon is not valid for your account.");
+            }
+            else if (coupon.expiryDate && now > coupon.expiryDate.toDate()) { 
+                setCouponError("This coupon has expired."); 
+            }
+            else if (subtotal < coupon.minOrderValue) { 
+                setCouponError(`A minimum order of ₹${coupon.minOrderValue} is required.`); 
+            }
             else {
-                let calc = coupon.type === 'fixed' ? coupon.value : (subtotal * coupon.value) / 100;
-                setDiscount(Math.min(calc, subtotal));
+                // Apply Discount
+                let calculatedDiscount = 0;
+                if (coupon.type === 'fixed') { calculatedDiscount = coupon.value; }
+                else if (coupon.type === 'percentage') { calculatedDiscount = (subtotal * coupon.value) / 100; }
+                
+                // If points are already active, re-check logic? 
+                // For simplicity, coupon applies first, then points cover the rest.
+                setDiscount(Math.min(calculatedDiscount, subtotal));
                 setAppliedCoupon({ code, ...coupon });
             }
         } catch (error) {
-            setCouponError("Error validating coupon.");
+            console.error("Error validating coupon:", error);
+            setCouponError("Could not validate coupon. Please try again.");
         } finally {
             setIsValidating(false);
         }
     };
 
     const handleConfirm = async () => {
-        if (!isTimeValid) return; // Fail-safe
+        if (!arrivalTime) { alert("Please select an arrival time."); return; }
         setIsPlacingOrder(true);
+        // PASS 'usePoints' TO THE PARENT FUNCTION HERE
         await onPlaceOrder(arrivalTime, subtotal, discount, appliedCoupon?.code, usePoints);
         setIsPlacingOrder(false); 
     };
@@ -1888,36 +1917,74 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 z-10"><X size={24} /></button>
                 <div className="p-6 sm:p-8 border-b">
                     <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Confirm Your Pre-order</h2>
-                    <p className="text-center text-gray-500 text-sm">Ordering from <span className="font-semibold">{restaurant?.name}</span>.</p>
+                    <p className="text-center text-gray-500 text-sm">Ordering from <span className="font-semibold">{restaurant?.name || 'Restaurant'}</span>.</p>
                 </div>
                 
                 <div className="px-6 sm:px-8 py-6 overflow-y-auto">
                     <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} restaurant={restaurant} />
-                    
-                    {/* Time Warning Message */}
-                    {arrivalTime && arrivalTime !== 'ASAP' && !isTimeValid && (
-                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-red-600 animate-pulse">
-                            <Info size={16} />
-                            <p className="text-xs font-bold">Time too early! Please select at least 15 mins from now.</p>
-                        </div>
-                    )}
                 </div>
 
                 <div className="mt-auto border-t p-4 sm:p-6 bg-gray-50 rounded-b-3xl">
-                    {/* Totals & Points logic remains here... */}
-                    
-                    <button 
-                        onClick={handleConfirm} 
-                        disabled={isPlacingOrder || !arrivalTime || !isTimeValid} 
-                        className={`w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg transition-all flex justify-center items-center px-6 ${(!arrivalTime || !isTimeValid) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
+                    {/* Coupon Input */}
+                    <div className="flex gap-2 mb-4">
+                        <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Enter Coupon Code" className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-green-500 focus:border-green-500" disabled={!!appliedCoupon} />
+                        <button type="button" onClick={handleApplyCoupon} disabled={isValidating || !!appliedCoupon || !couponCode.trim()} className="bg-gray-200 text-gray-700 font-semibold px-4 rounded-lg hover:bg-gray-300 disabled:opacity-50 text-sm flex-shrink-0">
+                            {isValidating ? <Loader2 className="animate-spin h-5 w-5" /> : appliedCoupon ? 'Applied' : 'Apply'}
+                        </button>
+                    </div>
+                    {couponError && <p className="text-red-500 text-xs italic mb-4 -mt-2">{couponError}</p>}
+                    {appliedCoupon && !couponError && <p className="text-green-600 text-xs italic mb-4 -mt-2">Coupon "{appliedCoupon.code}" applied!</p>}
+
+                    {/* NEW: Points Redemption Toggle */}
+                    {userPoints > 0 && (
+                        <div className="flex items-center justify-between bg-amber-50 p-3 rounded-lg border border-amber-200 mb-4 shadow-sm">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-amber-100 p-2 rounded-full text-amber-600"><Award size={20}/></div>
+                                <div>
+                                    <p className="font-bold text-amber-900 text-sm">Redeem Points</p>
+                                    <p className="text-xs text-amber-700 font-medium">Available: {userPoints} (Save ₹{Math.floor(userPoints/10)})</p>
+                                </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} className="sr-only peer" />
+                                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                        </div>
+                    )}
+
+                    {/* Totals Breakdown */}
+                    <div className="space-y-1 mb-4 text-sm">
+                        <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
+                        
+                        {discount > 0 && (
+                            <div className="flex justify-between text-green-600 font-semibold">
+                                <span>Coupon Discount</span>
+                                <span>- ₹{discount.toFixed(2)}</span>
+                            </div>
+                        )}
+                        
+                        {usePoints && pointsDiscountValue > 0 && (
+                            <div className="flex justify-between text-amber-600 font-semibold">
+                                <span>Points Redeemed ({pointsDiscountValue * 10} pts)</span>
+                                <span>- ₹{pointsDiscountValue.toFixed(2)}</span>
+                            </div>
+                        )}
+
+                        <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2 text-gray-900">
+                            <span>Grand Total</span>
+                            <span>₹{grandTotal.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className={`w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg transition-all disabled:opacity-50 flex justify-center items-center px-6 ${!arrivalTime ? 'cursor-not-allowed' : ''}`}>
                          {isPlacingOrder ? <Loader2 className="animate-spin" size={24} /> : (
                              <span className="flex justify-between w-full items-center">
-                                 <span>{grandTotal === 0 ? 'Confirm (Points)' : 'Proceed to Payment'}</span>
+                                 <span>{grandTotal === 0 ? 'Confirm (Paid by Points)' : 'Proceed to Payment'}</span>
                                  <span>₹{grandTotal.toFixed(2)}</span>
                              </span>
                          )}
                     </button>
+                    {!arrivalTime && <p className="text-xs text-center text-red-500 mt-2">Please select an arrival time.</p>}
                 </div>
             </div>
         </div>
