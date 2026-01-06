@@ -1679,147 +1679,106 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
     );
 };
 
+// --- Updated TimeSlotPicker Component (Free Selection with 15-min Buffer) ---
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
-    const [mode, setMode] = useState(selectedTime === 'ASAP' ? 'ASAP' : 'custom');
-
-    const Wheel = ({ options, value, onChange, label }) => {
-        const scrollRef = useRef(null);
-        const itemHeight = 40; 
-        // We use a ref to prevent the "feedback loop" where state updates fight the scroll
-        const isInternalUpdating = useRef(false);
-
-        // 1. Initial Position on Mount
-        useEffect(() => {
-            if (scrollRef.current) {
-                const index = options.indexOf(value);
-                if (index !== -1) {
-                    scrollRef.current.scrollTop = index * itemHeight;
-                }
-            }
-        }, []);
-
-        // 2. Continuous Scroll Handler
-        const handleScroll = () => {
-            if (!scrollRef.current || isInternalUpdating.current) return;
-
-            const scrollTop = scrollRef.current.scrollTop;
-            const index = Math.round(scrollTop / itemHeight);
-            const safeIndex = Math.max(0, Math.min(index, options.length - 1));
-            const newVal = options[safeIndex];
-
-            if (newVal !== value) {
-                // We briefly set this to true so React's re-render 
-                // doesn't try to "correct" our scroll position mid-flight
-                isInternalUpdating.current = true;
-                onChange(newVal);
-                
-                // Release the lock after React has processed the state change
-                setTimeout(() => {
-                    isInternalUpdating.current = false;
-                }, 50);
-            }
-        };
-
-        return (
-            <div className="flex flex-col items-center">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{label}</span>
-                <div className="relative h-[120px] w-16 bg-gray-50 rounded-2xl border border-gray-100 shadow-inner overflow-hidden">
-                    {/* The "Selection Glass" visual */}
-                    <div className="absolute top-1/2 left-0 w-full h-10 -translate-y-1/2 border-y border-green-500/20 pointer-events-none bg-green-50/20 z-10" />
-                    
-                    <div 
-                        ref={scrollRef}
-                        onScroll={handleScroll}
-                        className="h-full overflow-y-scroll no-scrollbar snap-y snap-mandatory"
-                        style={{ WebkitOverflowScrolling: 'touch' }}
-                    >
-                        <div className="h-10" /> {/* Top Spacer */}
-                        {options.map((opt) => (
-                            <div
-                                key={opt}
-                                className={`h-10 flex items-center justify-center snap-center transition-opacity duration-200 ${
-                                    value === opt ? 'text-green-600 font-black text-xl' : 'text-gray-300 text-sm'
-                                }`}
-                            >
-                                {opt}
-                            </div>
-                        ))}
-                        <div className="h-10" /> {/* Bottom Spacer */}
-                    </div>
-                </div>
-            </div>
-        );
+    
+    // Helper to format Date object to "HH:MM" for the time input
+    const formatToTimeInput = (date) => {
+        return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
     };
 
-    // --- Time Logic (Current Time + 15 min buffer) ---
-    const initial = useMemo(() => {
+    // Calculate the minimum allowed time (Now + 15 minutes)
+    const minAllowedTime = useMemo(() => {
         const now = new Date();
-        const future = new Date(now.getTime() + 15 * 60 * 1000);
-        let h24 = future.getHours();
-        let h12 = h24 % 12 || 12;
-        return {
-            h: h12.toString(),
-            m: future.getMinutes().toString().padStart(2, '0'),
-            period: h24 >= 12 ? 'PM' : 'AM'
-        };
-    }, []);
+        const minTime = new Date(now.getTime() + 15 * 60000); // Current time + 15 mins
+        
+        // Handle Restaurant Opening Time constraint
+        if (restaurant?.openingTime) {
+            const [oH, oM] = restaurant.openingTime.split(':').map(Number);
+            const openDate = new Date();
+            openDate.setHours(oH, oM, 0, 0);
+            return minTime < openDate ? openDate : minTime;
+        }
+        return minTime;
+    }, [restaurant]);
 
-    const [h, setH] = useState(initial.h);
-    const [m, setM] = useState(initial.m);
-    const [p, setP] = useState(initial.period);
+    const handleTimeInputChange = (e) => {
+        const selectedVal = e.target.value; // Format is "HH:MM" (24h)
+        if (!selectedVal) return;
 
-    const hours = ['1','2','3','4','5','6','7','8','9','10','11','12'];
-    const minutes = Array.from({length: 60}, (_, i) => i.toString().padStart(2, '0'));
-    const periods = ['AM', 'PM'];
+        // Convert 24h input to the "12:00 PM" format used in your DB/App
+        const [hours, minutes] = selectedVal.split(':');
+        const date = new Date();
+        date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        
+        const formattedTime = date.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit', 
+            hour12: true 
+        });
+        
+        onTimeSelect(formattedTime);
+    };
 
-    useEffect(() => {
-        if (mode === 'ASAP') onTimeSelect('ASAP');
-        else onTimeSelect(`${h}:${m} ${p}`);
-    }, [h, m, p, mode]);
+    if (!restaurant?.openingTime || !restaurant?.closingTime) {
+        return (
+            <div className="text-center p-4 bg-yellow-50 text-yellow-700 rounded-lg border border-yellow-200">
+                <p className="font-semibold">Restaurant hours not set.</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="w-full max-w-sm mx-auto p-1">
-            <style>{`
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-            `}</style>
-            
-            <div className="bg-gray-100 p-1.5 rounded-2xl flex gap-1 mb-8 border border-gray-200 shadow-sm">
-                <button 
-                    onClick={() => setMode('ASAP')} 
-                    className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${mode === 'ASAP' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500'}`}
+        <div className="space-y-4">
+            <label className="block text-gray-700 text-sm font-bold mb-3 flex items-center">
+                <Clock className="inline mr-2" size={16} /> Select Arrival Time
+            </label>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+                {/* ASAP Button */}
+                <button
+                    type="button"
+                    onClick={() => onTimeSelect('ASAP')}
+                    className={`flex-1 py-4 px-6 rounded-2xl font-bold border-2 transition-all ${
+                        selectedTime === 'ASAP' 
+                        ? 'bg-green-600 text-white border-green-600 shadow-lg' 
+                        : 'bg-green-50 text-green-700 border-green-200 hover:border-green-400'
+                    }`}
                 >
                     ASAP
+                    <span className="block text-[10px] opacity-80 font-normal">Ready in ~15-20 mins</span>
                 </button>
-                <button 
-                    onClick={() => setMode('custom')} 
-                    className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${mode === 'custom' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500'}`}
-                >
-                    Custom Time
-                </button>
+
+                {/* Custom Time Picker */}
+                <div className="flex-1 relative">
+                    <input
+                        type="time"
+                        min={formatToTimeInput(minAllowedTime)}
+                        max={restaurant.closingTime}
+                        onChange={handleTimeInputChange}
+                        className={`w-full py-4 px-6 rounded-2xl font-bold border-2 outline-none transition-all appearance-none ${
+                            selectedTime !== 'ASAP' && selectedTime !== ''
+                            ? 'border-green-600 bg-white text-gray-900 ring-2 ring-green-100'
+                            : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                        }`}
+                    />
+                    <div className="absolute top-1/2 right-4 -translate-y-1/2 pointer-events-none text-gray-400">
+                        <ChevronDown size={18} />
+                    </div>
+                    {selectedTime !== 'ASAP' && selectedTime !== '' && (
+                        <p className="text-[10px] text-green-600 mt-1 ml-2 font-bold uppercase tracking-tight">
+                            Selected: {selectedTime}
+                        </p>
+                    )}
+                </div>
             </div>
 
-            {mode === 'ASAP' ? (
-                <div className="text-center py-6 animate-fade-in-up">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-3">
-                        <Clock className="text-green-600 animate-pulse" size={28} />
-                    </div>
-                    <h3 className="text-lg font-black text-gray-800">Fastest Prep</h3>
-                    <p className="text-gray-500 text-xs">Ready in ~15 mins</p>
-                </div>
-            ) : (
-                <div className="flex justify-center items-center gap-3">
-                    <Wheel label="Hrs" options={hours} value={h} onChange={setH} />
-                    <span className="text-2xl font-black text-gray-200 mt-6">:</span>
-                    <Wheel label="Min" options={minutes} value={m} onChange={setM} />
-                    <div className="w-2" />
-                    <Wheel label="AM/PM" options={periods} value={p} onChange={setP} />
-                </div>
-            )}
+            <p className="text-[11px] text-gray-400 text-center italic">
+                Note: Orders must be placed at least 15 minutes before arrival.
+            </p>
         </div>
     );
 };
-
 
 // --- Updated CheckoutModal Component (With Strict Time Validation) ---
 const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
