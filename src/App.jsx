@@ -1686,7 +1686,7 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
 
         const slots = [];
         const now = new Date();
-        const intervalMinutes = 15;
+        const intervalMinutes = 5;
         // Minimum time to prepare first specific slot (e.g., 15 mins from now)
         const minimumLeadTimeMinutes = 15;
 
