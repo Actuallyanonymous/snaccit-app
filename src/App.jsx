@@ -2479,7 +2479,26 @@ const App = () => {
 
   // --- [2] NEW NAVIGATION LOGIC ---
   
-  // --- [2] NEW EFFECT: Auto-Save Cart & Restaurant to LocalStorage ---
+
+    useEffect(() => {
+        const startTime = Date.now();
+        
+        return () => {
+            const endTime = Date.now();
+            const sessionMinutes = Math.floor((endTime - startTime) / 60000);
+            
+            // Only log if the session was at least 1 minute long
+            if (sessionMinutes > 0 && auth.currentUser) {
+                db.collection("activity_logs").add({
+                    userId: auth.currentUser.uid,
+                    duration: sessionMinutes,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        };
+    }, []);
+
+    
     useEffect(() => {
         // Save Cart
         localStorage.setItem('snaccit_cart', JSON.stringify(cart));
