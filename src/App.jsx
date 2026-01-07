@@ -2478,7 +2478,27 @@ const App = () => {
   const showNotification = (message, type) => setNotification({ message, type });
 
   // --- [2] NEW NAVIGATION LOGIC ---
-  
+    
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const userRef = db.collection("users").doc(currentUser.uid);
+        const unsubscribe = userRef.onSnapshot((doc) => {
+            const data = doc.data();
+            // Trigger notification if a new, unread points update exists
+            if (data?.pointsNotification && !data.pointsNotification.read) {
+                
+                showNotification(`✨ You just received ${data.pointsNotification.amount} Snaccit Points!`, "success");
+                
+                // Immediately update the database to mark it as read
+                userRef.update({
+                    "pointsNotification.read": true
+                });
+            }
+        });
+
+        return () => unsubscribe(); 
+    }, [currentUser]);
 
     useEffect(() => {
         const startTime = Date.now();
@@ -2498,7 +2518,7 @@ const App = () => {
         };
     }, []);
 
-    
+
     useEffect(() => {
         // Save Cart
         localStorage.setItem('snaccit_cart', JSON.stringify(cart));
