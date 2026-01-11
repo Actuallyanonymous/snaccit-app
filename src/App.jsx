@@ -669,7 +669,7 @@ const PrivacyPolicyPage = () => {
             <div className="container mx-auto px-6">
                 <article className="prose lg:prose-lg max-w-4xl mx-auto text-gray-700">
                     <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Snaccit – Privacy Policy</h1>
-                    <p className="text-gray-500 font-bold mb-8">Effective Date: ___ / ___ / 2025</p>
+                    <p className="text-gray-500 font-bold mb-8">Effective Date: 01 / 01 / 2026</p>
                     
                     <p>Your privacy is important to us. This Privacy Policy explains how Snaccit collects, uses, and protects your information.</p>
 
@@ -730,7 +730,7 @@ const TermsOfServicePage = () => {
             <div className="container mx-auto px-6">
                 <article className="prose lg:prose-lg max-w-4xl mx-auto text-gray-700">
                     <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Snaccit – Terms of Service</h1>
-                    <p className="text-gray-500 font-bold mb-8">Effective Date: ___ / ___ / 2025</p>
+                    <p className="text-gray-500 font-bold mb-8">Effective Date: 01 / 01 / 2026</p>
                     
                     <p>Welcome to Snaccit (“Platform”, “We”, “Us”, “Our”). By accessing or using Snaccit, users (“You”, “Customer”, “Vendor”) agree to the following Terms of Service. Please read them carefully.</p>
 
@@ -817,7 +817,7 @@ const TermsOfServicePage = () => {
                     {/* --- REFUND POLICY SECTION --- */}
                     <div className="mt-16 pt-10 border-t-4 border-gray-100">
                         <h1 className="text-3xl font-extrabold text-gray-900 mb-6">Refund & Cancellation Policy</h1>
-                        <p className="text-gray-500 font-bold mb-6">Effective Date: ___ / ___ / 2025</p>
+                        <p className="text-gray-500 font-bold mb-6">Effective Date: 01 / 01 / 2026</p>
                         
                         <p>At Snaccit, we aim to provide a smooth and transparent experience for all users. This Refund & Cancellation Policy explains how cancellations and refunds are handled.</p>
 
