@@ -963,7 +963,7 @@ const ContactPage = ({ showNotification }) => {
 };
 
 // --- [FINAL REVISED] HomePage Component ---
-const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile, onSelectItem }) => {
+const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile, onSelectItem, topPicks }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchType, setSearchType] = useState('restaurant');
     const [activeFilter, setActiveFilter] = useState('all');
@@ -992,18 +992,24 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
     const displayList = (searchTerm || searchType === 'dish' || showAllRestaurants) ? filteredResults : filteredResults.slice(0, 6); 
     
     const topPicks = useMemo(() => {
-        const dmeCanteen = allRestaurants.find(r => r.name.toLowerCase().includes("dme"));
+        // Find DME Canteen from the full list
+        const dmeCanteen = restaurants.find(r => 
+            r.name?.toLowerCase().includes("dme")
+        );
+        
         if (!dmeCanteen || !dmeCanteen.menu) return [];
 
+        // Your exact target items
         const favoriteNames = ["Kurkure Chaap Strips", "Veg Wrap", "Potato Cheese Shots", "Chilli Potato"];
 
         return favoriteNames.map(name => {
             const menuItem = dmeCanteen.menu.find(item => 
-                item.name.toLowerCase().trim() === name.toLowerCase().trim()
+                item.name?.toLowerCase().trim() === name.toLowerCase().trim()
             );
+            // Attach restaurant context so the cart knows where it came from
             return menuItem ? { ...menuItem, restaurantName: dmeCanteen.name, restaurantId: dmeCanteen.id } : null;
         }).filter(item => item !== null);
-    }, [allRestaurants]);
+    }, [restaurants]);
 
     const topDishes = [
           { name: "Butter Chicken", restaurant: "Curry Kingdom", imageUrl: butterChickenImg },
@@ -3061,6 +3067,7 @@ const renderView = () => {
                 onRestaurantClick={handleRestaurantClick} 
                 onGoToProfile={() => navigate('profile')} 
                 onSelectItem={handleSelectItemForCustomization}
+                topPicks={topPicks}
             />;
         // ------------------------
         
