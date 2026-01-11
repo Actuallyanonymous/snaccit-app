@@ -2580,6 +2580,29 @@ const App = () => {
         }
     }, [cart, selectedRestaurant]);
 
+    const FloatingCartButton = ({ itemCount, totalAmount, onClick }) => {
+    if (itemCount === 0) return null;
+
+    return (
+        <button 
+            onClick={onClick}
+            className="fixed bottom-6 right-6 z-[45] flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-green-500 text-white px-6 py-4 rounded-full shadow-[0_10px_25px_-5px_rgba(16,185,129,0.5)] hover:scale-105 active:scale-95 transition-all duration-300 animate-fade-in-up"
+        >
+            <div className="relative">
+                <ShoppingCart size={24} strokeWidth={2.5} />
+                <span className="absolute -top-2 -right-2 bg-white text-emerald-600 text-[10px] font-black rounded-full h-5 w-5 flex items-center justify-center shadow-sm">
+                    {itemCount}
+                </span>
+            </div>
+            <div className="flex flex-col items-start leading-none">
+                <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">View Cart</span>
+                <span className="text-lg font-black">₹{totalAmount.toFixed(0)}</span>
+            </div>
+            <ChevronDown size={20} className="-rotate-90 opacity-70" />
+        </button>
+    );
+};
+
   // Helper to change view and update URL history
   const navigate = (newView, restaurantData) => {
     setView(newView);
@@ -3020,6 +3043,12 @@ const renderView = () => {
              <ReviewModal isOpen={!!orderToReview} onClose={() => setOrderToReview(null)} order={orderToReview} onSubmitReview={handleSubmitReview} />
              <PaymentRedirectOverlay isOpen={isRedirecting} />
 
+            <FloatingCartButton 
+            itemCount={cartItemCount} 
+            totalAmount={cart.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0)}
+            onClick={() => setIsCartOpen(true)}
+        />
+        
             <div className="bg-cream-50 font-sans text-slate-800 min-h-screen flex flex-col">
                 {/* Header Section */}
                 <header className="bg-white/80 backdrop-blur-xl sticky top-0 z-30 border-b border-gray-200/80">
