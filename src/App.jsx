@@ -963,7 +963,7 @@ const ContactPage = ({ showNotification }) => {
 };
 
 // --- [FINAL REVISED] HomePage Component ---
-const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile, onSelectItem, topPicks }) => {
+const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile, onSelectItem }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchType, setSearchType] = useState('restaurant');
     const [activeFilter, setActiveFilter] = useState('all');
@@ -992,24 +992,18 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
     const displayList = (searchTerm || searchType === 'dish' || showAllRestaurants) ? filteredResults : filteredResults.slice(0, 6); 
     
     const topPicks = useMemo(() => {
-        // Find DME Canteen from the full list
-        const dmeCanteen = restaurants.find(r => 
-            r.name?.toLowerCase().includes("dme")
-        );
-        
+        const dmeCanteen = allRestaurants.find(r => r.name.toLowerCase().includes("dme"));
         if (!dmeCanteen || !dmeCanteen.menu) return [];
 
-        // Your exact target items
         const favoriteNames = ["Kurkure Chaap Strips", "Veg Wrap", "Potato Cheese Shots", "Chilli Potato"];
 
         return favoriteNames.map(name => {
             const menuItem = dmeCanteen.menu.find(item => 
-                item.name?.toLowerCase().trim() === name.toLowerCase().trim()
+                item.name.toLowerCase().trim() === name.toLowerCase().trim()
             );
-            // Attach restaurant context so the cart knows where it came from
             return menuItem ? { ...menuItem, restaurantName: dmeCanteen.name, restaurantId: dmeCanteen.id } : null;
         }).filter(item => item !== null);
-    }, [restaurants]);
+    }, [allRestaurants]);
 
     const topDishes = [
           { name: "Butter Chicken", restaurant: "Curry Kingdom", imageUrl: butterChickenImg },
@@ -1643,40 +1637,22 @@ const ItemCustomizationModal = ({ isOpen, onClose, item, onConfirmAddToCart }) =
 };
 
 // --- Cart Sidebar Component ---
-const CartSidebar = ({ 
-    isOpen, 
-    onClose, 
-    cart, 
-    onUpdateQuantity, 
-    onCheckout, 
-    selectedRestaurant, 
-    onGoToMenu, 
-    onClear,
-    onQuickAdd,
-    topPicks 
-}) => {
+const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, selectedRestaurant, onGoToMenu, onClear }) => {
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
 
     return (
         <>
-            {/* Background Overlay */}
-            <div 
-                className={`fixed inset-0 bg-black/60 z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
-                onClick={onClose}
-            ></div>
-
-            {/* Sidebar Panel */}
+            <div className={`fixed inset-0 bg-black/60 z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={onClose}></div>
             <div className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="flex flex-col h-full">
-                    
-                    {/* Header Section */}
+                    {/* --- UPDATED HEADER WITH CLEAR OPTION --- */}
                     <div className="p-6 border-b">
                         <div className="flex justify-between items-center mb-2">
                             <h2 className="text-xl font-bold text-gray-800">Your Order</h2>
-                            <button onClick={onClose} className="text-gray-500 hover:text-gray-800 p-1"><X size={24} /></button>
+                            <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
                         </div>
                         
-                        <div className="flex justify-between items-center min-h-[24px]">
+                        <div className="flex justify-between items-center">
                             {/* "Back to Menu" Link */}
                             {selectedRestaurant && cart.length > 0 ? (
                                 <button 
@@ -1688,7 +1664,7 @@ const CartSidebar = ({
                                 </button>
                             ) : <div></div>}
 
-                            {/* "Clear Cart" Button */}
+                            {/* New "Clear Cart" Button */}
                             {cart.length > 0 && (
                                 <button 
                                     onClick={() => { 
@@ -1697,98 +1673,36 @@ const CartSidebar = ({
                                             onClose(); 
                                         } 
                                     }}
-                                    className="text-[10px] font-black text-red-400 hover:text-red-600 uppercase tracking-widest transition-colors px-2 py-1"
+                                    className="text-[10px] font-black text-red-400 hover:text-red-600 uppercase tracking-widest transition-colors"
                                 >
                                     Clear Cart
                                 </button>
                             )}
                         </div>
                     </div>
+                    {/* ----------------------------------------- */}
 
-                    {/* Scrollable Content Area */}
-                    <div className="flex-grow p-4 sm:p-6 overflow-y-auto no-scrollbar">
+                    <div className="flex-grow p-4 sm:p-6 overflow-y-auto">
                         {cart.length === 0 ? (
-                            <div className="flex flex-col h-full">
-                                {/* Sad Empty State */}
-                                <div className="flex flex-col items-center justify-center py-10 text-center">
-                                    <div className="bg-gray-50 p-8 rounded-full mb-4">
-                                        <ShoppingCart size={48} className="text-gray-200" />
-                                    </div>
-                                    <p className="text-gray-800 font-bold text-lg">Your cart is empty</p>
-                                    <p className="text-gray-400 text-sm italic mb-8">Hungry? Add some favorites!</p>
-                                </div>
-
-                                {/* Smart Quick Add Section */}
-                                {topPicks && topPicks.length > 0 && (
-                                    <div className="mt-auto animate-fade-in-up">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 px-1">
-                                            DME Canteen Favorites
-                                        </p>
-                                        <div className="grid grid-cols-1 gap-3">
-                                            {topPicks.map((item) => (
-                                                <button 
-                                                    key={item.id}
-                                                    onClick={() => onQuickAdd(item)}
-                                                    className="flex items-center gap-4 p-3 bg-white border border-gray-100 rounded-2xl hover:border-emerald-500 hover:shadow-md transition-all text-left group"
-                                                >
-                                                    <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
-                                                        <img 
-                                                            src={item.imageUrl || 'https://placehold.co/100'} 
-                                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                                                            alt={item.name} 
-                                                        />
-                                                    </div>
-                                                    <div className="flex-grow">
-                                                        <p className="text-sm font-bold text-gray-800 leading-tight">{item.name}</p>
-                                                        <p className="text-xs text-emerald-600 font-black mt-1">₹{item.sizes?.[0]?.price || item.price}</p>
-                                                    </div>
-                                                    <div className="bg-emerald-50 text-emerald-600 p-2 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                                                        <PlusCircle size={20} />
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                            <div className="flex flex-col items-center justify-center h-full text-center">
+                                <ShoppingCart size={48} className="text-gray-200 mb-4" />
+                                <p className="text-gray-500 italic">Your cart is empty.</p>
                             </div>
                         ) : (
-                            /* Cart Items List */
                             <div className="space-y-4">
                                 {cart.map(item => (
-                                    <div key={item.cartItemId} className="flex items-start border-b border-gray-50 pb-4 last:border-b-0">
+                                    <div key={item.cartItemId} className="flex items-start border-b pb-3 last:border-b-0">
                                         <div className="flex-grow pr-2">
-                                            <p className="font-bold text-gray-800 text-sm">{item.name} <span className="text-xs font-normal text-gray-400">({item.selectedSize.name})</span></p>
-                                            
-                                            {/* Add-ons list */}
-                                            {item.selectedAddons && item.selectedAddons.length > 0 && (
-                                                <div className="mt-1 space-y-0.5">
-                                                    {item.selectedAddons.map(addon => (
-                                                        <p key={addon.name} className="text-[11px] text-gray-400 pl-2 flex items-center">
-                                                            <span className="w-1 h-1 bg-gray-300 rounded-full mr-1.5"></span>
-                                                            + {addon.name}
-                                                        </p>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            
-                                            <p className="text-sm text-emerald-700 font-black mt-2">₹{item.finalPrice.toFixed(2)}</p>
+                                            <p className="font-semibold text-sm">{item.name} <span className="text-xs font-normal text-gray-500">({item.selectedSize.name})</span></p>
+                                            {item.selectedAddons && item.selectedAddons.length > 0 && item.selectedAddons.map(addon => (
+                                                <p key={addon.name} className="text-xs text-gray-500 pl-2">+ {addon.name}</p>
+                                            ))}
+                                            <p className="text-sm text-gray-700 font-bold mt-1">₹{item.finalPrice.toFixed(2)}</p>
                                         </div>
-                                        
-                                        {/* Quantity Controls */}
-                                        <div className="flex items-center bg-gray-50 rounded-xl p-1 shadow-inner">
-                                            <button 
-                                                onClick={() => onUpdateQuantity(item.cartItemId, item.quantity - 1)} 
-                                                className="text-gray-400 hover:text-red-500 p-1.5 transition-colors"
-                                            >
-                                                <MinusCircle size={20}/>
-                                            </button>
-                                            <span className="w-8 text-center font-black text-sm text-gray-700">{item.quantity}</span>
-                                            <button 
-                                                onClick={() => onUpdateQuantity(item.cartItemId, item.quantity + 1)} 
-                                                className="text-gray-400 hover:text-green-600 p-1.5 transition-colors"
-                                            >
-                                                <PlusCircle size={20}/>
-                                            </button>
+                                        <div className="flex items-center flex-shrink-0">
+                                            <button onClick={() => onUpdateQuantity(item.cartItemId, item.quantity - 1)} className="text-gray-400 hover:text-red-500 p-1 transition-colors"><MinusCircle size={20}/></button>
+                                            <span className="w-8 text-center font-bold text-sm mx-1 text-gray-700">{item.quantity}</span>
+                                            <button onClick={() => onUpdateQuantity(item.cartItemId, item.quantity + 1)} className="text-gray-400 hover:text-green-600 p-1 transition-colors"><PlusCircle size={20}/></button>
                                         </div>
                                     </div>
                                 ))}
@@ -1796,20 +1710,15 @@ const CartSidebar = ({
                         )}
                     </div>
 
-                    {/* Footer / Checkout Button */}
                     {cart.length > 0 && (
-                        <div className="p-6 border-t bg-gray-50 rounded-t-3xl shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
-                            <div className="flex justify-between items-center mb-6">
-                                <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">Subtotal</span>
-                                <span className="text-2xl font-black text-gray-900">₹{subtotal.toFixed(0)}</span>
+                        <div className="p-4 sm:p-6 border-t bg-gray-50">
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-md font-semibold text-gray-800">Subtotal</span>
+                                <span className="text-lg font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
                             </div>
-                            <button 
-                                onClick={onCheckout} 
-                                className="w-full bg-gradient-to-br from-emerald-500 to-green-600 text-white font-black py-4 rounded-2xl hover:shadow-xl hover:shadow-green-500/30 active:scale-[0.98] transition-all duration-300 text-lg flex items-center justify-center gap-3"
-                            >
-                                Checkout <ArrowLeft className="rotate-180" size={20} />
+                            <button onClick={onCheckout} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-4 rounded-2xl hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 text-md">
+                                Choose Arrival Time
                             </button>
-                            <p className="text-center text-[10px] text-gray-400 mt-4 font-bold uppercase tracking-widest">Select arrival time on next step</p>
                         </div>
                     )}
                 </div>
@@ -3067,7 +2976,6 @@ const renderView = () => {
                 onRestaurantClick={handleRestaurantClick} 
                 onGoToProfile={() => navigate('profile')} 
                 onSelectItem={handleSelectItemForCustomization}
-                topPicks={topPicks}
             />;
         // ------------------------
         
@@ -3109,12 +3017,9 @@ const renderView = () => {
     onUpdateQuantity={handleUpdateQuantity} 
     selectedRestaurant={selectedRestaurant}
     onGoToMenu={(resto) => navigate('menu', resto)}
+    // --- ADD THE CLEAR HANDLER HERE ---
     onClear={handleClearCart} 
-    onQuickAdd={(item) => {
-        setIsCartOpen(false); // Close cart to show customization modal
-        onSelectItem(item);
-    }}
-    topPicks={topPicks}
+    // ----------------------------------
     onCheckout={() => {
         let activeResto = selectedRestaurant;
 
