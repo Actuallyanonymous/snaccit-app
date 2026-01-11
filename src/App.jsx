@@ -963,7 +963,7 @@ const ContactPage = ({ showNotification }) => {
 };
 
 // --- [FINAL REVISED] HomePage Component ---
-const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile }) => {
+const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile, onSelectItem }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchType, setSearchType] = useState('restaurant');
     const [activeFilter, setActiveFilter] = useState('all');
@@ -990,6 +990,20 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
     }, [searchTerm, searchType, allRestaurants, activeFilter]);
 
     const displayList = (searchTerm || searchType === 'dish' || showAllRestaurants) ? filteredResults : filteredResults.slice(0, 6); 
+    
+    const topPicks = useMemo(() => {
+        const dmeCanteen = allRestaurants.find(r => r.name.toLowerCase().includes("dme"));
+        if (!dmeCanteen || !dmeCanteen.menu) return [];
+
+        const favoriteNames = ["Kurkure Chaap Strips", "Veg Wrap", "Potato Cheese Shots", "Chilli Potato"];
+
+        return favoriteNames.map(name => {
+            const menuItem = dmeCanteen.menu.find(item => 
+                item.name.toLowerCase().trim() === name.toLowerCase().trim()
+            );
+            return menuItem ? { ...menuItem, restaurantName: dmeCanteen.name, restaurantId: dmeCanteen.id } : null;
+        }).filter(item => item !== null);
+    }, [allRestaurants]);
 
     const topDishes = [
           { name: "Butter Chicken", restaurant: "Curry Kingdom", imageUrl: butterChickenImg },
@@ -1113,32 +1127,55 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
             </section>
             
             {/* 3. TOP DISHES SECTION */}
-            <section id="top-dishes" className="relative py-20 bg-white">
-                <div className="container relative mx-auto px-6 z-10">
-                    <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
-                        <div>
-                            <h3 className="text-sm font-bold uppercase text-orange-500 tracking-widest drop-shadow-sm">Visual Delight</h3>
-                            <h2 className="mt-1 text-3xl font-extrabold text-gray-900">Fan Favorites</h2>
-                        </div>
-                        <p className="text-gray-500 font-medium pb-2">Top picked dishes this week</p>
+<section id="top-dishes" className="relative py-20 bg-white">
+    <div className="container relative mx-auto px-6 z-10">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
+            <div>
+                <h3 className="text-sm font-bold uppercase text-orange-500 tracking-widest drop-shadow-sm">Visual Delight</h3>
+                <h2 className="mt-1 text-3xl font-extrabold text-gray-900">Fan Favorites</h2>
+            </div>
+            <p className="text-gray-500 font-medium pb-2">Most ordered from DME Canteen</p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {topPicks.map((item) => (
+                <div 
+                    key={item.id} 
+                    onClick={() => onSelectItem(item)} 
+                    className="relative rounded-3xl overflow-hidden group cursor-pointer shadow-lg transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl h-72"
+                >
+                    {/* --- BEST SELLER BADGE --- */}
+                    <div className="absolute top-3 left-3 z-20 bg-yellow-400 text-yellow-950 text-[10px] font-black px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1 animate-pulse">
+                        <Award size={12} fill="currentColor" />
+                        BEST SELLER
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {topDishes.map((dish, index) => (
-                            <div key={index} onClick={() => handleDishClick(dish)} className="relative rounded-3xl overflow-hidden group cursor-pointer shadow-lg transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl h-72">
-                                <img src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
-                                <div className="absolute bottom-0 left-0 p-5 text-white w-full">
-                                    <h4 className="text-xl font-bold leading-tight mb-1">{dish.name}</h4>
-                                    <div className="flex justify-between items-center">
-                                        <p className="text-xs font-medium text-gray-300">{dish.restaurant}</p>
-                                        <div className="bg-white/20 backdrop-blur-md p-1.5 rounded-full"><PlusCircle size={18} className="text-white"/></div>
-                                    </div>
-                                </div>
+                    {/* ------------------------- */}
+
+                    <img 
+                        src={item.imageUrl || 'https://placehold.co/400'} 
+                        alt={item.name} 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                    />
+                    
+                    {/* Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-95 transition-opacity"></div>
+                    
+                    <div className="absolute bottom-0 left-0 p-5 text-white w-full">
+                        <h4 className="text-lg font-bold leading-tight mb-1">{item.name}</h4>
+                        <div className="flex justify-between items-center">
+                            <p className="text-sm font-black text-yellow-400">
+                                ₹{item.sizes?.[0]?.price || item.price || 0}
+                            </p>
+                            <div className="bg-green-500 text-white p-1.5 rounded-full shadow-lg group-hover:bg-green-400 transition-colors transform group-hover:rotate-90 duration-300">
+                                <PlusCircle size={20} />
                             </div>
-                        ))}
+                        </div>
                     </div>
                 </div>
-            </section>
+            ))}
+        </div>
+    </div>
+</section>
 
             {/* 4. REFER & WIN SECTION (REDESIGNED: GOLDEN & SIMPLE) */}
             <section className="relative py-24 overflow-hidden bg-gray-900">
@@ -2915,6 +2952,7 @@ const renderView = () => {
                 isLoading={isLoading} 
                 onRestaurantClick={handleRestaurantClick} 
                 onGoToProfile={() => navigate('profile')} 
+                onSelectItem={handleSelectItemForCustomization}
             />;
         // ------------------------
         
