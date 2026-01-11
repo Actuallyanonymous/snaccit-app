@@ -1026,7 +1026,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
     <div className="relative z-20 text-center px-6">
         <AnimatedHeroText />
         <p className="mt-4 max-w-xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2 font-medium">
-            Pre-order now. Arrive later. Eat instantly.
+            No Waiting. No Standing. Just Eat.
         </p>
         
         {/* Updated Button Container */}
@@ -3048,7 +3048,7 @@ const renderView = () => {
             totalAmount={cart.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0)}
             onClick={() => setIsCartOpen(true)}
         />
-        
+
             <div className="bg-cream-50 font-sans text-slate-800 min-h-screen flex flex-col">
                 {/* Header Section */}
                 <header className="bg-white/80 backdrop-blur-xl sticky top-0 z-30 border-b border-gray-200/80">
@@ -3097,7 +3097,7 @@ const renderView = () => {
 
     <div className="container mx-auto px-6 relative z-10 text-center">
         <BrandLogo className="scale-125 origin-center mb-6" />
-        <p className="text-green-200/80 text-lg max-w-md mx-auto mb-8 font-medium leading-relaxed">Skip the wait. Savor the moment.</p>
+        <p className="text-green-200/80 text-lg max-w-md mx-auto mb-8 font-medium leading-relaxed">Pre Order Food. Skip The Wait.</p>
         
         {/* Download App Badge in Footer */}
         <div className="mb-12 flex justify-center">
