@@ -1098,6 +1098,17 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
                              </button>
                         </div>
                     )}
+
+                    <div className="mt-16 text-center animate-fade-in-up">
+    <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/50 backdrop-blur-sm border border-emerald-100 rounded-2xl shadow-sm">
+        <div className="bg-emerald-100 p-2 rounded-xl">
+            <Store size={20} className="text-emerald-600" />
+        </div>
+        <p className="text-gray-500 font-bold tracking-wide">
+            Currently serving <span className="text-emerald-700">IIT Delhi</span>. More colleges coming soon!
+        </p>
+    </div>
+</div>
                 </div>
             </section>
             
