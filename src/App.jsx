@@ -87,10 +87,10 @@ const AnimatedHeroText = () => (
         `}</style>
         <h2 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tighter drop-shadow-2xl">
             <span className="slide-in-1 inline-block relative px-4 py-2">
-                Skip the wait.
+                Pre-Order Food.
                 <svg className="absolute top-0 left-0 w-full h-full overflow-visible"><rect className="drawing-circle" x="0" y="0" width="100%" height="100%" rx="30" /></svg>
             </span>
-            <span className="slide-in-2 inline-block ml-4">Savor the moment.</span>
+            <span className="slide-in-2 inline-block ml-4">Skip The Wait.</span>
         </h2>
     </>
 );
