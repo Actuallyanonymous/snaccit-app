@@ -1105,7 +1105,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile 
             <Store size={20} className="text-emerald-600" />
         </div>
         <p className="text-gray-500 font-bold tracking-wide">
-            Currently serving <span className="text-emerald-700">IIT Delhi</span>. More colleges coming soon!
+            Currently serving <span className="text-emerald-700">DME Canteen</span>. More colleges coming soon!
         </p>
     </div>
 </div>
