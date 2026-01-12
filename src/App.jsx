@@ -1354,12 +1354,31 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
     const [reviews, setReviews] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [menuSearch, setMenuSearch] = useState('');
-    
-    // State for the "All Reviews" modal
     const [isAllReviewsOpen, setIsAllReviewsOpen] = useState(false);
 
+    // --- Dynamic Category Icons Mapper ---
+    const getCategoryIcon = (name) => {
+        const lower = name.toLowerCase();
+        if (lower.includes('bev') || lower.includes('drink') || lower.includes('coffee') || lower.includes('shake')) return <Clock size={16} />;
+        if (lower.includes('pizza')) return <Pizza size={16} />;
+        if (lower.includes('burger') || lower.includes('sandwich') || lower.includes('roll')) return <Sandwich size={16} />;
+        if (lower.includes('veg') || lower.includes('salad')) return <Leaf size={16} />;
+        if (lower.includes('star') || lower.includes('snack') || lower.includes('chaat')) return <ChefHat size={16} />;
+        if (lower.includes('dessert') || lower.includes('sweet') || lower.includes('ice')) return <PartyPopper size={16} />;
+        return <Utensils size={16} />;
+    };
+
+    // --- Calculate unique categories and their item counts ---
+    const categoryStats = useMemo(() => {
+        const stats = { 'All': menuItems.length };
+        menuItems.forEach(item => {
+            const cat = item.category || 'Other';
+            stats[cat] = (stats[cat] || 0) + 1;
+        });
+        return stats;
+    }, [menuItems]);
+
     const categories = useMemo(() => {
-        if (menuItems.length === 0) return ['All'];
         const uniqueCats = [...new Set(menuItems.map(item => item.category).filter(Boolean))];
         return ['All', ...uniqueCats.sort()];
     }, [menuItems]);
@@ -1373,7 +1392,6 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
         let unsubReviews = () => {};
 
         try {
-            // 1. Fetch Menu
             const menuCollectionRef = db.collection("restaurants").doc(restaurant.id).collection("menu");
             unsubMenu = menuCollectionRef.onSnapshot((snapshot) => {
                 const allItems = snapshot.docs.map(doc => ({ id: doc.id, restaurantId: restaurant.id, ...doc.data() }));
@@ -1382,11 +1400,10 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                 setIsLoading(false);
             });
 
-            // 2. Fetch Reviews (LIMIT TO 3 for preview)
             const reviewsQuery = db.collection("reviews")
                 .where("restaurantId", "==", restaurant.id)
                 .orderBy("createdAt", "desc")
-                .limit(3); // <--- Only fetch 3 for the main page
+                .limit(3);
             
             unsubReviews = reviewsQuery.onSnapshot((snapshot) => {
                 setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -1395,20 +1412,14 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
              console.error("Error setting up listeners:", error);
              setIsLoading(false);
         }
-
         return () => { unsubMenu(); unsubReviews(); };
     }, [restaurant]);
 
-    // Filter Logic for Menu Search
     const filteredItems = useMemo(() => {
         let result = menuItems;
-
-        // Filter by Category
         if (activeCategory !== 'All') {
             result = result.filter(item => item.category === activeCategory);
         }
-
-        // Filter by Search Term
         if (menuSearch) {
             const lowerTerm = menuSearch.toLowerCase();
             result = result.filter(item => 
@@ -1416,7 +1427,6 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                 (item.description && item.description.toLowerCase().includes(lowerTerm))
             );
         }
-
         return result;
     }, [menuItems, menuSearch, activeCategory]);
 
@@ -1425,8 +1435,7 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
     }
 
     return (
-        <div className="container mx-auto px-6 py-12 min-h-screen">
-            {/* Inject the Modal here */}
+        <div className="container mx-auto px-4 sm:px-6 py-12 min-h-screen">
             <ReviewsListModal 
                 isOpen={isAllReviewsOpen} 
                 onClose={() => setIsAllReviewsOpen(false)} 
@@ -1434,144 +1443,169 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                 restaurantName={restaurant.name}
             />
 
-            <button onClick={onBackClick} className="flex items-center text-gray-600 hover:text-green-600 font-semibold mb-8 transition-colors">
-                <ArrowLeft className="mr-2" size={20} /> Back to all restaurants
+            <button onClick={onBackClick} className="flex items-center text-gray-500 hover:text-emerald-600 font-bold mb-8 transition-all group">
+                <ArrowLeft className="mr-2 group-hover:-translate-x-1 transition-transform" size={20} /> Back to all restaurants
             </button>
 
-            {/* Restaurant Header */}
-            <div className="flex flex-col md:flex-row items-center mb-12">
-                <img src={restaurant.imageUrl} alt={restaurant.name} className="w-full md:w-48 h-48 rounded-3xl object-cover shadow-lg"/>
-                <div className="md:ml-8 mt-6 md:mt-0 text-center md:text-left">
-                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800">{restaurant.name}</h1>
-                    <p className="text-lg sm:text-xl text-gray-500 mt-2">{restaurant.cuisine}</p>
-                    <div className="mt-4 flex flex-col sm:flex-row justify-center md:justify-start items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                        <span className="text-amber-500 font-bold flex items-center text-lg"><Star size={20} className="mr-1 fill-current"/>{restaurant.rating ? restaurant.rating.toFixed(1) : 'New'} ({restaurant.reviewCount || 0} reviews)</span>
-                        <span className="text-gray-400 hidden sm:inline">|</span>
-                        <span className="text-gray-800 font-semibold text-lg">{restaurant.price}</span>
+            {/* Premium Restaurant Header */}
+            <div className="flex flex-col md:flex-row items-center mb-16 gap-8">
+                <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                    <img src={restaurant.imageUrl} alt={restaurant.name} className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-[2.2rem] object-cover shadow-2xl"/>
+                </div>
+                <div className="text-center md:text-left flex-grow">
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-none mb-4">{restaurant.name}</h1>
+                    <p className="text-xl text-gray-500 font-medium mb-6">{restaurant.cuisine}</p>
+                    <div className="flex flex-wrap justify-center md:justify-start items-center gap-4">
+                        <div className="bg-amber-50 text-amber-600 px-4 py-2 rounded-2xl flex items-center font-black shadow-sm border border-amber-100">
+                            <Star size={20} className="mr-1.5 fill-current"/>
+                            {restaurant.rating ? restaurant.rating.toFixed(1) : 'New'} 
+                            <span className="ml-2 text-xs font-bold text-amber-400 opacity-80">({restaurant.reviewCount || 0} reviews)</span>
+                        </div>
+                        <div className="h-2 w-2 rounded-full bg-gray-300 hidden sm:block"></div>
+                        <div className="bg-gray-50 text-gray-700 px-4 py-2 rounded-2xl font-bold border border-gray-100 shadow-sm">
+                            {restaurant.price}
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div className="max-w-4xl mx-auto">
-                {/* Reviews Section (Compact) */}
-                <div className="mb-12">
-                    <div className="flex justify-between items-end mb-6">
-                        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Latest Reviews</h2>
+                {/* Compact Reviews Grid */}
+                <div className="mb-16">
+                    <div className="flex justify-between items-center mb-8">
+                        <h2 className="text-2xl font-black text-gray-800">What People Love</h2>
                         {reviews.length > 0 && (
-                            <button 
-                                onClick={() => setIsAllReviewsOpen(true)}
-                                className="text-green-600 font-bold text-sm hover:underline"
-                            >
-                                See all reviews
+                            <button onClick={() => setIsAllReviewsOpen(true)} className="text-emerald-600 font-black text-sm hover:text-emerald-700 flex items-center gap-1">
+                                See all reviews <ChevronDown size={16} className="-rotate-90" />
                             </button>
                         )}
                     </div>
-
                     {reviews.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {reviews.map(review => (
-                                <div key={review.id} className="bg-white p-4 rounded-lg shadow-sm border">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <StarRating rating={review.rating} />
-                                        <span className="text-xs text-gray-400">{review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : 'Date unavailable'}</span>
-                                    </div>
-                                     {review.text && <p className="text-gray-600 mt-2 text-sm">"{review.text}"</p> }
-                                    <p className="text-xs text-gray-500 mt-2 font-semibold">- {review.userEmail ? review.userEmail.split('@')[0] : 'Anonymous'}</p>
+                                <div key={review.id} className="bg-white/50 backdrop-blur-sm p-5 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                    <StarRating rating={review.rating} />
+                                    <p className="text-gray-600 mt-3 text-sm line-clamp-3 font-medium italic">"{review.text}"</p>
+                                    <p className="text-[10px] text-emerald-600 mt-4 font-black uppercase tracking-widest">— {review.userEmail ? review.userEmail.split('@')[0] : 'Guest'}</p>
                                 </div>
                             ))}
                         </div>
-                    ) : (<p className="text-gray-500 italic">No reviews yet.</p>)}
+                    ) : (<p className="text-gray-400 italic text-center py-4">No reviews yet. Be the first to order!</p>)}
                 </div>
 
-                {/* --- NEW: Category Selection Bar --- */}
-                <div className="mb-8 overflow-x-auto no-scrollbar flex gap-3 pb-2">
-                    {categories.map((cat) => (
-                        <button
-                            key={cat}
-                            onClick={() => setActiveCategory(cat)}
-                            className={`px-5 py-2 rounded-full whitespace-nowrap font-bold text-sm transition-all border ${
-                                activeCategory === cat 
-                                ? 'bg-green-600 text-white border-green-600 shadow-md' 
-                                : 'bg-white text-gray-500 border-gray-200 hover:border-green-300'
-                            }`}
-                        >
-                            {cat}
-                        </button>
-                    ))}
+                {/* --- STICKY DYNAMIC CATEGORY BAR --- */}
+                <div className="sticky top-20 z-30 -mx-4 px-4 py-4 bg-cream-50/80 backdrop-blur-xl border-b border-emerald-100/50 mb-10">
+                    <div className="flex overflow-x-auto no-scrollbar gap-3 pb-1">
+                        {categories.map((cat) => {
+                            const isActive = activeCategory === cat;
+                            return (
+                                <button
+                                    key={cat}
+                                    onClick={() => setActiveCategory(cat)}
+                                    className={`
+                                        flex items-center gap-2 px-6 py-3.5 rounded-2xl whitespace-nowrap font-black text-xs uppercase tracking-wider transition-all duration-500
+                                        ${isActive 
+                                            ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-200 scale-105 ring-2 ring-emerald-500 ring-offset-2' 
+                                            : 'bg-white text-gray-500 border border-gray-100 hover:border-emerald-300 hover:text-emerald-600 shadow-sm'}
+                                    `}
+                                >
+                                    {cat === 'All' ? <Store size={14}/> : getCategoryIcon(cat)}
+                                    {cat}
+                                    <span className={`
+                                        ml-1 text-[10px] px-2 py-0.5 rounded-full 
+                                        ${isActive ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600'}
+                                    `}>
+                                        {categoryStats[cat] || 0}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
-                {/* Menu Section with Search */}
-                <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center mb-6 gap-4">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
-                        {activeCategory === 'All' ? 'Menu' : activeCategory}
-                    </h2>
+                {/* Menu Header & Floating Search */}
+                <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+                    <div className="text-center md:text-left">
+                        <h2 className="text-4xl font-black text-gray-900 tracking-tighter">
+                            {activeCategory === 'All' ? 'Everything' : activeCategory}
+                        </h2>
+                        <div className="h-1.5 w-10 bg-emerald-500 rounded-full mt-2 mx-auto md:mx-0"></div>
+                    </div>
                     
-                    <div className="relative w-full sm:w-64">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="text-gray-400" size={18} />
+                    <div className="relative w-full md:w-80 group">
+                        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                            <Search className="text-gray-400 group-focus-within:text-emerald-500 transition-colors" size={20} />
                         </div>
                         <input 
                             type="text" 
-                            placeholder="Search dishes..." 
+                            placeholder={`Search in ${activeCategory}...`} 
                             value={menuSearch}
                             onChange={(e) => setMenuSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white shadow-sm"
+                            className="w-full pl-12 pr-6 py-4 bg-white border-2 border-gray-100 rounded-3xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all shadow-lg shadow-gray-200/20"
                         />
                     </div>
                 </div>
 
-                {/* Menu Grid */}
+                {/* Polished Menu Grid */}
                 {isLoading ? (
-                    <div className="flex justify-center"><Loader2 className="animate-spin text-green-600" size={32} /></div>
+                    <div className="flex justify-center py-24"><Loader2 className="animate-spin text-emerald-600" size={48} /></div>
                 ) : filteredItems.length > 0 ? (
-                    <div className="space-y-4">
-                        {filteredItems.map((item) => (
-    <div key={item.id} className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 hover:border-orange-200 hover:shadow-lg transition-all flex gap-4 group">
-        
-        {/* Item Image */}
-        <div className="w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-100 relative">
-            <img src={item.imageUrl || 'https://placehold.co/200'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={item.name}/>
-        </div>
+                    <div className="grid grid-cols-1 gap-8">
+                        {filteredItems.map((item, idx) => (
+                            <div 
+                                key={item.id} 
+                                style={{ animationDelay: `${idx * 50}ms` }}
+                                className="animate-fade-in-up bg-white rounded-[2.5rem] p-6 shadow-sm border border-gray-100 hover:shadow-2xl hover:border-emerald-100 transition-all duration-500 flex flex-col sm:flex-row gap-8 group relative overflow-hidden"
+                            >
+                                {/* Decorative Gradient Blur */}
+                                <div className="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 bg-emerald-50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
-        {/* Item Details */}
-        <div className="flex-grow flex flex-col justify-between py-1">
-            <div>
-                <h3 className="font-bold text-lg text-gray-800 leading-tight mb-1">{item.name}</h3>
-                <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{item.description}</p>
-            </div>
-            
-            <div className="flex justify-between items-end mt-2">
-                <div className="text-lg font-black text-gray-900">
-                    {/* Show base price */}
-                    ₹{item.sizes && item.sizes.length > 0 ? item.sizes[0].price : item.price || 0}
-                </div>
-                
-                {/* Custom Add Button */}
-                <button onClick={() => onSelectItem(item)} className="bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white font-bold py-2 px-5 rounded-xl transition-all shadow-sm text-sm flex items-center gap-1">
-                    ADD <PlusCircle size={14} />
-                </button>
-            </div>
-        </div>
-    </div>
-))}
+                                {/* Item Image with Veg/Non-Veg Indicators */}
+                                <div className="w-full sm:w-44 h-44 flex-shrink-0 rounded-[2rem] overflow-hidden bg-gray-50 relative shadow-inner">
+                                    <img src={item.imageUrl || 'https://placehold.co/400'} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt={item.name}/>
+                                    
+                                    {/* Indian FSSAI-style Tag */}
+                                    <div className={`absolute top-3 right-3 w-6 h-6 border-2 flex items-center justify-center rounded-md bg-white shadow-sm ${item.isVeg ? 'border-green-600' : 'border-red-600'}`}>
+                                        <div className={`w-2.5 h-2.5 rounded-full ${item.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></div>
+                                    </div>
+                                </div>
+
+                                {/* Item Details */}
+                                <div className="flex-grow flex flex-col justify-between py-2">
+                                    <div>
+                                        <h3 className="font-black text-2xl text-gray-800 leading-tight group-hover:text-emerald-700 transition-colors mb-2">{item.name}</h3>
+                                        <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed font-medium">{item.description}</p>
+                                    </div>
+                                    
+                                    <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-50">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Price Starts At</span>
+                                            <span className="text-3xl font-black text-gray-900 tracking-tighter">₹{item.sizes && item.sizes.length > 0 ? item.sizes[0].price : item.price || 0}</span>
+                                        </div>
+                                        
+                                        <button 
+                                            onClick={() => onSelectItem(item)} 
+                                            className="bg-emerald-600 text-white font-black py-4 px-10 rounded-[1.5rem] hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-emerald-200/50 flex items-center gap-3"
+                                        >
+                                            ADD <PlusCircle size={20} strokeWidth={3}/>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : (
-                    <div className="text-center py-10">
-                        {menuSearch ? (
-                            <>
-                                <Frown size={48} className="mx-auto text-gray-300 mb-2"/>
-                                <p className="text-gray-500 font-medium">No dishes match "{menuSearch}"</p>
-                            </>
-                        ) : (
-                            <p className="text-gray-500 italic">Menu not available for this restaurant.</p>
-                        )}
+                    <div className="text-center py-20 bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200">
+                        <Frown size={64} className="mx-auto text-gray-300 mb-4 opacity-50"/>
+                        <h3 className="text-xl font-black text-gray-500">Nothing here...</h3>
+                        <p className="text-gray-400 font-medium">Try searching for something else or change the category.</p>
                     </div>
                 )}
             </div>
         </div>
     );
 };
-
 // --- Item Customization Modal ---
 const ItemCustomizationModal = ({ isOpen, onClose, item, onConfirmAddToCart }) => {
 
