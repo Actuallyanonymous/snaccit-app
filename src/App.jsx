@@ -1896,59 +1896,76 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
         }
     }, [isOpen]);
 
-    const handleApplyCoupon = async () => {
-        if (!couponCode) return;
-        setIsValidating(true);
-        setCouponError('');
-        setDiscount(0);
-        setAppliedCoupon(null);
-        try {
-            const code = couponCode.toUpperCase();
-            const couponRef = db.collection("coupons").doc(code);
-            const couponSnap = await couponRef.get();
-            
-            if (!couponSnap.exists) {
-                setCouponError("Invalid coupon code.");
+    // Locate handleApplyCoupon inside CheckoutModal component in snaccit-app
+
+const handleApplyCoupon = async () => {
+    if (!couponCode) return;
+    setIsValidating(true);
+    setCouponError('');
+    setDiscount(0);
+    setAppliedCoupon(null);
+    try {
+        const code = couponCode.toUpperCase();
+        const couponRef = db.collection("coupons").doc(code);
+        const couponSnap = await couponRef.get();
+        
+        if (!couponSnap.exists) {
+            setCouponError("Invalid coupon code.");
+            return;
+        }
+        const coupon = couponSnap.data();
+        const now = new Date();
+        
+        // --- VALIDATION LOGIC ---
+        if (!coupon.isActive) { 
+            setCouponError("This coupon is no longer active."); 
+        }
+        else if (coupon.expiryDate && now > coupon.expiryDate.toDate()) { 
+            setCouponError("This coupon has expired."); 
+        }
+        else if (subtotal < coupon.minOrderValue) { 
+            setCouponError(`A minimum order of ₹${coupon.minOrderValue} is required.`); 
+        }
+        // --- NEW USAGE LIMIT CHECK ---
+        else if (coupon.usageLimit === 'once') {
+            // Check if this specific user has used this specific coupon code before in a successful order
+            const previousOrders = await db.collection("orders")
+                .where("userId", "==", auth.currentUser.uid)
+                .where("couponCode", "==", code)
+                .where("status", "in", ["pending", "accepted", "preparing", "ready", "completed"])
+                .limit(1)
+                .get();
+
+            if (!previousOrders.empty) {
+                setCouponError("You have already used this coupon once.");
+                setIsValidating(false);
                 return;
             }
-            const coupon = couponSnap.data();
-            const now = new Date();
             
-            // --- VALIDATION LOGIC ---
-            if (!coupon.isActive) { 
-                setCouponError("This coupon is no longer active."); 
-            }
-            else if (coupon.isUsed) { 
-                 setCouponError("This coupon has already been used."); 
-            }
-            else if (coupon.assignedTo && coupon.assignedTo !== auth.currentUser?.uid) {
-                setCouponError("This coupon is not valid for your account.");
-            }
-            else if (coupon.expiryDate && now > coupon.expiryDate.toDate()) { 
-                setCouponError("This coupon has expired."); 
-            }
-            else if (subtotal < coupon.minOrderValue) { 
-                setCouponError(`A minimum order of ₹${coupon.minOrderValue} is required.`); 
-            }
-            else {
-                // Apply Discount
-                let calculatedDiscount = 0;
-                if (coupon.type === 'fixed') { calculatedDiscount = coupon.value; }
-                else if (coupon.type === 'percentage') { calculatedDiscount = (subtotal * coupon.value) / 100; }
-                
-                // If points are already active, re-check logic? 
-                // For simplicity, coupon applies first, then points cover the rest.
-                setDiscount(Math.min(calculatedDiscount, subtotal));
-                setAppliedCoupon({ code, ...coupon });
-            }
-        } catch (error) {
-            console.error("Error validating coupon:", error);
-            setCouponError("Could not validate coupon. Please try again.");
-        } finally {
-            setIsValidating(false);
+            // Proceed to apply if no previous orders found
+            applyCoupon(coupon, code);
         }
-    };
+        else {
+            // It's either unlimited or has no restriction
+            applyCoupon(coupon, code);
+        }
+    } catch (error) {
+        console.error("Error validating coupon:", error);
+        setCouponError("Could not validate coupon. Please try again.");
+    } finally {
+        setIsValidating(false);
+    }
+};
 
+// Helper function to keep the code clean
+const applyCoupon = (coupon, code) => {
+    let calculatedDiscount = 0;
+    if (coupon.type === 'fixed') { calculatedDiscount = coupon.value; }
+    else if (coupon.type === 'percentage') { calculatedDiscount = (subtotal * coupon.value) / 100; }
+    
+    setDiscount(Math.min(calculatedDiscount, subtotal));
+    setAppliedCoupon({ code, ...coupon });
+};
     const handleConfirm = async () => {
         if (!arrivalTime) { alert("Please select an arrival time."); return; }
         setIsPlacingOrder(true);
