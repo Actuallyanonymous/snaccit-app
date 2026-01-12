@@ -1129,12 +1129,13 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
             {/* 3. TOP DISHES SECTION */}
 <section id="top-dishes" className="relative py-20 bg-white">
     <div className="container relative mx-auto px-6 z-10">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
+        {/* FIXED: Changed items-end to items-center and added text alignment logic */}
+        <div className="flex flex-col md:flex-row justify-between items-center md:items-end text-center md:text-left mb-10 gap-4">
             <div>
                 <h3 className="text-sm font-bold uppercase text-orange-500 tracking-widest drop-shadow-sm">Visual Delight</h3>
                 <h2 className="mt-1 text-3xl font-extrabold text-gray-900">Fan Favorites</h2>
             </div>
-            <p className="text-gray-500 font-medium pb-2">Most ordered from DME Canteen</p>
+            <p className="text-gray-500 font-medium md:pb-2">Most ordered from DME Canteen</p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -1149,7 +1150,6 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
                         <Award size={12} fill="currentColor" />
                         BEST SELLER
                     </div>
-                    {/* ------------------------- */}
 
                     <img 
                         src={item.imageUrl || 'https://placehold.co/400'} 
@@ -1160,7 +1160,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
                     {/* Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-95 transition-opacity"></div>
                     
-                    <div className="absolute bottom-0 left-0 p-5 text-white w-full">
+                    <div className="absolute bottom-0 left-0 p-5 text-white w-full text-left"> {/* Added text-left here just for the card contents */}
                         <h4 className="text-lg font-bold leading-tight mb-1">{item.name}</h4>
                         <div className="flex justify-between items-center">
                             <p className="text-sm font-black text-yellow-400">
