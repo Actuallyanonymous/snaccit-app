@@ -1350,12 +1350,19 @@ const ReviewsListModal = ({ isOpen, onClose, restaurantId, restaurantName }) => 
 // --- [UPDATED] MenuPage Component (With Limited Reviews & Search) ---
 const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
     const [menuItems, setMenuItems] = useState([]);
+    const [activeCategory, setActiveCategory] = useState('All');
     const [reviews, setReviews] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [menuSearch, setMenuSearch] = useState('');
     
     // State for the "All Reviews" modal
     const [isAllReviewsOpen, setIsAllReviewsOpen] = useState(false);
+
+    const categories = useMemo(() => {
+        if (menuItems.length === 0) return ['All'];
+        const uniqueCats = [...new Set(menuItems.map(item => item.category).filter(Boolean))];
+        return ['All', ...uniqueCats.sort()];
+    }, [menuItems]);
 
     useEffect(() => {
         if (!restaurant) return;
@@ -1394,13 +1401,24 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
 
     // Filter Logic for Menu Search
     const filteredItems = useMemo(() => {
-        if (!menuSearch) return menuItems;
-        const lowerTerm = menuSearch.toLowerCase();
-        return menuItems.filter(item => 
-            item.name.toLowerCase().includes(lowerTerm) || 
-            (item.description && item.description.toLowerCase().includes(lowerTerm))
-        );
-    }, [menuItems, menuSearch]);
+        let result = menuItems;
+
+        // Filter by Category
+        if (activeCategory !== 'All') {
+            result = result.filter(item => item.category === activeCategory);
+        }
+
+        // Filter by Search Term
+        if (menuSearch) {
+            const lowerTerm = menuSearch.toLowerCase();
+            result = result.filter(item => 
+                item.name.toLowerCase().includes(lowerTerm) || 
+                (item.description && item.description.toLowerCase().includes(lowerTerm))
+            );
+        }
+
+        return result;
+    }, [menuItems, menuSearch, activeCategory]);
 
     if (!restaurant) {
          return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
@@ -1465,9 +1483,28 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                     ) : (<p className="text-gray-500 italic">No reviews yet.</p>)}
                 </div>
 
+                {/* --- NEW: Category Selection Bar --- */}
+                <div className="mb-8 overflow-x-auto no-scrollbar flex gap-3 pb-2">
+                    {categories.map((cat) => (
+                        <button
+                            key={cat}
+                            onClick={() => setActiveCategory(cat)}
+                            className={`px-5 py-2 rounded-full whitespace-nowrap font-bold text-sm transition-all border ${
+                                activeCategory === cat 
+                                ? 'bg-green-600 text-white border-green-600 shadow-md' 
+                                : 'bg-white text-gray-500 border-gray-200 hover:border-green-300'
+                            }`}
+                        >
+                            {cat}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Menu Section with Search */}
                 <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center mb-6 gap-4">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Menu</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
+                        {activeCategory === 'All' ? 'Menu' : activeCategory}
+                    </h2>
                     
                     <div className="relative w-full sm:w-64">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
