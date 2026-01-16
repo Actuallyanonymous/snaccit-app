@@ -974,37 +974,40 @@ const LiveOrderTracker = ({ orders, onViewProfile }) => {
     };
 
     return (
-        <div className="container mx-auto px-6 mb-8 -mt-8 relative z-20">
-            <div className="space-y-3">
-                {orders.map(order => {
-                    const config = statusConfig[order.status] || statusConfig.pending;
-                    return (
-                        <div key={order.id} onClick={onViewProfile} className="glass-panel border-l-4 border-l-emerald-500 rounded-2xl shadow-xl p-4 flex items-center justify-between cursor-pointer hover:scale-[1.01] transition-transform">
-                            <div className="flex items-center gap-4">
-                                <div className={`p-3 rounded-xl ${config.color} text-white shadow-lg`}>
-                                    <Utensils size={20} />
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-gray-900 text-sm sm:text-base">
-                                        Active Order at {order.restaurantName}
-                                    </h4>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className={`flex items-center gap-1.5 text-xs font-black uppercase tracking-wider ${config.color.replace('bg-', 'text-')}`}>
-                                            {config.icon} {config.text}
-                                        </span>
+        /* REMOVED -mt-8 and added py-8 to give it dedicated space */
+        <div className="bg-white border-b border-gray-100 py-8 relative z-20">
+            <div className="container mx-auto px-6">
+                <div className="space-y-3">
+                    {orders.map(order => {
+                        const config = statusConfig[order.status] || statusConfig.pending;
+                        return (
+                            <div key={order.id} onClick={onViewProfile} className="glass-panel border-l-4 border-l-emerald-500 rounded-2xl shadow-lg p-4 flex items-center justify-between cursor-pointer hover:scale-[1.01] transition-transform">
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-3 rounded-xl ${config.color} text-white shadow-md`}>
+                                        <Utensils size={20} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-gray-900 text-sm sm:text-base">
+                                            Active Order at {order.restaurantName}
+                                        </h4>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className={`flex items-center gap-1.5 text-xs font-black uppercase tracking-wider ${config.color.replace('bg-', 'text-')}`}>
+                                                {config.icon} {config.text}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
+                                <div className="text-right hidden sm:block">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Arrival Time</p>
+                                    <p className="font-black text-gray-800">{order.arrivalTime}</p>
+                                </div>
+                                <button className="bg-gray-100 p-2 rounded-full text-gray-400">
+                                    <ArrowLeft className="rotate-180" size={18} />
+                                </button>
                             </div>
-                            <div className="text-right hidden sm:block">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase">Arrival Time</p>
-                                <p className="font-black text-gray-800">{order.arrivalTime}</p>
-                            </div>
-                            <button className="bg-gray-100 p-2 rounded-full text-gray-400">
-                                <ArrowLeft className="rotate-180" size={18} />
-                            </button>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );
