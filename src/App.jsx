@@ -976,57 +976,47 @@ const LiveOrderTracker = ({ orders, onViewProfile }) => {
     if (!orders || orders.length === 0) return null;
 
     const statusConfig = {
-        pending: { color: 'bg-amber-500', text: 'Waiting for Restaurant', icon: <Clock size={18} className="animate-pulse" />, glow: 'shadow-amber-200' },
-        accepted: { color: 'bg-blue-600', text: 'Order Accepted', icon: <CheckCircle size={18} />, glow: 'shadow-blue-200' },
-        preparing: { color: 'bg-indigo-600', text: 'Chef is Cooking', icon: <Loader2 size={18} className="animate-spin" />, glow: 'shadow-indigo-200' },
-        ready: { color: 'bg-green-600', text: 'Ready for Pickup!', icon: <PartyPopper size={18} className="animate-bounce" />, glow: 'shadow-green-200' },
+        pending: { color: 'bg-amber-500', text: 'Waiting for Restaurant', icon: <Clock size={16} className="animate-pulse" /> },
+        accepted: { color: 'bg-blue-500', text: 'Order Accepted', icon: <CheckCircle size={16} /> },
+        preparing: { color: 'bg-indigo-500', text: 'Chef is Cooking', icon: <Loader2 size={16} className="animate-spin" /> },
+        ready: { color: 'bg-green-500', text: 'Ready for Pickup!', icon: <PartyPopper size={16} className="animate-bounce" /> },
     };
 
     return (
-        /* Outer Container: Added subtle gradient to give it depth */
-        <div className="bg-gradient-to-b from-transparent via-emerald-50/40 to-white pt-2 pb-12 relative z-20">
+        /* REMOVED -mt-8 and added bg-white py-10 for clean separation */
+        <div className="bg-white border-b border-gray-100 py-10 relative z-20">
             <div className="container mx-auto px-6">
-                <div className="space-y-4 max-w-5xl mx-auto">
+                <div className="space-y-4">
                     {orders.map(order => {
                         const config = statusConfig[order.status] || statusConfig.pending;
                         return (
                             <div 
                                 key={order.id} 
                                 onClick={onViewProfile} 
-                                className="animate-vibrant-pulse bg-white border-2 border-emerald-100 rounded-[2rem] p-6 flex items-center justify-between cursor-pointer transition-all hover:border-emerald-400"
+                                /* Added animate-pulse-subtle class here */
+                                className="animate-pulse-subtle bg-white border-2 border-emerald-50 rounded-2xl p-5 flex items-center justify-between cursor-pointer transition-all"
                             >
-                                <div className="flex items-center gap-5">
-                                    {/* Icon with colored glow */}
-                                    <div className={`p-4 rounded-2xl ${config.color} text-white shadow-xl ${config.glow} transform -rotate-3`}>
-                                        <Utensils size={24} strokeWidth={2.5} />
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-3.5 rounded-2xl ${config.color} text-white shadow-lg`}>
+                                        <Utensils size={22} />
                                     </div>
                                     <div>
-                                        <h4 className="font-black text-gray-900 text-lg sm:text-xl tracking-tight">
-                                            Tracking Order at <span className="text-emerald-700">{order.restaurantName}</span>
+                                        <h4 className="font-black text-gray-900 text-base sm:text-lg">
+                                            Tracking Order at {order.restaurantName}
                                         </h4>
-                                        <div className="flex items-center gap-2.5 mt-1.5">
-                                            <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${config.color.replace('bg-', 'bg-')}/10 border ${config.color.replace('bg-', 'border-')}/20`}>
-                                                <span className={`${config.color.replace('bg-', 'text-')}`}>
-                                                    {config.icon}
-                                                </span>
-                                                <span className={`text-xs font-black uppercase tracking-widest ${config.color.replace('bg-', 'text-')}`}>
-                                                    {config.text}
-                                                </span>
-                                            </div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className={`flex items-center gap-1.5 text-xs font-black uppercase tracking-widest ${config.color.replace('bg-', 'text-')}`}>
+                                                {config.icon} {config.text}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center gap-8">
-                                    <div className="text-right hidden md:block border-l border-gray-100 pl-8">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Pick up Goal</p>
-                                        <p className="font-black text-emerald-900 text-2xl">{order.arrivalTime}</p>
-                                    </div>
-                                    
-                                    {/* Vibrant Button */}
-                                    <div className="bg-emerald-600 p-3 rounded-full text-white shadow-lg shadow-emerald-200 hover:scale-110 transition-transform">
-                                        <ArrowLeft className="rotate-180" size={24} strokeWidth={3} />
-                                    </div>
+                                <div className="text-right hidden sm:block px-6 border-l border-gray-100">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Arrival Goal</p>
+                                    <p className="font-black text-gray-800 text-lg">{order.arrivalTime}</p>
+                                </div>
+                                <div className="bg-gray-50 p-2.5 rounded-full text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                    <ArrowLeft className="rotate-180" size={20} strokeWidth={3} />
                                 </div>
                             </div>
                         );
@@ -2308,25 +2298,6 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
             </button>
         </div>
     );
-};
-
-
-const raiseWalletRequest = async (amount, selectedRestaurant) => {
-  try {
-    await db.collection("wallet_requests").add({
-      userId: currentUser.uid,
-      userName: userProfile.username,
-      userPhone: userProfile.mobile,
-      restaurantId: selectedRestaurant.id,
-      restaurantName: selectedRestaurant.name,
-      amount: Number(amount),
-      status: 'pending',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    showNotification("Request raised! Please pay cash at the counter.", "success");
-  } catch (error) {
-    showNotification("Failed to raise request.", "error");
-  }
 };
 
 // --- [FINAL POLISHED] Profile Page Component ---
