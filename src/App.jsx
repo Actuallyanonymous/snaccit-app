@@ -22,13 +22,13 @@ import burgerImg from './assets/vegan-burger.png';
 const GlobalStyles = () => (
     <style>{`
 
-        @keyframes pulse-subtle {
-            0% { transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-            50% { transform: scale(1.01); box-shadow: 0 10px 15px -3px rgb(16 185 129 / 0.2); }
-            100% { transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        @keyframes pulse-vibrant {
+            0% { transform: scale(1); box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.1), 0 4px 6px -4px rgba(16, 185, 129, 0.1); }
+            50% { transform: scale(1.015); box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.2), 0 8px 10px -6px rgba(16, 185, 129, 0.2); border-color: #10b981; }
+            100% { transform: scale(1); box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.1), 0 4px 6px -4px rgba(16, 185, 129, 0.1); }
         }
-        .animate-pulse-subtle {
-            animation: pulse-subtle 2s infinite ease-in-out;
+        .animate-vibrant-pulse {
+            animation: pulse-vibrant 2.5s infinite ease-in-out;
         }
         @keyframes fade-in-up {
             from { opacity: 0; transform: translateY(20px); }
