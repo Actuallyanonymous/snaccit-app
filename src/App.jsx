@@ -962,6 +962,82 @@ const ContactPage = ({ showNotification }) => {
     );
 };
 
+// --- [NEW] Active Order Tracker Component ---
+const ActiveOrderTracker = ({ currentUser }) => {
+    const [activeOrder, setActiveOrder] = useState(null);
+
+    useEffect(() => {
+        if (!currentUser) return;
+
+        // Listen for the most recent order that is NOT completed/failed
+        const q = db.collection("orders")
+            .where("userId", "==", currentUser.uid)
+            .where("status", "in", ["pending", "accepted", "preparing", "ready"])
+            .orderBy("createdAt", "desc")
+            .limit(1);
+
+        const unsubscribe = q.onSnapshot((snapshot) => {
+            if (!snapshot.empty) {
+                setActiveOrder({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
+            } else {
+                setActiveOrder(null);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [currentUser]);
+
+    if (!activeOrder) return null;
+
+    const statusConfig = {
+        pending: { label: "Waiting for Restaurant", icon: <Clock className="animate-pulse" />, color: "bg-amber-500" },
+        accepted: { label: "Order Confirmed", icon: <CheckCircle2 />, color: "bg-blue-500" },
+        preparing: { label: "Chef is Cooking", icon: <ChefHat className="animate-bounce" />, color: "bg-indigo-500" },
+        ready: { label: "Food is Ready!", icon: <PartyPopper className="animate-tada" />, color: "bg-green-500" },
+    };
+
+    const currentStatus = statusConfig[activeOrder.status] || statusConfig.pending;
+
+    return (
+        <div className="container mx-auto px-6 mb-8 -mt-8 relative z-30">
+            <div className="bg-white rounded-3xl shadow-xl border-2 border-green-100 overflow-hidden flex flex-col md:flex-row items-center p-1">
+                {/* Status Icon/Color Block */}
+                <div className={`${currentStatus.color} text-white p-4 md:p-6 rounded-2xl flex items-center justify-center w-full md:w-auto`}>
+                    {React.cloneElement(currentStatus.icon, { size: 32 })}
+                </div>
+
+                {/* Details */}
+                <div className="flex-grow p-4 text-center md:text-left">
+                    <div className="flex flex-col md:flex-row md:items-center gap-2">
+                        <span className="text-xs font-black uppercase tracking-widest text-gray-400">Live Order Status</span>
+                        <span className="hidden md:block text-gray-300">•</span>
+                        <span className="text-sm font-bold text-green-600">{activeOrder.restaurantName}</span>
+                    </div>
+                    <h3 className="text-xl font-black text-gray-800 mt-1">{currentStatus.label}</h3>
+                    <p className="text-gray-500 text-sm font-medium">Arrival Goal: {activeOrder.arrivalTime}</p>
+                </div>
+
+                {/* Progress Indicator (Mobile Friendly) */}
+                <div className="p-4 w-full md:w-48">
+                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                            className={`h-full ${currentStatus.color} transition-all duration-1000`} 
+                            style={{ 
+                                width: activeOrder.status === 'pending' ? '25%' : 
+                                       activeOrder.status === 'accepted' ? '50%' : 
+                                       activeOrder.status === 'preparing' ? '75%' : '100%' 
+                            }}
+                        ></div>
+                    </div>
+                    <p className="text-[10px] font-bold text-center mt-2 text-gray-400 uppercase tracking-tighter">
+                        {activeOrder.status === 'ready' ? "Collect your food!" : "Real-time Update"}
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- [FINAL REVISED] HomePage Component ---
 const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile, onSelectItem }) => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -1052,6 +1128,8 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
         </div>
     </div>
 </main>
+
+            <ActiveOrderTracker currentUser={currentUser} />
 
             {/* 2. RESTAURANTS SECTION */}
             <section id="restaurants" className="relative py-16 bg-gray-50/50">
@@ -3033,6 +3111,7 @@ const renderView = () => {
     switch(view) {
         case 'home': 
             return <HomePage 
+                currentUser={currentUser}
                 allRestaurants={restaurants} 
                 isLoading={isLoading} 
                 onRestaurantClick={handleRestaurantClick} 
