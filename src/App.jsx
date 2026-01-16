@@ -962,8 +962,56 @@ const ContactPage = ({ showNotification }) => {
     );
 };
 
+// --- [NEW] Live Order Tracking Component ---
+const LiveOrderTracker = ({ orders, onViewProfile }) => {
+    if (!orders || orders.length === 0) return null;
+
+    const statusConfig = {
+        pending: { color: 'bg-amber-500', text: 'Waiting for Restaurant', icon: <Clock size={16} className="animate-pulse" /> },
+        accepted: { color: 'bg-blue-500', text: 'Order Accepted', icon: <CheckCircle size={16} /> },
+        preparing: { color: 'bg-indigo-500', text: 'Chef is Cooking', icon: <Loader2 size={16} className="animate-spin" /> },
+        ready: { color: 'bg-green-500', text: 'Ready for Pickup!', icon: <PartyPopper size={16} className="animate-bounce" /> },
+    };
+
+    return (
+        <div className="container mx-auto px-6 mb-8 -mt-8 relative z-20">
+            <div className="space-y-3">
+                {orders.map(order => {
+                    const config = statusConfig[order.status] || statusConfig.pending;
+                    return (
+                        <div key={order.id} onClick={onViewProfile} className="glass-panel border-l-4 border-l-emerald-500 rounded-2xl shadow-xl p-4 flex items-center justify-between cursor-pointer hover:scale-[1.01] transition-transform">
+                            <div className="flex items-center gap-4">
+                                <div className={`p-3 rounded-xl ${config.color} text-white shadow-lg`}>
+                                    <Utensils size={20} />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900 text-sm sm:text-base">
+                                        Active Order at {order.restaurantName}
+                                    </h4>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className={`flex items-center gap-1.5 text-xs font-black uppercase tracking-wider ${config.color.replace('bg-', 'text-')}`}>
+                                            {config.icon} {config.text}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-right hidden sm:block">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase">Arrival Time</p>
+                                <p className="font-black text-gray-800">{order.arrivalTime}</p>
+                            </div>
+                            <button className="bg-gray-100 p-2 rounded-full text-gray-400">
+                                <ArrowLeft className="rotate-180" size={18} />
+                            </button>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
 // --- [FINAL REVISED] HomePage Component ---
-const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile, onSelectItem }) => {
+const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile, onSelectItem, activeOrders }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchType, setSearchType] = useState('restaurant');
     const [activeFilter, setActiveFilter] = useState('all');
@@ -1052,6 +1100,8 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
         </div>
     </div>
 </main>
+
+            <LiveOrderTracker orders={activeOrders} onViewProfile={onGoToProfile} />
 
             {/* 2. RESTAURANTS SECTION */}
             <section id="restaurants" className="relative py-16 bg-gray-50/50">
@@ -2557,6 +2607,7 @@ const App = () => {
     // --- [1] REPLACE ALL YOUR STATE DECLARATIONS WITH THIS ---
   const [view, setView] = useState('home');
   const [currentUser, setCurrentUser] = useState(null);
+  const [activeOrders, setActiveOrders] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [restaurants, setRestaurants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -2586,6 +2637,32 @@ const App = () => {
   const [newUserObject, setNewUserObject] = useState(null);
 
   const showNotification = (message, type) => setNotification({ message, type });
+
+  // Listener for Live Active Orders
+useEffect(() => {
+    if (!currentUser) {
+        setActiveOrders([]);
+        return;
+    }
+
+    // Monitor orders that are NOT completed or declined
+    const q = db.collection("orders")
+        .where("userId", "==", currentUser.uid)
+        .where("status", "in", ["pending", "accepted", "preparing", "ready"])
+        .orderBy("createdAt", "desc");
+
+    const unsubscribe = q.onSnapshot(snapshot => {
+        const orders = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        setActiveOrders(orders);
+    }, (error) => {
+        console.error("Live Order Listener Error:", error);
+    });
+
+    return () => unsubscribe();
+}, [currentUser]);
 
   // --- [2] NEW NAVIGATION LOGIC ---
     
@@ -3038,6 +3115,7 @@ const renderView = () => {
                 onRestaurantClick={handleRestaurantClick} 
                 onGoToProfile={() => navigate('profile')} 
                 onSelectItem={handleSelectItemForCustomization}
+                activeOrders={activeOrders}
             />;
         // ------------------------
         
