@@ -185,6 +185,78 @@ const FAQSection = () => {
     );
 };
 
+
+// --- [NEW] Cash Deposit Component ---
+const CashDepositView = ({ currentUser, restaurants, showNotification, onBack }) => {
+    const [amount, setAmount] = useState('');
+    const [selectedRestoId, setSelectedRestoId] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!selectedRestoId || amount <= 0) return;
+        setIsSubmitting(true);
+
+        try {
+            const resto = restaurants.find(r => r.id === selectedRestoId);
+            await db.collection("cash_requests").add({
+                userId: currentUser.uid,
+                userName: currentUser.displayName || "Customer", // Ideally from userProfile
+                userMobile: currentUser.phoneNumber,
+                restaurantId: selectedRestoId,
+                restaurantName: resto.name,
+                amountRequested: Number(amount),
+                status: 'pending_restaurant',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            showNotification("Request raised! Please ask the restaurant to confirm.", "success");
+            onBack();
+        } catch (error) {
+            showNotification("Failed to raise request.", "error");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="container mx-auto px-6 py-12">
+            <button onClick={onBack} className="flex items-center text-gray-600 mb-6"><ArrowLeft className="mr-2"/> Back</button>
+            <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md mx-auto border border-emerald-100">
+                <h2 className="text-2xl font-black text-gray-800 mb-2">Deposit Cash</h2>
+                <p className="text-gray-500 text-sm mb-6">Handed cash to the owner? Raise a request here to get points.</p>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">Select Canteen</label>
+                        <select 
+                            value={selectedRestoId} 
+                            onChange={(e) => setSelectedRestoId(e.target.value)}
+                            className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-green-500"
+                            required
+                        >
+                            <option value="">-- Choose Restaurant --</option>
+                            {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">Amount Paid (₹)</label>
+                        <input 
+                            type="number" 
+                            value={amount} 
+                            onChange={(e) => setAmount(e.target.value)}
+                            placeholder="e.g. 500"
+                            className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-green-500"
+                            required
+                        />
+                    </div>
+                    <button disabled={isSubmitting} type="submit" className="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-green-700 transition-all flex justify-center">
+                        {isSubmitting ? <Loader2 className="animate-spin" /> : "Notify Restaurant"}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 // --- Authentication Modal Component (Detects New User) ---
 const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
     const [phoneNumber, setPhoneNumber] = useState('');
