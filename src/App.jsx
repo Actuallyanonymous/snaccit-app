@@ -5,7 +5,7 @@ import {
     ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, 
     Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, 
     Search, Star, Award, User, Info, Bell, Loader2, Frown, Copy, TicketPercent,
-    Gift, ChevronDown, Mail, Phone, CheckCircle
+    Gift, ChevronDown, Mail, Phone, CheckCircle, HelpCircle
 } from 'lucide-react';
 import 'firebase/compat/auth'; // Ensure Auth compat is imported
 import { auth, db, functionsAsia, messaging } from './firebase'; 
@@ -104,10 +104,85 @@ const AnimatedHeroText = () => (
     </>
 );
 
+// --- FAQ Section Component ---
+const FAQSection = () => {
+    const [openIndex, setOpenIndex] = useState(null);
+
+    const faqs = [
+        {
+            q: "What is Snaccit?",
+            a: "Snaccit is a food pre-ordering platform. You can order food before heading to the canteen so it's ready when you arrive. No waiting in lines!"
+        },
+        {
+            q: "How do I use Snaccit?",
+            a: "Open Snaccit, select your canteen, choose your food, set your arrival time, and pay online. Simply collect your food when the status shows 'Ready'."
+        },
+        {
+            q: "Can I pay cash?",
+            a: "No. Currently, Snaccit supports online payments only (UPI, Cards, FamPay, etc.) to ensure a completely contactless and fast experience."
+        },
+        {
+            q: "How do I know my order is ready?",
+            a: "Check your live status on the Home page or in 'Profile → Order History'. When it shows 'Ready', your food is waiting for you!"
+        },
+        {
+            q: "Can I cancel my order?",
+            a: "No. Once an order is placed, it cannot be cancelled as vendors begin preparation immediately to meet your arrival time."
+        },
+        {
+            q: "What if the canteen declines my order?",
+            a: "If an order is declined, a full refund is automatically initiated to your original payment method."
+        },
+        {
+            q: "Is Snaccit safe?",
+            a: "Yes. Payments are processed through secure UPI gateways. Snaccit does not store your bank or card details."
+        },
+        {
+            q: "Do I need to download an app?",
+            a: "No, you can use the website! However, Android users can download our APK for a better experience, and iOS users can 'Add to Home Screen' via Safari."
+        }
+    ];
+
+    return (
+        <section id="faq" className="py-24 bg-white">
+            <div className="container mx-auto px-6 max-w-3xl">
+                <div className="text-center mb-12">
+                    <div className="inline-flex items-center gap-2 bg-emerald-50 px-4 py-1.5 rounded-full border border-emerald-100 mb-4">
+                        <HelpCircle size={16} className="text-emerald-600" />
+                        <span className="text-sm font-bold tracking-wide uppercase text-emerald-700">Got Questions?</span>
+                    </div>
+                    <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">Frequently Asked Questions</h2>
+                </div>
+
+                <div className="space-y-4">
+                    {faqs.map((faq, index) => (
+                        <div key={index} className="border border-gray-100 rounded-2xl overflow-hidden transition-all duration-300">
+                            <button 
+                                onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                                className={`w-full flex items-center justify-between p-5 text-left transition-colors ${openIndex === index ? 'bg-emerald-50' : 'bg-white hover:bg-gray-50'}`}
+                            >
+                                <span className={`font-bold ${openIndex === index ? 'text-emerald-700' : 'text-gray-700'}`}>{faq.q}</span>
+                                <ChevronDown size={20} className={`text-emerald-500 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`} />
+                            </button>
+                            <div className={`transition-all duration-300 ease-in-out ${openIndex === index ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden bg-emerald-50/30`}>
+                                <p className="p-5 text-gray-600 leading-relaxed border-t border-emerald-100/50">
+                                    {faq.a}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                
+                <div className="mt-12 p-6 bg-gray-50 rounded-3xl text-center border border-dashed border-gray-200">
+                    <p className="text-gray-500 font-medium">Still have questions? Reach out to us at <span className="text-emerald-600 font-bold">itsnacc@gmail.com</span></p>
+                </div>
+            </div>
+        </section>
+    );
+};
+
 // --- Authentication Modal Component (Detects New User) ---
 const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
-// ... (Full component code as provided in previous response) ...
     const [phoneNumber, setPhoneNumber] = useState('');
     const [otp, setOtp] = useState('');
     const [error, setError] = useState('');
@@ -1342,6 +1417,9 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
                     </div>
                 </div>
             </section>
+
+            {/* 6. NEW FAQ SECTION */}
+            <FAQSection />
         </>
     );
 };
