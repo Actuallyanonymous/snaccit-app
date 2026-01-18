@@ -2909,7 +2909,7 @@ useEffect(() => {
                      }
                      return restaurantData;
                  });
-                 const restaurantList = await Promise.all(restaurantListPromises);
+                 const restaurantList = allFetchedRestaurants.filter(r => r.isVisible === true);
                  setRestaurants(restaurantList);
                  console.log("Finished fetching restaurants and menus.");
              } catch (error) {
