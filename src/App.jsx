@@ -193,30 +193,40 @@ const CashDepositView = ({ currentUser, userProfile, restaurants, showNotificati
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!selectedRestoId || amount <= 0) return;
-        setIsSubmitting(true);
+    e.preventDefault();
+    if (!selectedRestoId || amount <= 0 || !currentUser) return; // Added currentUser check
+    setIsSubmitting(true);
 
-        try {
-            const resto = restaurants.find(r => r.id === selectedRestoId);
-            await db.collection("cash_requests").add({
-                userId: currentUser.uid,
-                userName: userProfile?.username || "Customer", // <--- Uses the saved username
-                userMobile: userProfile?.mobile || currentUser.phoneNumber,
-                restaurantId: selectedRestoId,
-                restaurantName: resto.name,
-                amountRequested: Number(amount),
-                status: 'pending_restaurant',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            showNotification("Request raised! Please ask the restaurant to confirm.", "success");
-            onBack();
-        } catch (error) {
-            showNotification("Failed to raise request.", "error");
-        } finally {
+    try {
+        const resto = restaurants.find(r => r.id === selectedRestoId);
+        
+        // ADD THIS SAFETY CHECK
+        if (!resto) {
+            showNotification("Please select a valid restaurant.", "error");
             setIsSubmitting(false);
+            return;
         }
-    };
+
+        await db.collection("cash_requests").add({
+            userId: currentUser.uid,
+            userName: userProfile?.username || "Customer",
+            userMobile: userProfile?.mobile || currentUser.phoneNumber,
+            restaurantId: selectedRestoId,
+            restaurantName: resto.name, // Now safe
+            amountRequested: Number(amount),
+            status: 'pending_restaurant',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showNotification("Request raised! Please ask the owner to confirm.", "success");
+        onBack();
+    } catch (error) {
+        console.error(error); // Helpful for debugging
+        showNotification("Failed to raise request. check connection.", "error");
+    } finally {
+        setIsSubmitting(false);
+    }
+};
 
     return (
         <div className="container mx-auto px-6 py-12">
@@ -2993,12 +3003,10 @@ useEffect(() => {
                      }
                      return restaurantData;
                  });
-                 // 1. Get all data from Firebase
-const allFetchedRestaurants = await Promise.all(restaurantListPromises);
 
-// 2. Filter out restaurants that are hidden (isVisible is false)
-// Note: We use !== false so that restaurants without the field yet still show up
+const allFetchedRestaurants = await Promise.all(restaurantListPromises);
 const visibleRestaurants = allFetchedRestaurants.filter(r => r.isVisible !== false);
+setRestaurants(visibleRestaurants);
 
 // 3. Set the state with only the visible ones
 setRestaurants(visibleRestaurants);
