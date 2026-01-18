@@ -140,6 +140,10 @@ const FAQSection = () => {
         {
             q: "Do I need to download an app?",
             a: "No, you can use the website! However, Android users can download our APK for a better experience, and iOS users can 'Add to Home Screen' via Safari."
+        },
+        {
+            q : "Can I Pay using Fampay?",
+            a : "Yes. Select “Other UPI Apps”, enter your Fampay UPI ID, and complete UPI verification. Then open the Fampay app to approve the payment, as Fampay does not support direct redirection."
         }
     ];
 
