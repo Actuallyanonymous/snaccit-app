@@ -5,7 +5,7 @@ import {
     ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, 
     Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, 
     Search, Star, Award, User, Info, Bell, Loader2, Frown, Copy, TicketPercent,
-    Gift, ChevronDown, Mail, Phone, CheckCircle, HelpCircle
+    Gift, ChevronDown, Mail, Phone, CheckCircle, HelpCircle, DollarSign
 } from 'lucide-react';
 import 'firebase/compat/auth'; // Ensure Auth compat is imported
 import { auth, db, functionsAsia, messaging } from './firebase'; 
@@ -2611,7 +2611,16 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder, on
                             </div>
                         </div>
                     )}
+
+                    <button 
+                onClick={() => setView('cashDeposit')}
+                className="w-full mt-6 bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+            >
+                <DollarSign size={20}/> Deposit Cash at Canteen
+            </button>
                  </div>
+
+                 
 
                  {/* RIGHT COLUMN: Order History */}
                 <div className="lg:w-2/3">
@@ -3298,7 +3307,13 @@ const renderView = () => {
         // ------------------------
         
         case 'menu': return selectedRestaurant ? <MenuPage restaurant={selectedRestaurant} onBackClick={handleBackClick} onSelectItem={handleSelectItemForCustomization} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
-
+        case 'cashDeposit': 
+    return <CashDepositView 
+        currentUser={currentUser} 
+        restaurants={restaurants} 
+        showNotification={showNotification} 
+        onBack={() => setView('home')} 
+    />;
         case 'confirmation': return <OrderConfirmation onGoHome={() => handleGoHome()} />;
         case 'paymentStatus': 
             return <PaymentStatusPage 
