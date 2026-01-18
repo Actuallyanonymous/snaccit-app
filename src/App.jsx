@@ -187,7 +187,7 @@ const FAQSection = () => {
 
 
 // --- [NEW] Cash Deposit Component ---
-const CashDepositView = ({ currentUser, restaurants, showNotification, onBack }) => {
+const CashDepositView = ({ currentUser, userProfile, restaurants, showNotification, onBack }) => { // <--- Added userProfile prop
     const [amount, setAmount] = useState('');
     const [selectedRestoId, setSelectedRestoId] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -201,8 +201,8 @@ const CashDepositView = ({ currentUser, restaurants, showNotification, onBack })
             const resto = restaurants.find(r => r.id === selectedRestoId);
             await db.collection("cash_requests").add({
                 userId: currentUser.uid,
-                userName: currentUser.displayName || "Customer", // Ideally from userProfile
-                userMobile: currentUser.phoneNumber,
+                userName: userProfile?.username || "Customer", // <--- Uses the saved username
+                userMobile: userProfile?.mobile || currentUser.phoneNumber,
                 restaurantId: selectedRestoId,
                 restaurantName: resto.name,
                 amountRequested: Number(amount),
@@ -2455,7 +2455,7 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
 };
 
 // --- [FINAL POLISHED] Profile Page Component ---
-const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder, onBackClick }) => {
+const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder, onBackClick, onNavigate }) => {
     const [orders, setOrders] = useState([]);
     const [profile, setProfile] = useState({ username: '', mobile: '', myReferralCode: '', points: 0 });
     const [isLoading, setIsLoading] = useState(true);
@@ -2612,8 +2612,7 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder, on
                         </div>
                     )}
 
-                    <button 
-                onClick={() => setView('cashDeposit')}
+                    <button onClick={() => onNavigate('cashDeposit')}
                 className="w-full mt-6 bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
             >
                 <DollarSign size={20}/> Deposit Cash at Canteen
@@ -3310,6 +3309,7 @@ const renderView = () => {
         case 'cashDeposit': 
     return <CashDepositView 
         currentUser={currentUser} 
+        userProfile={userProfile}
         restaurants={restaurants} 
         showNotification={showNotification} 
         onBack={() => setView('home')} 
@@ -3324,7 +3324,7 @@ const renderView = () => {
         case 'terms': return <TermsOfServicePage />;
         case 'privacy': return <PrivacyPolicyPage />;
         case 'contact': return <ContactPage showNotification={showNotification} />;
-        case 'profile': return currentUser ? <ProfilePage currentUser={currentUser} showNotification={showNotification} onReorder={handleReorder} onRateOrder={setOrderToReview} onBackClick={handleBackClick} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
+        case 'profile': return currentUser ? <ProfilePage currentUser={currentUser} showNotification={showNotification} onReorder={handleReorder} onRateOrder={setOrderToReview} onBackClick={handleBackClick} onNavigate={setView} /> : <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
         default: return <HomePage allRestaurants={restaurants} isLoading={isLoading} onRestaurantClick={handleRestaurantClick} onGoToProfile={() => setView('profile')} />;
     }
 };
