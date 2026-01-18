@@ -2909,8 +2909,15 @@ useEffect(() => {
                      }
                      return restaurantData;
                  });
-                 const restaurantList = allFetchedRestaurants.filter(r => r.isVisible === true);
-                 setRestaurants(restaurantList);
+                 // 1. Get all data from Firebase
+const allFetchedRestaurants = await Promise.all(restaurantListPromises);
+
+// 2. Filter out restaurants that are hidden (isVisible is false)
+// Note: We use !== false so that restaurants without the field yet still show up
+const visibleRestaurants = allFetchedRestaurants.filter(r => r.isVisible !== false);
+
+// 3. Set the state with only the visible ones
+setRestaurants(visibleRestaurants);
                  console.log("Finished fetching restaurants and menus.");
              } catch (error) {
                  console.error("Error fetching restaurants: ", error);
