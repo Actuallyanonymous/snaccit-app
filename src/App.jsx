@@ -3140,7 +3140,7 @@ setRestaurants(visibleRestaurants);
         }
     };
 
-const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, usePoints) => { // <--- Added usePoints
+const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, usePoints) => {
     if (!currentUser) { showNotification("Please log in to place an order.", "error"); return; }
     if (!userProfile) { showNotification("Please wait for profile to load.", "error"); return; }
     
@@ -3148,18 +3148,16 @@ const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, use
     setIsCheckoutOpen(false);
 
     try {
-        console.log("Calling secure backend to create order...");
-        
         const orderPayload = {
             restaurantId: selectedRestaurant.id,
             arrivalTime: arrivalTime,
             couponCode: couponCode || null,
-            usePoints: usePoints, // <--- Pass to backend
+            usePoints: Boolean(usePoints), 
             userName: userProfile?.username || 'Customer',
             userPhone: userProfile?.mobile || currentUser.phoneNumber,
             items: cart.map(item => ({
                 id: item.id,
-                quantity: item.quantity,
+                quantity: Number(item.quantity), // Ensure number
                 size: item.selectedSize.name,
                 addons: item.selectedAddons ? item.selectedAddons.map(a => a.name) : []
             }))
@@ -3168,20 +3166,15 @@ const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, use
         const createOrderAndPay = functionsAsia.httpsCallable('createOrderAndPay');
         const result = await createOrderAndPay(orderPayload);
         
-        const { redirectUrl } = result.data;
-        if (redirectUrl) {
-            window.location.href = redirectUrl;
+        if (result.data.redirectUrl) {
+            window.location.href = result.data.redirectUrl;
         } else {
-            throw new Error("No payment URL received.");
+            throw new Error("Payment link was not generated.");
         }
 
     } catch (error) {
-        console.error("Error during order creation:", error);
-        let errorMessage = "Failed to place order.";
-        if (error.details) errorMessage = error.details;
-        else if (error.message) errorMessage = error.message;
-        
-        showNotification(errorMessage, "error");
+        console.error("Order Error:", error);
+        showNotification(error.message || "Failed to place order.", "error");
         setIsRedirecting(false);
     }
 };

@@ -28,213 +28,136 @@ const PHONEPE_PAY_API_URL = "https://api.phonepe.com/apis/hermes/pg/v1/pay";
 exports.createOrderAndPay = onCall({
   region: "asia-south2",
   secrets: [PHONEPE_MERCHANT_ID, PHONEPE_SALT_KEY, PHONEPE_SALT_INDEX],
-  minInstances: 0,
 }, async (request) => {
-  // 1. Auth Check
-  if (!request.auth) {
-    throw new admin.functions.https.HttpsError('unauthenticated', 'Login required.');
-  }
+  if (!request.auth) throw new admin.functions.https.HttpsError('unauthenticated', 'Login required.');
 
   try {
     const userId = request.auth.uid;
-    const { 
-      restaurantId, 
-      items, 
-      couponCode, 
-      arrivalTime, 
-      userName, 
-      userPhone, 
-      usePoints 
-    } = request.data;
+    const { restaurantId, items, couponCode, arrivalTime, userName, userPhone } = request.data;
+    // Explicitly check for boolean true
+    const usePoints = request.data.usePoints === true; 
 
-    // --- A. PRICE CALCULATION (SERVER SIDE) ---
+    // 1. Fetch Restaurant & Menu
     const restaurantRef = db.collection('restaurants').doc(restaurantId);
     const restaurantDoc = await restaurantRef.get();
-    
-    if (!restaurantDoc.exists) {
-        throw new admin.functions.https.HttpsError('not-found', 'Restaurant not found');
-    }
+    if (!restaurantDoc.exists) throw new admin.functions.https.HttpsError('not-found', 'Restaurant not found');
 
     const menuSnapshot = await restaurantRef.collection('menu').get();
     const menuMap = {};
-    menuSnapshot.docs.forEach(doc => { 
-        menuMap[doc.id] = { id: doc.id, ...doc.data() }; 
-    });
+    menuSnapshot.docs.forEach(doc => { menuMap[doc.id] = doc.data(); });
 
+    // 2. Calculate Real Subtotal
     let calculatedSubtotal = 0;
     const secureItems = [];
 
-    // Loop through items to calculate real price
-    for (const itemRequest of items) {
-        const realItem = menuMap[itemRequest.id];
-        if (!realItem) {
-            throw new admin.functions.https.HttpsError('invalid-argument', `Item ${itemRequest.id} not found`);
-        }
+    for (const itemReq of items) {
+        const realItem = menuMap[itemReq.id];
+        if (!realItem) continue;
 
-        const realSize = realItem.sizes.find(s => s.name === itemRequest.size);
-        if (!realSize) {
-             throw new admin.functions.https.HttpsError('invalid-argument', `Invalid size for ${realItem.name}`);
-        }
+        const realSize = realItem.sizes.find(s => s.name === itemReq.size);
+        if (!realSize) continue;
 
         let addonsPrice = 0;
         const validatedAddons = [];
-        
-        if (itemRequest.addons && Array.isArray(itemRequest.addons)) {
-            const availableAddons = realItem.addons || [];
-            availableAddons.forEach(a => {
-                if (itemRequest.addons.includes(a.name)) {
+        if (itemReq.addons) {
+            realItem.addons?.forEach(a => {
+                if (itemReq.addons.includes(a.name)) {
                     addonsPrice += a.price;
                     validatedAddons.push(a.name);
                 }
             });
         }
 
-        const finalItemPrice = realSize.price + addonsPrice;
-        calculatedSubtotal += finalItemPrice * itemRequest.quantity;
-
-        secureItems.push({
-            id: realItem.id, 
-            name: realItem.name, 
-            quantity: itemRequest.quantity,
-            price: finalItemPrice, 
-            size: itemRequest.size, 
-            addons: validatedAddons
-        });
+        const unitPrice = realSize.price + addonsPrice;
+        calculatedSubtotal += unitPrice * itemReq.quantity;
+        secureItems.push({ ...itemReq, name: realItem.name, price: unitPrice, addons: validatedAddons });
     }
 
-    // --- B. POINTS LOGIC ---
-    let pointsDiscount = 0;
-    let pointsRedeemed = 0;
-
-    if (usePoints) {
-        const userDoc = await db.collection('users').doc(userId).get();
-        const availablePoints = userDoc.data().points || 0;
-        
-        if (availablePoints > 0) {
-            // Logic: 10 Points = 1 Rupee
-            const maxPointsDiscount = Math.floor(availablePoints / 10);
-            pointsDiscount = Math.min(maxPointsDiscount, calculatedSubtotal);
-            pointsRedeemed = pointsDiscount * 10;
-        }
-    }
-
-    // --- C. COUPON LOGIC ---
+    // 3. Apply Coupon Discount First (Matches Frontend Logic)
     let couponDiscount = 0;
     if (couponCode) {
         const couponDoc = await db.collection('coupons').doc(couponCode).get();
         if (couponDoc.exists) {
-            const coupon = couponDoc.data();
-            const now = admin.firestore.Timestamp.now();
-            
-            // Check if active, unused, not expired, and meets min order
-            const isNotExpired = !coupon.expiryDate || now < coupon.expiryDate;
-            if (coupon.isActive && !coupon.isUsed && isNotExpired && calculatedSubtotal >= coupon.minOrderValue) {
-                if (coupon.type === 'fixed') {
-                    couponDiscount = coupon.value;
-                } else if (coupon.type === 'percentage') {
-                    couponDiscount = (calculatedSubtotal * coupon.value) / 100;
-                }
+            const cp = couponDoc.data();
+            if (cp.isActive && calculatedSubtotal >= (cp.minOrderValue || 0)) {
+                couponDiscount = cp.type === 'fixed' ? cp.value : (calculatedSubtotal * cp.value) / 100;
             }
         }
     }
 
-    const totalDiscount = pointsDiscount + couponDiscount;
-    // Prevent negative total
-    const grandTotal = Math.max(0, calculatedSubtotal - totalDiscount);
+    // 4. Calculate Points Discount (on REMAINING balance)
+    let pointsDiscount = 0;
+    let pointsRedeemed = 0;
+    const remainingAfterCoupon = Math.max(0, calculatedSubtotal - couponDiscount);
 
-    // --- D. DEDUCT POINTS & CREATE ORDER ---
+    if (usePoints && remainingAfterCoupon > 0) {
+        const userDoc = await db.collection('users').doc(userId).get();
+        const userData = userDoc.data();
+        const availablePoints = Number(userData?.points || 0); // Force number conversion
+        
+        if (availablePoints > 0) {
+            const potentialDiscount = Math.floor(availablePoints / 10);
+            // Points can only discount what's left after the coupon
+            pointsDiscount = Math.min(potentialDiscount, remainingAfterCoupon);
+            pointsRedeemed = pointsDiscount * 10;
+        }
+    }
+
+    const grandTotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDiscount);
+
+    // 5. Update Points and Create Order
     if (pointsRedeemed > 0) {
         await db.collection('users').doc(userId).update({
             points: admin.firestore.FieldValue.increment(-pointsRedeemed)
         });
     }
 
-    const orderData = {
-        userId, 
-        userEmail: request.auth.token.email || null,
-        userName: userName || 'Customer', 
-        userPhone: userPhone || 'N/A',
-        restaurantId, 
-        restaurantName: restaurantDoc.data().name,
-        items: secureItems,
-        subtotal: calculatedSubtotal,
-        discount: totalDiscount,
+    const orderRef = await db.collection("orders").add({
+        userId, restaurantId, items: secureItems,
+        subtotal: calculatedSubtotal, 
+        discount: couponDiscount + pointsDiscount,
+        pointsRedeemed, pointsValue: pointsDiscount,
         couponCode: couponCode || null,
-        pointsRedeemed: pointsRedeemed, 
-        pointsValue: pointsDiscount,
         total: grandTotal,
-        status: "awaiting_payment",
-        arrivalTime,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        hasReview: false,
-    };
+        status: grandTotal === 0 ? "pending" : "awaiting_payment",
+        arrivalTime, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        restaurantName: restaurantDoc.data().name
+    });
 
-    const orderRef = await db.collection("orders").add(orderData);
-
-    // --- E. PAYMENT HANDLING ---
-    
-    // Case 1: Order is fully paid by points/coupons (Total is 0)
     if (grandTotal === 0) {
-        await orderRef.update({ 
-            status: 'pending', 
-            paymentDetails: { method: 'points_full' } 
-        });
         return { redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderRef.id}` };
     }
 
-    // Case 2: PhonePe Payment Required
+    // 6. Initiate PhonePe
     const merchantTransactionId = `SNCT_${orderRef.id}`;
-    
     const payload = {
-      merchantId: PHONEPE_MERCHANT_ID.value(),
-      merchantTransactionId: merchantTransactionId,
-      merchantUserId: userId,
-      amount: Math.round(grandTotal * 100), // PhonePe expects paisa
-      redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderRef.id}`,
-      redirectMode: "REDIRECT",
-      callbackUrl: `https://asia-south2-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/phonePeCallback`,
-      mobileNumber: userPhone || "9999999999",
-      paymentInstrument: { type: "PAY_PAGE" },
+        merchantId: PHONEPE_MERCHANT_ID.value(),
+        merchantTransactionId,
+        merchantUserId: userId,
+        amount: Math.round(grandTotal * 100), // Paisa
+        redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderRef.id}`,
+        redirectMode: "REDIRECT",
+        callbackUrl: `https://asia-south2-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/phonePeCallback`,
+        paymentInstrument: { type: "PAY_PAGE" },
     };
 
     const base64Payload = Buffer.from(JSON.stringify(payload)).toString("base64");
-    const stringToHash = base64Payload + "/pg/v1/pay" + PHONEPE_SALT_KEY.value();
-    const sha256Hash = crypto.createHash("sha256").update(stringToHash).digest("hex");
-    const xVerify = sha256Hash + "###" + PHONEPE_SALT_INDEX.value();
+    const xVerify = crypto.createHash("sha256").update(base64Payload + "/pg/v1/pay" + PHONEPE_SALT_KEY.value()).digest("hex") + "###" + PHONEPE_SALT_INDEX.value();
 
-    try {
-        const response = await axios.post(PHONEPE_PAY_API_URL, { request: base64Payload }, {
-            headers: { 
-                "Content-Type": "application/json", 
-                "X-VERIFY": xVerify 
-            }
-        });
-        
-        if (response.data.success) {
-            await orderRef.update({ merchantTransactionId });
-            return { redirectUrl: response.data.data.instrumentResponse.redirectInfo.url };
-        } else {
-            throw new Error(response.data.message || "Payment initiation failed");
-        }
-    } catch (paymentError) {
-        // ROLLBACK: Refund points if payment init failed
-        if(pointsRedeemed > 0) {
-            await db.collection('users').doc(userId).update({ 
-                points: admin.firestore.FieldValue.increment(pointsRedeemed) 
-            });
-        }
-        // Mark order as failed init
-        await orderRef.update({ status: 'payment_init_failed' });
-        
-        logger.error("Payment Init Error", paymentError);
-        throw new admin.functions.https.HttpsError('internal', 'Payment Gateway Error');
+    const response = await axios.post(PHONEPE_PAY_API_URL, { request: base64Payload }, {
+        headers: { "Content-Type": "application/json", "X-VERIFY": xVerify }
+    });
+
+    if (response.data.success) {
+        await orderRef.update({ merchantTransactionId });
+        return { redirectUrl: response.data.data.instrumentResponse.redirectInfo.url };
+    } else {
+        throw new Error("Gateway Error");
     }
 
   } catch (error) {
-    logger.error("Create Order Error", error);
-    // Rethrow valid HttpsErrors, wrap others
-    if (error.code && error.details) throw error;
-    throw new admin.functions.https.HttpsError('internal', error.message || "Internal Server Error");
+    console.error("Payment Error:", error);
+    throw new admin.functions.https.HttpsError('internal', error.message);
   }
 });
 
