@@ -102,45 +102,64 @@ exports.createOrderAndPay = onCall({
         });
     }
 
-    // --- B. POINTS LOGIC ---
-    let pointsDiscount = 0;
-    let pointsRedeemed = 0;
-
-    if (usePoints) {
-        const userDoc = await db.collection('users').doc(userId).get();
-        const availablePoints = userDoc.data().points || 0;
+    // 1. IMPROVED COUPON LOGIC
+let couponDiscount = 0;
+if (couponCode) {
+    const couponDoc = await db.collection('coupons').doc(couponCode.toUpperCase()).get();
+    
+    if (couponDoc.exists) {
+        const coupon = couponDoc.data();
+        const now = admin.firestore.Timestamp.now();
         
-        if (availablePoints > 0) {
-            // Logic: 10 Points = 1 Rupee
-            const maxPointsDiscount = Math.floor(availablePoints / 10);
-            pointsDiscount = Math.min(maxPointsDiscount, calculatedSubtotal);
-            pointsRedeemed = pointsDiscount * 10;
-        }
-    }
+        // Validation
+        const isActive = coupon.isActive !== false;
+        const isNotExpired = !coupon.expiryDate || now < coupon.expiryDate;
+        const meetsMinOrder = calculatedSubtotal >= (coupon.minOrderValue || 0);
 
-    // --- C. COUPON LOGIC ---
-    let couponDiscount = 0;
-    if (couponCode) {
-        const couponDoc = await db.collection('coupons').doc(couponCode).get();
-        if (couponDoc.exists) {
-            const coupon = couponDoc.data();
-            const now = admin.firestore.Timestamp.now();
-            
-            // Check if active, unused, not expired, and meets min order
-            const isNotExpired = !coupon.expiryDate || now < coupon.expiryDate;
-            if (coupon.isActive && !coupon.isUsed && isNotExpired && calculatedSubtotal >= coupon.minOrderValue) {
-                if (coupon.type === 'fixed') {
-                    couponDiscount = coupon.value;
-                } else if (coupon.type === 'percentage') {
-                    couponDiscount = (calculatedSubtotal * coupon.value) / 100;
-                }
+        // Check if user has used this specific "once" coupon before
+        let alreadyUsedByUser = false;
+        if (coupon.usageLimit === 'once') {
+            const usageCheck = await db.collection("orders")
+                .where("userId", "==", userId)
+                .where("couponCode", "==", couponCode.toUpperCase())
+                .where("status", "in", ["pending", "accepted", "preparing", "ready", "completed"])
+                .limit(1)
+                .get();
+            alreadyUsedByUser = !usageCheck.empty;
+        }
+
+        if (isActive && isNotExpired && meetsMinOrder && !alreadyUsedByUser) {
+            if (coupon.type === 'fixed') {
+                couponDiscount = coupon.value;
+            } else if (coupon.type === 'percentage') {
+                couponDiscount = (calculatedSubtotal * coupon.value) / 100;
             }
+        } else {
+            // OPTIONAL: Throw error if coupon was sent but failed validation
+            // This prevents the user from being charged the full price unexpectedly
+            throw new admin.functions.https.HttpsError('failed-precondition', 'Coupon is no longer valid. Please remove it and try again.');
         }
     }
+}
 
-    const totalDiscount = pointsDiscount + couponDiscount;
-    // Prevent negative total
-    const grandTotal = Math.max(0, calculatedSubtotal - totalDiscount);
+// 2. POINTS LOGIC (Calculate after coupon to avoid negative totals)
+let pointsDiscount = 0;
+let pointsRedeemed = 0;
+
+if (usePoints) {
+    const userDoc = await db.collection('users').doc(userId).get();
+    const availablePoints = userDoc.data().points || 0;
+    
+    if (availablePoints > 0) {
+        const potentialPointsDiscount = Math.floor(availablePoints / 10);
+        // Ensure points don't exceed the REMAINING balance after coupon
+        const remainingAfterCoupon = Math.max(0, calculatedSubtotal - couponDiscount);
+        pointsDiscount = Math.min(potentialPointsDiscount, remainingAfterCoupon);
+        pointsRedeemed = pointsDiscount * 10;
+    }
+}
+
+const grandTotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDiscount);
 
     // --- D. DEDUCT POINTS & CREATE ORDER ---
     if (pointsRedeemed > 0) {
@@ -158,7 +177,7 @@ exports.createOrderAndPay = onCall({
         restaurantName: restaurantDoc.data().name,
         items: secureItems,
         subtotal: calculatedSubtotal,
-        discount: totalDiscount,
+        discount: couponDiscount + pointsDiscount,
         couponCode: couponCode || null,
         pointsRedeemed: pointsRedeemed, 
         pointsValue: pointsDiscount,
