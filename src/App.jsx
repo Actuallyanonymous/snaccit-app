@@ -3167,7 +3167,7 @@ const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, use
         const result = await createOrderAndPay(orderPayload);
         
         if (result.data.redirectUrl) {
-            window.location.href = result.data.redirectUrl;
+            window.location.replace(result.data.redirectUrl);
         } else {
             throw new Error("Payment link was not generated.");
         }

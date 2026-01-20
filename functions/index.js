@@ -129,7 +129,7 @@ exports.createOrderAndPay = onCall({
     }
 
     // 6. Initiate PhonePe
-    const merchantTransactionId = `SNCT_${orderRef.id}`;
+    const merchantTransactionId = `SNCT_${orderRef.id}_${Date.now()}`;
     const payload = {
         merchantId: PHONEPE_MERCHANT_ID.value(),
         merchantTransactionId,
