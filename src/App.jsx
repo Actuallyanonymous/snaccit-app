@@ -38,10 +38,12 @@ const GlobalStyles = () => (
             animation: fade-in-up 0.6s ease-out forwards;
         }
         .glass-panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-        }
+    background: rgba(255, 255, 255, 0.95);
+    @supports ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+    }
+}
         /* Hide scrollbar for cleaner UI */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -2396,13 +2398,28 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
                 .limit(1)
                 .get()
                 .then((snapshot) => {
-                    if (!snapshot.empty) {
-                        const latestOrder = snapshot.docs[0];
-                        const diffMins = (new Date() - latestOrder.data().createdAt?.toDate()) / 1000 / 60;
-                        if (diffMins < 15) startListeningToOrder(latestOrder.id);
-                        else setOrderStatus('missing_id');
-                    } else setOrderStatus('missing_id');
-                });
+    if (!snapshot.empty) {
+        const latestOrder = snapshot.docs[0];
+        const orderData = latestOrder.data();
+        const firestoreDate = orderData?.createdAt;
+
+        if (firestoreDate && typeof firestoreDate.toDate === 'function') {
+            const orderTime = firestoreDate.toDate().getTime();
+            const now = new Date().getTime();
+            const diffMins = (now - orderTime) / 1000 / 60;
+
+            if (diffMins < 15) {
+                startListeningToOrder(latestOrder.id);
+            } else {
+                setOrderStatus('missing_id');
+            }
+        } else {
+            setOrderStatus('missing_id');
+        }
+    } else {
+        setOrderStatus('missing_id');
+    }
+});
         }
     }, [isCheckingAuth]);
 
@@ -2801,13 +2818,22 @@ const App = () => {
   const [restaurants, setRestaurants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cart, setCart] = useState(() => {
+    try {
         const savedCart = localStorage.getItem('snaccit_cart');
         return savedCart ? JSON.parse(savedCart) : [];
-    });
+    } catch (e) {
+        return []; 
+    }
+});
   const [selectedRestaurant, setSelectedRestaurant] = useState(() => {
+    try {
         const savedResto = localStorage.getItem('snaccit_restaurant');
         return savedResto ? JSON.parse(savedResto) : null;
-    });
+    } catch (e) {
+        console.error("LocalStorage blocked:", e);
+        return null; // Safe fallback for iOS
+    }
+});
   
   // Modal States
   const [isCartOpen, setIsCartOpen] = useState(false);
