@@ -73,13 +73,13 @@ const Notification = ({ message, type, onDismiss }) => {
     );
 };
 
-const BrandLogo = ({ className = "" }) => (
+const BrandLogo = ({ className = "", theme = "light" }) => (
     <div className={`inline-flex items-center justify-center space-x-3 ${className}`}>
         <div className="bg-gradient-to-tr from-emerald-500 to-teal-400 text-white p-2.5 rounded-xl shadow-lg shadow-emerald-200 transform -rotate-6 hover:rotate-0 transition-transform duration-300">
             <Utensils size={24} strokeWidth={2.5} />
         </div>
         <div className="text-left">
-            <h1 className="text-3xl font-black tracking-tighter text-gray-800 leading-none">
+            <h1 className={`text-3xl font-black tracking-tighter leading-none ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
                 Snaccit<span className="text-orange-500 text-4xl">.</span> 
             </h1>
         </div>
@@ -3458,47 +3458,66 @@ const renderView = () => {
                     {renderView()}
                 </main>
 
-                <footer className="bg-emerald-950 text-white relative z-40 pt-24 pb-12 overflow-hidden">
+                <footer className="bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white relative z-40 pt-20 pb-10 overflow-hidden">
+    {/* Background Pattern */}
     <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
-    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-[800px] h-[400px] bg-green-600/20 rounded-[100%] blur-[100px] pointer-events-none"></div>
+    
+    {/* Glowing orbs */}
+    <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-    <div className="container mx-auto px-6 relative z-10 text-center">
-        <BrandLogo className="scale-125 origin-center mb-6" />
-        <p className="text-green-200/80 text-lg max-w-md mx-auto mb-8 font-medium leading-relaxed">Pre Order Food. Skip The Wait.</p>
+    <div className="container mx-auto px-6 relative z-10">
+        {/* Top Section - Logo and Tagline */}
+        <div className="text-center mb-12">
+            <BrandLogo className="scale-125 origin-center mb-4" theme="dark" />
+            <p className="text-emerald-200 text-lg max-w-md mx-auto font-medium leading-relaxed">Pre Order Food. Skip The Wait.</p>
+        </div>
         
-        {/* Download App Badge in Footer */}
+        {/* Download App Section */}
         <div className="mb-12 flex justify-center">
             <a 
                 href="https://play.google.com/store/apps/details?id=com.snaccit.app&hl=en" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="group"
+                className="group transform hover:scale-105 transition-all duration-300"
             >
                 <img 
                     alt='Get it on Google Play' 
                     src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' 
-                    className="h-14 opacity-80 group-hover:opacity-100 transition-opacity"
+                    className="h-14 opacity-90 group-hover:opacity-100 transition-opacity drop-shadow-lg"
                 />
             </a>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-12">
-            <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); navigate('terms'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">
-                Terms of Service
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span>
-            </a>
-            <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); navigate('privacy'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">
-                Privacy Policy
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span>
-            </a>
-            <a href="/contact" onClick={(e) => { e.preventDefault(); navigate('contact'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">
-                Contact Us
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span>
+        {/* Contact Information */}
+        <div className="flex flex-wrap justify-center gap-6 mb-10 text-emerald-100">
+            <a href="mailto:itsnacc@gmail.com" className="flex items-center gap-2 hover:text-white transition-colors group">
+                <Mail size={18} className="group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-medium">itsnacc@gmail.com</span>
             </a>
         </div>
 
-        <div className="border-t border-green-800/50 pt-8">
-            <p className="text-green-300/60 text-sm font-medium">© 2026 Snaccit Inc. All rights reserved.</p>
+        {/* Links Section */}
+        <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-12">
+            <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); navigate('terms'); }} className="text-base text-emerald-200 hover:text-white font-semibold transition-all relative group">
+                Terms of Service
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-400 transition-all group-hover:w-full"></span>
+            </a>
+            <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); navigate('privacy'); }} className="text-base text-emerald-200 hover:text-white font-semibold transition-all relative group">
+                Privacy Policy
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-400 transition-all group-hover:w-full"></span>
+            </a>
+            <a href="/contact" onClick={(e) => { e.preventDefault(); navigate('contact'); }} className="text-base text-emerald-200 hover:text-white font-semibold transition-all relative group">
+                Contact Us
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-400 transition-all group-hover:w-full"></span>
+            </a>
+        </div>
+
+        {/* Bottom Section - Copyright */}
+        <div className="border-t border-emerald-700/30 pt-8 text-center">
+            <p className="text-emerald-300/70 text-sm font-medium">
+                © 2026 <span className="text-emerald-200 font-bold">Snaccit Inc.</span> All rights reserved.
+            </p>
         </div>
     </div>
 </footer>
