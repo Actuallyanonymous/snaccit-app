@@ -47,6 +47,118 @@ const GlobalStyles = () => (
         /* Hide scrollbar for cleaner UI */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* NEW APPETIZING ANIMATIONS */
+        
+        /* Floating food animation - gentle up and down */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        /* Faster float for emphasis */
+        @keyframes float-fast {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float-fast {
+            animation: float-fast 2s ease-in-out infinite;
+        }
+        
+        /* Shimmer effect for loading/emphasis */
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        /* Ripple effect for button clicks */
+        @keyframes ripple {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(4); opacity: 0; }
+        }
+        
+        /* Smooth glow pulse */
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(251, 146, 60, 0.3), 0 0 30px rgba(251, 146, 60, 0.1); }
+            50% { box-shadow: 0 0 25px rgba(251, 146, 60, 0.5), 0 0 50px rgba(251, 146, 60, 0.2); }
+        }
+        .animate-glow {
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        /* Bounce subtle */
+        @keyframes bounce-subtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .animate-bounce-subtle {
+            animation: bounce-subtle 1s ease-in-out infinite;
+        }
+        
+        /* Scale on hover */
+        .hover-scale {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Glassmorphism effect */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Parallax scroll effect */
+        .parallax {
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        /* Smooth fade in down */
+        @keyframes fade-in-down {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-down {
+            animation: fade-in-down 0.6s ease-out forwards;
+        }
+        
+        /* Stagger delay classes for list animations */
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+        
+        /* Appetizing hover glow for food items */
+        .food-glow:hover {
+            box-shadow: 0 20px 60px rgba(251, 146, 60, 0.4), 0 0 0 1px rgba(251, 146, 60, 0.2);
+            transform: translateY(-8px) scale(1.02);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        /* Smooth scale animation */
+        .smooth-scale {
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        /* Image saturation boost on hover */
+        .saturate-hover {
+            filter: saturate(1);
+            transition: filter 0.3s ease;
+        }
+        .saturate-hover:hover {
+            filter: saturate(1.3);
+        }
     `}</style>
 );
 
@@ -1248,28 +1360,31 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
     return (
         <>
             {/* 1. HERO SECTION */}
-<main className="relative h-[500px] flex items-center justify-center text-white overflow-hidden">
-    <div className="absolute inset-0 bg-black/50 z-10"></div>
+<main className="relative h-[550px] flex items-center justify-center text-white overflow-hidden">
+   {/* Enhanced gradient overlay for better text visibility and depth */}
+    <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70 z-10"></div>
     <video className="absolute inset-0 w-full h-full object-cover" src={heroVideo} autoPlay loop muted playsInline />                  
     <div className="relative z-20 text-center px-6">
         <AnimatedHeroText />
-        <p className="mt-4 max-w-xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2 font-medium">
+        <p className="mt-6 max-w-xl mx-auto text-xl text-gray-100 drop-shadow-2xl slide-in-2 font-semibold">
             No Waiting. No Standing. Just Eat.
         </p>
         
         {/* Updated Button Container */}
-        <div className="mt-8 slide-in-2 flex flex-col sm:flex-row items-center justify-center gap-6">
+        <div className="mt-10 slide-in-2 flex flex-col sm:flex-row items-center justify-center gap-6">
             <button onClick={() => {
                 document.getElementById('restaurants')?.scrollIntoView({ behavior: 'smooth' });
-            }} className="bg-white text-green-700 font-extrabold py-3 px-10 rounded-full hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:scale-105 transition-all duration-300 shadow-lg text-lg">
-                Order Now
+            }} className="group relative bg-white text-emerald-700 font-extrabold py-4 px-12 rounded-full hover:shadow-[0_0_30px_rgba(255,255,255,0.6),_0_0_60px_rgba(16,185,129,0.3)] hover:scale-110 transition-all duration-500 shadow-2xl text-lg overflow-hidden">
+                <span className="relative z-10">Order Now</span>
+                {/* Animated gradient background on hover */}
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             </button>
 
             <a 
                 href="https://play.google.com/store/apps/details?id=com.snaccit.app&hl=en" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="hover:scale-105 transition-transform duration-300"
+                className="hover:scale-110 transition-all duration-500 drop-shadow-2xl hover:drop-shadow-[0_10px_20px_rgba(255,255,255,0.3)]"
             >
                 <img 
                     alt='Get it on Google Play' 
@@ -1313,21 +1428,22 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
                         {isLoading ? (
                             <div className="col-span-full text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
                         ) : (
-                            displayList.map((item) => (
-                                <div key={item.id} onClick={() => onRestaurantClick(item)} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
-                                    <div className="relative h-44 overflow-hidden">
-                                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                        {item.rating >= 4.5 && <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-amber-600 text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm flex items-center"><Star size={10} className="mr-1 fill-current"/> Top Rated</div>}
+                            displayList.map((item, index) => (
+                                <div key={item.id} onClick={() => onRestaurantClick(item)} className={`bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer h-full flex flex-col group animate-fade-in-up stagger-${Math.min(index % 4 + 1, 4)}`} style={{backdropFilter: 'blur(10px)'}}>
+                                    <div className="relative h-48 overflow-hidden">
+                                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 saturate-hover" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                        {item.rating >= 4.5 && <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm text-amber-600 text-[10px] font-bold px-3 py-1.5 rounded-xl shadow-lg flex items-center animate-float-fast"><Star size={10} className="mr-1 fill-current"/> Top Rated</div>}
                                     </div>
-                                    <div className="p-5 flex flex-col flex-grow">
-                                        <div className="flex justify-between items-start mb-1">
-                                            <h4 className="text-lg font-bold text-gray-900 line-clamp-1">{item.name}</h4>
-                                            {item.rating && <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded flex items-center"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
+                                    <div className="p-6 flex flex-col flex-grow bg-gradient-to-b from-white to-gray-50/30 group-hover:from-emerald-50/30 transition-colors duration-500">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h4 className="text-lg font-black text-gray-900 line-clamp-1 group-hover:text-emerald-700 transition-colors">{item.name}</h4>
+                                            {item.rating && <div className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-lg flex items-center shadow-sm"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
                                         </div>
                                         <p className="text-gray-500 text-sm font-medium mb-3 line-clamp-1">{item.cuisine}</p>
-                                        <div className="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
+                                        <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center">
                                             <span className="text-gray-900 font-bold text-sm">{item.price}</span>
-                                            <span className="text-green-600 text-xs font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1" size={14}/></span>
+                                            <span className="text-emerald-600 text-xs font-bold group-hover:translate-x-2 transition-transform duration-300 inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1 group-hover:ml-2 transition-all" size={14}/></span>
                                         </div>
                                     </div>
                                 </div>
@@ -1357,26 +1473,31 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
             </section>
             
             {/* 3. TOP DISHES SECTION */}
-<section id="top-dishes" className="relative py-20 bg-white">
+<section id="top-dishes" className="relative py-20 bg-gradient-to-b from-white via-orange-50/20 to-white overflow-hidden">
+    {/* Decorative floating food particles */}
+    <div className="absolute top-10 left-10 w-20 h-20 bg-orange-200/30 rounded-full blur-2xl animate-float"></div>
+    <div className="absolute bottom-20 right-20 w-32 h-32 bg-yellow-200/30 rounded-full blur-3xl animate-float-fast"></div>
+    
     <div className="container relative mx-auto px-6 z-10">
         {/* FIXED: Changed items-end to items-center and added text alignment logic */}
-        <div className="flex flex-col md:flex-row justify-between items-center md:items-end text-center md:text-left mb-10 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-center md:items-end text-center md:text-left mb-12 gap-4">
             <div>
                 <h3 className="text-sm font-bold uppercase text-orange-500 tracking-widest drop-shadow-sm">Visual Delight</h3>
-                <h2 className="mt-1 text-3xl font-extrabold text-gray-900">Fan Favorites</h2>
+                <h2 className="mt-1 text-4xl font-extrabold text-gray-900">Fan Favorites</h2>
             </div>
             <p className="text-gray-500 font-medium md:pb-2">Most ordered from DME Canteen</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {topPicks.map((item) => (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
+            {topPicks.map((item, index) => (
                 <div 
                     key={item.id} 
                     onClick={() => onSelectItem(item)} 
-                    className="relative rounded-3xl overflow-hidden group cursor-pointer shadow-lg transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl h-72"
+                    className={`relative rounded-3xl overflow-hidden group cursor-pointer shadow-xl transition-all duration-700 food-glow h-72 animate-float stagger-${index + 1}`}
+                    style={{animationDelay: `${index * 0.2}s`}}
                 >
                     {/* --- BEST SELLER BADGE --- */}
-                    <div className="absolute top-3 left-3 z-20 bg-yellow-400 text-yellow-950 text-[10px] font-black px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1 animate-pulse">
+                    <div className="absolute top-3 left-3 z-20 bg-yellow-400 text-yellow-950 text-[10px] font-black px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1 animate-bounce-subtle">
                         <Award size={12} fill="currentColor" />
                         BEST SELLER
                     </div>
@@ -1384,20 +1505,20 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
                     <img 
                         src={item.imageUrl || 'https://placehold.co/400'} 
                         alt={item.name} 
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                        className="w-full h-full object-cover transition-all duration-700 group-hover:scale-115 saturate-hover" 
                     />
                     
-                    {/* Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-95 transition-opacity"></div>
+                    {/* Enhanced Overlay with appetizing gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-orange-900/30 to-transparent opacity-85 group-hover:opacity-90 transition-opacity duration-500"></div>
                     
-                    <div className="absolute bottom-0 left-0 p-5 text-white w-full text-left"> {/* Added text-left here just for the card contents */}
-                        <h4 className="text-lg font-bold leading-tight mb-1">{item.name}</h4>
+                    <div className="absolute bottom-0 left-0 p-5 text-white w-full text-left">
+                        <h4 className="text-lg font-black leading-tight mb-2 drop-shadow-lg">{item.name}</h4>
                         <div className="flex justify-between items-center">
-                            <p className="text-sm font-black text-yellow-400">
+                            <p className="text-base font-black text-yellow-300 drop-shadow-md">
                                 ₹{item.sizes?.[0]?.price || item.price || 0}
                             </p>
-                            <div className="bg-green-500 text-white p-1.5 rounded-full shadow-lg group-hover:bg-green-400 transition-colors transform group-hover:rotate-90 duration-300">
-                                <PlusCircle size={20} />
+                            <div className="bg-gradient-to-br from-emerald-500 to-green-600 text-white p-2 rounded-full shadow-2xl group-hover:shadow-emerald-500/50 transition-all transform group-hover:rotate-90 group-hover:scale-110 duration-300 animate-pulse">
+                                <PlusCircle size={22} strokeWidth={2.5} />
                             </div>
                         </div>
                     </div>
