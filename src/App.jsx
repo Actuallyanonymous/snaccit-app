@@ -47,118 +47,6 @@ const GlobalStyles = () => (
         /* Hide scrollbar for cleaner UI */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* NEW APPETIZING ANIMATIONS */
-        
-        /* Floating food animation - gentle up and down */
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-12px); }
-        }
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        /* Faster float for emphasis */
-        @keyframes float-fast {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
-        }
-        .animate-float-fast {
-            animation: float-fast 2s ease-in-out infinite;
-        }
-        
-        /* Shimmer effect for loading/emphasis */
-        @keyframes shimmer {
-            0% { background-position: -1000px 0; }
-            100% { background-position: 1000px 0; }
-        }
-        .shimmer {
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            background-size: 1000px 100%;
-            animation: shimmer 2s infinite;
-        }
-        
-        /* Ripple effect for button clicks */
-        @keyframes ripple {
-            0% { transform: scale(0); opacity: 1; }
-            100% { transform: scale(4); opacity: 0; }
-        }
-        
-        /* Smooth glow pulse */
-        @keyframes glow {
-            0%, 100% { box-shadow: 0 0 15px rgba(251, 146, 60, 0.3), 0 0 30px rgba(251, 146, 60, 0.1); }
-            50% { box-shadow: 0 0 25px rgba(251, 146, 60, 0.5), 0 0 50px rgba(251, 146, 60, 0.2); }
-        }
-        .animate-glow {
-            animation: glow 2s ease-in-out infinite;
-        }
-        
-        /* Bounce subtle */
-        @keyframes bounce-subtle {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
-        }
-        .animate-bounce-subtle {
-            animation: bounce-subtle 1s ease-in-out infinite;
-        }
-        
-        /* Scale on hover */
-        .hover-scale {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .hover-scale:hover {
-            transform: scale(1.05);
-        }
-        
-        /* Glassmorphism effect */
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        /* Parallax scroll effect */
-        .parallax {
-            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        
-        /* Smooth fade in down */
-        @keyframes fade-in-down {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-down {
-            animation: fade-in-down 0.6s ease-out forwards;
-        }
-        
-        /* Stagger delay classes for list animations */
-        .stagger-1 { animation-delay: 0.1s; }
-        .stagger-2 { animation-delay: 0.2s; }
-        .stagger-3 { animation-delay: 0.3s; }
-        .stagger-4 { animation-delay: 0.4s; }
-        
-        /* Appetizing hover glow for food items */
-        .food-glow:hover {
-            box-shadow: 0 20px 60px rgba(251, 146, 60, 0.4), 0 0 0 1px rgba(251, 146, 60, 0.2);
-            transform: translateY(-8px) scale(1.02);
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        
-        /* Smooth scale animation */
-        .smooth-scale {
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        
-        /* Image saturation boost on hover */
-        .saturate-hover {
-            filter: saturate(1);
-            transition: filter 0.3s ease;
-        }
-        .saturate-hover:hover {
-            filter: saturate(1.3);
-        }
     `}</style>
 );
 
@@ -185,13 +73,13 @@ const Notification = ({ message, type, onDismiss }) => {
     );
 };
 
-const BrandLogo = ({ className = "", theme = "light" }) => (
+const BrandLogo = ({ className = "" }) => (
     <div className={`inline-flex items-center justify-center space-x-3 ${className}`}>
         <div className="bg-gradient-to-tr from-emerald-500 to-teal-400 text-white p-2.5 rounded-xl shadow-lg shadow-emerald-200 transform -rotate-6 hover:rotate-0 transition-transform duration-300">
             <Utensils size={24} strokeWidth={2.5} />
         </div>
         <div className="text-left">
-            <h1 className={`text-3xl font-black tracking-tighter leading-none ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+            <h1 className="text-3xl font-black tracking-tighter text-gray-800 leading-none">
                 Snaccit<span className="text-orange-500 text-4xl">.</span> 
             </h1>
         </div>
@@ -1360,31 +1248,28 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
     return (
         <>
             {/* 1. HERO SECTION */}
-<main className="relative h-[550px] flex items-center justify-center text-white overflow-hidden">
-   {/* Enhanced gradient overlay for better text visibility and depth */}
-    <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70 z-10"></div>
+<main className="relative h-[500px] flex items-center justify-center text-white overflow-hidden">
+    <div className="absolute inset-0 bg-black/50 z-10"></div>
     <video className="absolute inset-0 w-full h-full object-cover" src={heroVideo} autoPlay loop muted playsInline />                  
     <div className="relative z-20 text-center px-6">
         <AnimatedHeroText />
-        <p className="mt-6 max-w-xl mx-auto text-xl text-gray-100 drop-shadow-2xl slide-in-2 font-semibold">
+        <p className="mt-4 max-w-xl mx-auto text-lg text-gray-200 drop-shadow-xl slide-in-2 font-medium">
             No Waiting. No Standing. Just Eat.
         </p>
         
         {/* Updated Button Container */}
-        <div className="mt-10 slide-in-2 flex flex-col sm:flex-row items-center justify-center gap-6">
+        <div className="mt-8 slide-in-2 flex flex-col sm:flex-row items-center justify-center gap-6">
             <button onClick={() => {
                 document.getElementById('restaurants')?.scrollIntoView({ behavior: 'smooth' });
-            }} className="group relative bg-white text-emerald-700 font-extrabold py-4 px-12 rounded-full hover:shadow-[0_0_30px_rgba(255,255,255,0.6),_0_0_60px_rgba(16,185,129,0.3)] hover:scale-110 transition-all duration-500 shadow-2xl text-lg overflow-hidden">
-                <span className="relative z-10">Order Now</span>
-                {/* Animated gradient background on hover */}
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            }} className="bg-white text-green-700 font-extrabold py-3 px-10 rounded-full hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:scale-105 transition-all duration-300 shadow-lg text-lg">
+                Order Now
             </button>
 
             <a 
                 href="https://play.google.com/store/apps/details?id=com.snaccit.app&hl=en" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="hover:scale-110 transition-all duration-500 drop-shadow-2xl hover:drop-shadow-[0_10px_20px_rgba(255,255,255,0.3)]"
+                className="hover:scale-105 transition-transform duration-300"
             >
                 <img 
                     alt='Get it on Google Play' 
@@ -1428,22 +1313,21 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
                         {isLoading ? (
                             <div className="col-span-full text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
                         ) : (
-                            displayList.map((item, index) => (
-                                <div key={item.id} onClick={() => onRestaurantClick(item)} className={`bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer h-full flex flex-col group animate-fade-in-up stagger-${Math.min(index % 4 + 1, 4)}`} style={{backdropFilter: 'blur(10px)'}}>
-                                    <div className="relative h-48 overflow-hidden">
-                                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 saturate-hover" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                        {item.rating >= 4.5 && <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm text-amber-600 text-[10px] font-bold px-3 py-1.5 rounded-xl shadow-lg flex items-center animate-float-fast"><Star size={10} className="mr-1 fill-current"/> Top Rated</div>}
+                            displayList.map((item) => (
+                                <div key={item.id} onClick={() => onRestaurantClick(item)} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
+                                    <div className="relative h-44 overflow-hidden">
+                                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                        {item.rating >= 4.5 && <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-amber-600 text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm flex items-center"><Star size={10} className="mr-1 fill-current"/> Top Rated</div>}
                                     </div>
-                                    <div className="p-6 flex flex-col flex-grow bg-gradient-to-b from-white to-gray-50/30 group-hover:from-emerald-50/30 transition-colors duration-500">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h4 className="text-lg font-black text-gray-900 line-clamp-1 group-hover:text-emerald-700 transition-colors">{item.name}</h4>
-                                            {item.rating && <div className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-lg flex items-center shadow-sm"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
+                                    <div className="p-5 flex flex-col flex-grow">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <h4 className="text-lg font-bold text-gray-900 line-clamp-1">{item.name}</h4>
+                                            {item.rating && <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded flex items-center"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
                                         </div>
                                         <p className="text-gray-500 text-sm font-medium mb-3 line-clamp-1">{item.cuisine}</p>
-                                        <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center">
+                                        <div className="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
                                             <span className="text-gray-900 font-bold text-sm">{item.price}</span>
-                                            <span className="text-emerald-600 text-xs font-bold group-hover:translate-x-2 transition-transform duration-300 inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1 group-hover:ml-2 transition-all" size={14}/></span>
+                                            <span className="text-green-600 text-xs font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1" size={14}/></span>
                                         </div>
                                     </div>
                                 </div>
@@ -1473,31 +1357,26 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
             </section>
             
             {/* 3. TOP DISHES SECTION */}
-<section id="top-dishes" className="relative py-20 bg-gradient-to-b from-white via-orange-50/20 to-white overflow-hidden">
-    {/* Decorative floating food particles */}
-    <div className="absolute top-10 left-10 w-20 h-20 bg-orange-200/30 rounded-full blur-2xl animate-float"></div>
-    <div className="absolute bottom-20 right-20 w-32 h-32 bg-yellow-200/30 rounded-full blur-3xl animate-float-fast"></div>
-    
+<section id="top-dishes" className="relative py-20 bg-white">
     <div className="container relative mx-auto px-6 z-10">
         {/* FIXED: Changed items-end to items-center and added text alignment logic */}
-        <div className="flex flex-col md:flex-row justify-between items-center md:items-end text-center md:text-left mb-12 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-center md:items-end text-center md:text-left mb-10 gap-4">
             <div>
                 <h3 className="text-sm font-bold uppercase text-orange-500 tracking-widest drop-shadow-sm">Visual Delight</h3>
-                <h2 className="mt-1 text-4xl font-extrabold text-gray-900">Fan Favorites</h2>
+                <h2 className="mt-1 text-3xl font-extrabold text-gray-900">Fan Favorites</h2>
             </div>
             <p className="text-gray-500 font-medium md:pb-2">Most ordered from DME Canteen</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
-            {topPicks.map((item, index) => (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {topPicks.map((item) => (
                 <div 
                     key={item.id} 
                     onClick={() => onSelectItem(item)} 
-                    className={`relative rounded-3xl overflow-hidden group cursor-pointer shadow-xl transition-all duration-700 food-glow h-72 animate-float stagger-${index + 1}`}
-                    style={{animationDelay: `${index * 0.2}s`}}
+                    className="relative rounded-3xl overflow-hidden group cursor-pointer shadow-lg transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl h-72"
                 >
                     {/* --- BEST SELLER BADGE --- */}
-                    <div className="absolute top-3 left-3 z-20 bg-yellow-400 text-yellow-950 text-[10px] font-black px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1 animate-bounce-subtle">
+                    <div className="absolute top-3 left-3 z-20 bg-yellow-400 text-yellow-950 text-[10px] font-black px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1 animate-pulse">
                         <Award size={12} fill="currentColor" />
                         BEST SELLER
                     </div>
@@ -1505,20 +1384,20 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
                     <img 
                         src={item.imageUrl || 'https://placehold.co/400'} 
                         alt={item.name} 
-                        className="w-full h-full object-cover transition-all duration-700 group-hover:scale-115 saturate-hover" 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                     />
                     
-                    {/* Enhanced Overlay with appetizing gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-orange-900/30 to-transparent opacity-85 group-hover:opacity-90 transition-opacity duration-500"></div>
+                    {/* Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-95 transition-opacity"></div>
                     
-                    <div className="absolute bottom-0 left-0 p-5 text-white w-full text-left">
-                        <h4 className="text-lg font-black leading-tight mb-2 drop-shadow-lg">{item.name}</h4>
+                    <div className="absolute bottom-0 left-0 p-5 text-white w-full text-left"> {/* Added text-left here just for the card contents */}
+                        <h4 className="text-lg font-bold leading-tight mb-1">{item.name}</h4>
                         <div className="flex justify-between items-center">
-                            <p className="text-base font-black text-yellow-300 drop-shadow-md">
+                            <p className="text-sm font-black text-yellow-400">
                                 ₹{item.sizes?.[0]?.price || item.price || 0}
                             </p>
-                            <div className="bg-gradient-to-br from-emerald-500 to-green-600 text-white p-2 rounded-full shadow-2xl group-hover:shadow-emerald-500/50 transition-all transform group-hover:rotate-90 group-hover:scale-110 duration-300 animate-pulse">
-                                <PlusCircle size={22} strokeWidth={2.5} />
+                            <div className="bg-green-500 text-white p-1.5 rounded-full shadow-lg group-hover:bg-green-400 transition-colors transform group-hover:rotate-90 duration-300">
+                                <PlusCircle size={20} />
                             </div>
                         </div>
                     </div>
@@ -3579,66 +3458,47 @@ const renderView = () => {
                     {renderView()}
                 </main>
 
-                <footer className="bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white relative z-40 pt-20 pb-10 overflow-hidden">
-    {/* Background Pattern */}
+                <footer className="bg-emerald-950 text-white relative z-40 pt-24 pb-12 overflow-hidden">
     <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
-    
-    {/* Glowing orbs */}
-    <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"></div>
-    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-[800px] h-[400px] bg-green-600/20 rounded-[100%] blur-[100px] pointer-events-none"></div>
 
-    <div className="container mx-auto px-6 relative z-10">
-        {/* Top Section - Logo and Tagline */}
-        <div className="text-center mb-12">
-            <BrandLogo className="scale-125 origin-center mb-4" theme="dark" />
-            <p className="text-emerald-200 text-lg max-w-md mx-auto font-medium leading-relaxed">Pre Order Food. Skip The Wait.</p>
-        </div>
+    <div className="container mx-auto px-6 relative z-10 text-center">
+        <BrandLogo className="scale-125 origin-center mb-6" />
+        <p className="text-green-200/80 text-lg max-w-md mx-auto mb-8 font-medium leading-relaxed">Pre Order Food. Skip The Wait.</p>
         
-        {/* Download App Section */}
+        {/* Download App Badge in Footer */}
         <div className="mb-12 flex justify-center">
             <a 
                 href="https://play.google.com/store/apps/details?id=com.snaccit.app&hl=en" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="group transform hover:scale-105 transition-all duration-300"
+                className="group"
             >
                 <img 
                     alt='Get it on Google Play' 
                     src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' 
-                    className="h-14 opacity-90 group-hover:opacity-100 transition-opacity drop-shadow-lg"
+                    className="h-14 opacity-80 group-hover:opacity-100 transition-opacity"
                 />
             </a>
         </div>
 
-        {/* Contact Information */}
-        <div className="flex flex-wrap justify-center gap-6 mb-10 text-emerald-100">
-            <a href="mailto:itsnacc@gmail.com" className="flex items-center gap-2 hover:text-white transition-colors group">
-                <Mail size={18} className="group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-medium">itsnacc@gmail.com</span>
-            </a>
-        </div>
-
-        {/* Links Section */}
         <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-12">
-            <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); navigate('terms'); }} className="text-base text-emerald-200 hover:text-white font-semibold transition-all relative group">
+            <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); navigate('terms'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">
                 Terms of Service
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-400 transition-all group-hover:w-full"></span>
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span>
             </a>
-            <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); navigate('privacy'); }} className="text-base text-emerald-200 hover:text-white font-semibold transition-all relative group">
+            <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); navigate('privacy'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">
                 Privacy Policy
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-400 transition-all group-hover:w-full"></span>
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span>
             </a>
-            <a href="/contact" onClick={(e) => { e.preventDefault(); navigate('contact'); }} className="text-base text-emerald-200 hover:text-white font-semibold transition-all relative group">
+            <a href="/contact" onClick={(e) => { e.preventDefault(); navigate('contact'); }} className="text-base text-green-100 hover:text-white font-bold transition-colors relative group">
                 Contact Us
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-400 transition-all group-hover:w-full"></span>
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 transition-all group-hover:w-full"></span>
             </a>
         </div>
 
-        {/* Bottom Section - Copyright */}
-        <div className="border-t border-emerald-700/30 pt-8 text-center">
-            <p className="text-emerald-300/70 text-sm font-medium">
-                © 2026 <span className="text-emerald-200 font-bold">Snaccit Inc.</span> All rights reserved.
-            </p>
+        <div className="border-t border-green-800/50 pt-8">
+            <p className="text-green-300/60 text-sm font-medium">© 2026 Snaccit Inc. All rights reserved.</p>
         </div>
     </div>
 </footer>
