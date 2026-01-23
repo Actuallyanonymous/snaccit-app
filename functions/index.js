@@ -44,7 +44,8 @@ exports.createOrderAndPay = onCall({
       arrivalTime, 
       userName, 
       userPhone, 
-      usePoints 
+      usePoints,
+      paymentMethod = 'phonepe' // Default to phonepe for backward compatibility
     } = request.data;
 
     // --- A. PRICE CALCULATION (SERVER SIDE) ---
@@ -53,6 +54,11 @@ exports.createOrderAndPay = onCall({
     
     if (!restaurantDoc.exists) {
         throw new admin.functions.https.HttpsError('not-found', 'Restaurant not found');
+    }
+
+    // --- COD VALIDATION ---
+    if (paymentMethod === 'cod' && !restaurantDoc.data().codEnabled) {
+        throw new admin.functions.https.HttpsError('failed-precondition', 'Cash on Delivery is not available for this restaurant');
     }
 
     const menuSnapshot = await restaurantRef.collection('menu').get();
@@ -201,7 +207,16 @@ const grandTotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDisco
         return { redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderRef.id}` };
     }
 
-    // Case 2: PhonePe Payment Required
+    // Case 2: Cash on Delivery (COD) - No PhonePe payment needed
+    if (paymentMethod === 'cod') {
+        await orderRef.update({ 
+            status: 'pending', 
+            paymentDetails: { method: 'cod' } 
+        });
+        return { redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderRef.id}` };
+    }
+
+    // Case 3: PhonePe Payment Required
     const merchantTransactionId = `SNCT_${orderRef.id}`;
     
     const payload = {

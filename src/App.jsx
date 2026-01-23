@@ -1349,7 +1349,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
             <Store size={20} className="text-emerald-600" />
         </div>
         <p className="text-gray-500 font-bold tracking-wide">
-            Currently serving <span className="text-emerald-700">DME Canteen</span>. More colleges coming soon!
+            Currently serving <span className="text-emerald-700">The Above Canteens</span>. More colleges coming soon!
         </p>
     </div>
 </div>
@@ -1365,7 +1365,7 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
                 <h3 className="text-sm font-bold uppercase text-orange-500 tracking-widest drop-shadow-sm">Visual Delight</h3>
                 <h2 className="mt-1 text-3xl font-extrabold text-gray-900">Fan Favorites</h2>
             </div>
-            <p className="text-gray-500 font-medium md:pb-2">Most ordered from DME Canteen</p>
+            <p className="text-gray-500 font-medium md:pb-2">Most ordered from SNACCIT</p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
