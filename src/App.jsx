@@ -2132,9 +2132,13 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [isValidating, setIsValidating] = useState(false);
 
-    // Points State (NEW)
+    // Points State
     const [usePoints, setUsePoints] = useState(false);
     const [userPoints, setUserPoints] = useState(0);
+
+    // Payment Method State (COD Feature)
+    const [paymentMethod, setPaymentMethod] = useState('phonepe');
+    const isCodAvailable = restaurant?.codEnabled === true;
 
     // Calculate Subtotal
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
@@ -2162,6 +2166,7 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
             setAppliedCoupon(null);
             setUsePoints(false);
             setIsPlacingOrder(false);
+            setPaymentMethod('phonepe'); // Reset to default payment method
 
             // Fetch User Points
             if (auth.currentUser) {
@@ -2247,8 +2252,8 @@ const applyCoupon = (coupon, code) => {
     const handleConfirm = async () => {
         if (!arrivalTime) { alert("Please select an arrival time."); return; }
         setIsPlacingOrder(true);
-        // PASS 'usePoints' TO THE PARENT FUNCTION HERE
-        await onPlaceOrder(arrivalTime, subtotal, discount, appliedCoupon?.code, usePoints);
+        // Pass payment method along with other order details
+        await onPlaceOrder(arrivalTime, subtotal, discount, appliedCoupon?.code, usePoints, paymentMethod);
         setIsPlacingOrder(false); 
     };
 
@@ -2263,9 +2268,72 @@ const applyCoupon = (coupon, code) => {
                     <p className="text-center text-gray-500 text-sm">Ordering from <span className="font-semibold">{restaurant?.name || 'Restaurant'}</span>.</p>
                 </div>
                 
+                
                 <div className="px-6 sm:px-8 py-6 overflow-y-auto">
+                    {/* Payment Method Selection */}
+                    <div className="mb-6">
+                        <label className="block text-gray-700 text-sm font-bold mb-3">Payment Method</label>
+                        <div className="space-y-3">
+                            {/* Online Payment Option */}
+                            <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'phonepe' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                                <input 
+                                    type="radio" 
+                                    name="paymentMethod" 
+                                    value="phonepe" 
+                                    checked={paymentMethod === 'phonepe'} 
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className="w-5 h-5 text-green-600 focus:ring-green-500"
+                                />
+                                <div className="ml-3 flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold text-gray-800">Pay Online</span>
+                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">Recommended</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-0.5">UPI, Cards, Wallets via PhonePe</p>
+                                </div>
+                            </label>
+
+                            {/* Cash on Delivery Option */}
+                            {isCodAvailable ? (
+                                <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                                    <input 
+                                        type="radio" 
+                                        name="paymentMethod" 
+                                        value="cod" 
+                                        checked={paymentMethod === 'cod'} 
+                                        onChange={(e) => setPaymentMethod(e.target.value)}
+                                        className="w-5 h-5 text-amber-600 focus:ring-amber-500"
+                                    />
+                                    <div className="ml-3 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-gray-800">Cash on Delivery</span>
+                                            <span className="text-lg">💵</span>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-0.5">Pay when you collect your order</p>
+                                    </div>
+                                </label>
+                            ) : (
+                                <div className="flex items-center p-4 border-2 border-gray-100 rounded-xl bg-gray-50 opacity-60">
+                                    <input 
+                                        type="radio" 
+                                        disabled 
+                                        className="w-5 h-5 text-gray-400"
+                                    />
+                                    <div className="ml-3 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-gray-400">Cash on Delivery</span>
+                                            <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-semibold">Not Available</span>
+                                        </div>
+                                        <p className="text-xs text-gray-400 mt-0.5">This restaurant only accepts online payments</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} restaurant={restaurant} />
                 </div>
+
 
                 <div className="mt-auto border-t p-4 sm:p-6 bg-gray-50 rounded-b-3xl">
                     {/* Coupon Input */}
@@ -2322,7 +2390,7 @@ const applyCoupon = (coupon, code) => {
                     <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className={`w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg transition-all disabled:opacity-50 flex justify-center items-center px-6 ${!arrivalTime ? 'cursor-not-allowed' : ''}`}>
                          {isPlacingOrder ? <Loader2 className="animate-spin" size={24} /> : (
                              <span className="flex justify-between w-full items-center">
-                                 <span>{grandTotal === 0 ? 'Confirm (Paid by Points)' : 'Proceed to Payment'}</span>
+                                 <span>{grandTotal === 0 ? 'Confirm (Paid by Points)' : paymentMethod === 'cod' ? 'Place COD Order' : 'Proceed to Payment'}</span>
                                  <span>₹{grandTotal.toFixed(2)}</span>
                              </span>
                          )}
@@ -3166,7 +3234,7 @@ setRestaurants(visibleRestaurants);
         }
     };
 
-const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, usePoints) => { // <--- Added usePoints
+const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, usePoints, paymentMethod = 'phonepe') => {
     if (!currentUser) { showNotification("Please log in to place an order.", "error"); return; }
     if (!userProfile) { showNotification("Please wait for profile to load.", "error"); return; }
     
@@ -3180,7 +3248,8 @@ const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, use
             restaurantId: selectedRestaurant.id,
             arrivalTime: arrivalTime,
             couponCode: couponCode || null,
-            usePoints: usePoints, // <--- Pass to backend
+            usePoints: usePoints,
+            paymentMethod: paymentMethod, // Pass payment method to backend
             userName: userProfile?.username || 'Customer',
             userPhone: userProfile?.mobile || currentUser.phoneNumber,
             items: cart.map(item => ({
