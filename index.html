@@ -1,116 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#22c55e" />
-    <link rel="manifest" href="/manifest.json" />
 
-    <title>Snaccit - Skip the wait. Savor the moment.</title>
-    <meta name="title" content="Snaccit - Skip the wait. Savor the moment.">
-    <meta name="description" content="Don't wait in line. Pre-order your meals at your favorite restaurants and have food waiting for you the moment you arrive.">
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#22c55e" />
+  <link rel="manifest" href="/manifest.json" />
 
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://www.snaccit.com/">
-    <meta property="og:title" content="Snaccit - Skip the wait. Savor the moment.">
-    <meta property="og:description" content="Don't wait in line. Pre-order your meals at your favorite restaurants and have food waiting for you the moment you arrive.">
-    <meta property="og:image" content="/Snaccit-logo.png">
+  <title>Snaccit - Skip the wait. Savor the moment.</title>
+  <meta name="title" content="Snaccit - Skip the wait. Savor the moment.">
+  <meta name="description"
+    content="Don't wait in line. Pre-order your meals at your favorite restaurants and have food waiting for you the moment you arrive.">
 
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://www.snaccit.com/">
-    <meta property="twitter:title" content="Snaccit - Skip the wait. Savor the moment.">
-    <meta property="twitter:description" content="Don't wait in line. Pre-order your meals at your favorite restaurants and have food waiting for you the moment you arrive.">
-    <meta property="twitter:image" content="/og-image.png">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.snaccit.com/">
+  <meta property="og:title" content="Snaccit - Skip the wait. Savor the moment.">
+  <meta property="og:description"
+    content="Don't wait in line. Pre-order your meals at your favorite restaurants and have food waiting for you the moment you arrive.">
+  <meta property="og:image" content="/Snaccit-logo.png">
 
-    <link rel="apple-touch-icon" href="/logo192.png" />
-    
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root">
-      <!-- Loading indicator shown until React loads -->
-      <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1a1a1a; color: #22c55e; font-family: system-ui, -apple-system, sans-serif;">
-        <div style="text-align: center;">
-          <div style="width: 50px; height: 50px; border: 4px solid #333; border-top-color: #22c55e; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-          <p style="font-size: 18px; font-weight: 600;">Loading Snaccit...</p>
-          <p style="font-size: 12px; color: #666; margin-top: 10px;">If this takes too long, try refreshing</p>
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://www.snaccit.com/">
+  <meta property="twitter:title" content="Snaccit - Skip the wait. Savor the moment.">
+  <meta property="twitter:description"
+    content="Don't wait in line. Pre-order your meals at your favorite restaurants and have food waiting for you the moment you arrive.">
+  <meta property="twitter:image" content="/og-image.png">
+
+  <link rel="apple-touch-icon" href="/logo192.png" />
+
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</head>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root">
+    <!-- Loading indicator shown until React loads -->
+    <div
+      style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1a1a1a; color: #22c55e; font-family: system-ui, -apple-system, sans-serif;">
+      <div style="text-align: center;">
+        <div
+          style="width: 50px; height: 50px; border: 4px solid #333; border-top-color: #22c55e; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;">
         </div>
+        <p style="font-size: 18px; font-weight: 600;">Loading Snaccit...</p>
+        <p style="font-size: 12px; color: #666; margin-top: 10px;">If this takes too long, try refreshing</p>
       </div>
     </div>
+  </div>
 
-    <!-- Inline error detection - runs before any modules load -->
-    <script>
-      // Simple error display function
-      function showError(title, message, details) {
-        var root = document.getElementById('root');
-        if (root) {
-          root.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1a1a1a; color: white; font-family: system-ui, -apple-system, sans-serif; padding: 20px;"><div style="max-width: 600px; text-align: center;"><h1 style="font-size: 24px; margin-bottom: 16px; color: #22c55e;">' + title + '</h1><p style="margin-bottom: 24px; color: #9ca3af;">' + message + '</p><button onclick="window.location.reload()" style="background: #22c55e; color: white; padding: 12px 24px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer;">Refresh Page</button><details style="margin-top: 24px; text-align: left; padding: 16px; background: #2a2a2a; border-radius: 8px; font-size: 12px;"><summary style="cursor: pointer; margin-bottom: 8px; color: #f87171;">Error Details</summary><pre style="white-space: pre-wrap; word-break: break-word; color: #fca5a5;">' + details + '</pre></details><p style="margin-top: 24px; font-size: 14px; color: #6b7280;">User Agent: ' + navigator.userAgent + '</p></div></div>';
-        }
+  <!-- Inline error detection - runs before any modules load -->
+  <script>
+    // Simple error display function
+    function showError(title, message, details) {
+      var root = document.getElementById('root');
+      if (root) {
+        root.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1a1a1a; color: white; font-family: system-ui, -apple-system, sans-serif; padding: 20px;"><div style="max-width: 600px; text-align: center;"><h1 style="font-size: 24px; margin-bottom: 16px; color: #22c55e;">' + title + '</h1><p style="margin-bottom: 24px; color: #9ca3af;">' + message + '</p><button onclick="window.location.reload()" style="background: #22c55e; color: white; padding: 12px 24px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer;">Refresh Page</button><details style="margin-top: 24px; text-align: left; padding: 16px; background: #2a2a2a; border-radius: 8px; font-size: 12px;"><summary style="cursor: pointer; margin-bottom: 8px; color: #f87171;">Error Details</summary><pre style="white-space: pre-wrap; word-break: break-word; color: #fca5a5;">' + details + '</pre></details><p style="margin-top: 24px; font-size: 14px; color: #6b7280;">User Agent: ' + navigator.userAgent + '</p></div></div>';
       }
+    }
 
-      // Catch early errors - ES5 syntax for max compatibility
-      window.addEventListener('error', function(event) {
-        console.error('Early error caught:', event.error);
-        var errorDetails = event.error ? 
-          event.error.toString() + '\n\nStack:\n' + (event.error.stack || 'No stack trace') :
-          event.message + '\nat ' + event.filename + ':' + event.lineno + ':' + event.colno;
-        
-        showError(
-          'App Loading Error (iOS)',
-          'Something went wrong while loading the app. This error has been logged.',
-          errorDetails
-        );
+    // Catch early errors - ES5 syntax for max compatibility
+    window.addEventListener('error', function (event) {
+      console.error('Early error caught:', event.error);
+      var errorDetails = event.error ?
+        event.error.toString() + '\n\nStack:\n' + (event.error.stack || 'No stack trace') :
+        event.message + '\nat ' + event.filename + ':' + event.lineno + ':' + event.colno;
+
+      showError(
+        'App Loading Error (iOS)',
+        'Something went wrong while loading the app. This error has been logged.',
+        errorDetails
+      );
+    });
+
+    window.addEventListener('unhandledrejection', function (event) {
+      console.error('Early promise rejection:', event.reason);
+      var errorDetails = (event.reason && event.reason.stack) || (event.reason && event.reason.toString()) || 'Unknown rejection';
+
+      showError(
+        'App Initialization Error (iOS)',
+        'A critical error occurred during app initialization.',
+        errorDetails
+      );
+    });
+  </script>
+
+  <!-- Unregister service workers and clear caches (iOS fix) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (var i = 0; i < registrations.length; i++) {
+          registrations[i].unregister();
+          console.log('Service worker unregistered');
+        }
       });
 
-      window.addEventListener('unhandledrejection', function(event) {
-        console.error('Early promise rejection:', event.reason);
-        var errorDetails = (event.reason && event.reason.stack) || (event.reason && event.reason.toString()) || 'Unknown rejection';
-        
-        showError(
-          'App Initialization Error (iOS)',
-          'A critical error occurred during app initialization.',
-          errorDetails
-        );
-      });
-    </script>
-
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            })
-            .catch((err) => {
-    <script>
-      // CRITICAL: Unregister service workers and clear caches (iOS fix)
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for (var i = 0; i < registrations.length; i++) {
-            registrations[i].unregister();
-            console.log('Service worker unregistered');
+      if ('caches' in window) {
+        caches.keys().then(function (names) {
+          for (var i = 0; i < names.length; i++) {
+            caches.delete(names[i]);
+            console.log('Cache cleared:', names[i]);
           }
         });
-        
-        if ('caches' in window) {
-          caches.keys().then(function(names) {
-            for (var i = 0; i < names.length; i++) {
-              caches.delete(names[i]);
-              console.log('Cache cleared:', names[i]);
-            }
-          });
-        }
       }
-    </script>
-    
-    <style>
-      @keyframes spin {
-        to { transform: rotate(360deg); }
+    }
+  </script>
+
+  <style>
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
       }
-    </style>
-    
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+    }
+  </style>
+
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>
