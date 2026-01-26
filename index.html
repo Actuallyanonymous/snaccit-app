@@ -84,9 +84,24 @@
               console.log('ServiceWorker registration successful with scope: ', registration.scope);
             })
             .catch((err) => {
-              console.log('ServiceWorker registration failed: ', err);
-            });
+    <script>
+      // CRITICAL: Unregister service workers and clear caches (iOS fix)
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (var i = 0; i < registrations.length; i++) {
+            registrations[i].unregister();
+            console.log('Service worker unregistered');
+          }
         });
+        
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            for (var i = 0; i < names.length; i++) {
+              caches.delete(names[i]);
+              console.log('Cache cleared:', names[i]);
+            }
+          });
+        }
       }
     </script>
     
