@@ -79,8 +79,8 @@ const BrandLogo = ({ className = "" }) => (
             <Utensils size={24} strokeWidth={2.5} />
         </div>
         <div className="text-left">
-            <h1 className="text-3xl font-black tracking-tighter text-gray-800 leading-none">
-                Snaccit<span className="text-orange-500 text-4xl">.</span> 
+            <h1 className="text-3xl font-black tracking-tighter text-gray-800 leading-none" style={{fontFamily: "'Baloo 2', cursive"}}>
+                Snaccit
             </h1>
         </div>
     </div>
@@ -3588,7 +3588,7 @@ const renderView = () => {
         </div>
 
         <div className="border-t border-green-800/50 pt-8">
-            <p className="text-green-300/60 text-sm font-medium">© 2026 Snaccit Inc. All rights reserved.</p>
+            <p className="text-emerald-400 text-sm font-bold" style={{fontFamily: "'Baloo 2', cursive"}}>© 2026 <span className="text-emerald-300">Snaccit</span> Inc. All rights reserved.</p>
         </div>
     </div>
 </footer>
