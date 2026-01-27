@@ -2275,7 +2275,7 @@ const applyCoupon = (coupon, code) => {
                         <label className="block text-gray-700 text-sm font-bold mb-3">Payment Method</label>
                         <div className="space-y-3">
                             {/* Online Payment Option */}
-                            <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'phonepe' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                            <label className={`flex items-center p-2 sm:p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'phonepe' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}>
                                 <input 
                                     type="radio" 
                                     name="paymentMethod" 
@@ -2286,16 +2286,16 @@ const applyCoupon = (coupon, code) => {
                                 />
                                 <div className="ml-3 flex-1">
                                     <div className="flex items-center gap-2">
-                                        <span className="font-bold text-gray-800">Pay Online</span>
-                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">Recommended</span>
+                                        <span className="font-bold text-sm sm:text-base text-gray-800">Pay Online</span>
+                                        <span className="text-[10px] sm:text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">Recommended</span>
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-0.5">UPI, Cards, Wallets via PhonePe</p>
+                                    <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">UPI, Cards, Wallets via PhonePe</p>
                                 </div>
                             </label>
 
                             {/* Cash on Delivery Option */}
                             {isCodAvailable ? (
-                                <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                                <label className={`flex items-center p-2 sm:p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'}`}>
                                     <input 
                                         type="radio" 
                                         name="paymentMethod" 
@@ -2306,10 +2306,10 @@ const applyCoupon = (coupon, code) => {
                                     />
                                     <div className="ml-3 flex-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-bold text-gray-800">Cash on Delivery</span>
-                                            <span className="text-lg">💵</span>
+                                            <span className="font-bold text-sm sm:text-base text-gray-800">Cash on Delivery</span>
+                                            <span className="text-base sm:text-lg">💵</span>
                                         </div>
-                                        <p className="text-xs text-gray-500 mt-0.5">Pay when you collect your order</p>
+                                        <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">Pay when you collect your order</p>
                                     </div>
                                 </label>
                             ) : (
