@@ -73,13 +73,13 @@ const Notification = ({ message, type, onDismiss }) => {
     );
 };
 
-const BrandLogo = ({ className = "" }) => (
+const BrandLogo = ({ className = "", textColor = "text-gray-800" }) => (
     <div className={`inline-flex items-center justify-center space-x-3 ${className}`}>
         <div className="bg-gradient-to-tr from-emerald-500 to-teal-400 text-white p-2.5 rounded-xl shadow-lg shadow-emerald-200 transform -rotate-6 hover:rotate-0 transition-transform duration-300">
             <Utensils size={24} strokeWidth={2.5} />
         </div>
         <div className="text-left">
-            <h1 className="text-3xl font-black tracking-tighter text-gray-800 leading-none font-baloo">
+            <h1 className={`text-3xl font-black tracking-tighter ${textColor} leading-none font-baloo`}>
                 Snaccit
             </h1>
         </div>
@@ -3553,7 +3553,7 @@ const renderView = () => {
     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-[800px] h-[400px] bg-green-600/20 rounded-[100%] blur-[100px] pointer-events-none"></div>
 
     <div className="container mx-auto px-6 relative z-10 text-center">
-        <BrandLogo className="scale-125 origin-center mb-6" />
+        <BrandLogo className="scale-125 origin-center mb-6" textColor="text-white" />
         <p className="text-green-200/80 text-lg max-w-md mx-auto mb-8 font-medium leading-relaxed">Pre Order Food. Skip The Wait.</p>
         
         {/* Download App Badge in Footer */}
