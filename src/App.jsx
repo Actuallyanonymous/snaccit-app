@@ -3511,7 +3511,7 @@ const renderView = () => {
                 <header className="bg-white/80 backdrop-blur-xl sticky top-0 z-30 border-b border-gray-200/80">
                     <div className="container mx-auto px-6 py-4 flex justify-between items-center">
                         {/* Logo goes Home */}
-                        <h1 onClick={() => handleGoHome()} className="text-3xl font-bold text-green-700 tracking-tight cursor-pointer">Snaccit</h1>
+                        <h1 onClick={() => handleGoHome()} className="text-3xl font-bold text-green-700 tracking-tight font-baloo cursor-pointer">Snaccit</h1>
                         
                         <div className="flex items-center space-x-4">
                             {/* Search Button */}
