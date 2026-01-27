@@ -1610,8 +1610,9 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
             const menuCollectionRef = db.collection("restaurants").doc(restaurant.id).collection("menu");
             unsubMenu = menuCollectionRef.onSnapshot((snapshot) => {
                 const allItems = snapshot.docs.map(doc => ({ id: doc.id, restaurantId: restaurant.id, ...doc.data() }));
-                const availableItems = allItems.filter(item => item.isAvailable !== false);
-                setMenuItems(availableItems);
+                // Show ALL items - unavailable items will be styled differently
+                console.log(`Restaurant ${restaurant.name}: Loaded ${allItems.length} menu items`);
+                setMenuItems(allItems);
                 setIsLoading(false);
             });
 
@@ -1766,35 +1767,55 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                     <div className="flex justify-center"><Loader2 className="animate-spin text-green-600" size={32} /></div>
                 ) : filteredItems.length > 0 ? (
                     <div className="space-y-4">
-                        {filteredItems.map((item) => (
-    <div key={item.id} className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 hover:border-orange-200 hover:shadow-lg transition-all flex gap-4 group">
+                        {filteredItems.map((item) => {
+                            const isUnavailable = item.isAvailable === false;
+                            return (
+    <div key={item.id} className={`bg-white rounded-3xl p-4 shadow-sm border border-gray-100 transition-all flex gap-4 group relative ${isUnavailable ? 'opacity-60' : 'hover:border-orange-200 hover:shadow-lg'}`}>
         
+        {/* Unavailable Badge */}
+        {isUnavailable && (
+            <div className="absolute top-2 right-2 z-10">
+                <span className="bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full border border-red-300">
+                    Not Available
+                </span>
+            </div>
+        )}
+
         {/* Item Image */}
-        <div className="w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-100 relative">
-            <img src={item.imageUrl || 'https://placehold.co/200'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={item.name}/>
+        <div className={`w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-100 relative ${isUnavailable ? 'grayscale' : ''}`}>
+            <img src={item.imageUrl || 'https://placehold.co/200'} className={`w-full h-full object-cover ${isUnavailable ? '' : 'transition-transform duration-500 group-hover:scale-110'}`} alt={item.name}/>
         </div>
 
         {/* Item Details */}
         <div className="flex-grow flex flex-col justify-between py-1">
             <div>
-                <h3 className="font-bold text-lg text-gray-800 leading-tight mb-1">{item.name}</h3>
+                <h3 className={`font-bold text-lg leading-tight mb-1 ${isUnavailable ? 'text-gray-500' : 'text-gray-800'}`}>{item.name}</h3>
                 <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{item.description}</p>
             </div>
             
             <div className="flex justify-between items-end mt-2">
-                <div className="text-lg font-black text-gray-900">
+                <div className={`text-lg font-black ${isUnavailable ? 'text-gray-400' : 'text-gray-900'}`}>
                     {/* Show base price */}
                     ₹{item.sizes && item.sizes.length > 0 ? item.sizes[0].price : item.price || 0}
                 </div>
                 
                 {/* Custom Add Button */}
-                <button onClick={() => onSelectItem(item)} className="bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white font-bold py-2 px-5 rounded-xl transition-all shadow-sm text-sm flex items-center gap-1">
-                    ADD <PlusCircle size={14} />
+                <button 
+                    onClick={() => !isUnavailable && onSelectItem(item)} 
+                    disabled={isUnavailable}
+                    className={`font-bold py-2 px-5 rounded-xl transition-all shadow-sm text-sm flex items-center gap-1 ${
+                        isUnavailable 
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                            : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+                    }`}
+                >
+                    {isUnavailable ? 'UNAVAILABLE' : 'ADD'} {!isUnavailable && <PlusCircle size={14} />}
                 </button>
             </div>
         </div>
     </div>
-))}
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="text-center py-10">
