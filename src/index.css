@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Baloo Font for Snaccit Branding */
+.font-baloo {
+  font-family: 'Baloo 2', cursive !important;
+}
+
+/* Bright footer text that overrides everything */
+.footer-bright {
+  color: #6ee7b7 !important; /* emerald-300 */
+  font-family: 'Baloo 2', cursive !important;
+  font-weight: 800 !important;
+}
+
+.footer-brand {
+  color: #ffffff !important; /* white */
+  font-family: 'Baloo 2', cursive !important;
+  font-weight: 900 !important;
+}
