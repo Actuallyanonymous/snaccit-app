@@ -5,7 +5,7 @@ import {
     ChefHat, Smartphone, Store, Pizza, Sandwich, Utensils, X, ArrowLeft, 
     Leaf, PlusCircle, MinusCircle, ShoppingCart, Clock, PartyPopper, 
     Search, Star, Award, User, Info, Bell, Loader2, Frown, Copy, TicketPercent,
-    Gift, ChevronDown, Mail, Phone, CheckCircle, HelpCircle, DollarSign
+    Gift, ChevronDown, Mail, Phone, CheckCircle, HelpCircle, DollarSign, XCircle
 } from 'lucide-react';
 import 'firebase/compat/auth'; // Ensure Auth compat is imported
 import { auth, db, functionsAsia, messaging } from './firebase'; 
@@ -1313,11 +1313,33 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
                         {isLoading ? (
                             <div className="col-span-full text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40} /></div>
                         ) : (
-                            displayList.map((item) => (
-                                <div key={item.id} onClick={() => onRestaurantClick(item)} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group">
+                            displayList.map((item) => {
+                                const isClosed = item.isOperational === false;
+                                return (
+                                <div 
+                                    key={item.id} 
+                                    onClick={() => {
+                                        if (isClosed) {
+                                            alert('🚫 This restaurant is currently closed.\n\nPlease check back later!');
+                                            return;
+                                        }
+                                        onRestaurantClick(item);
+                                    }} 
+                                    className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col group ${
+                                        isClosed ? 'opacity-50 grayscale cursor-not-allowed' : ''
+                                    }`}
+                                >
                                     <div className="relative h-44 overflow-hidden">
                                         <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                        {item.rating >= 4.5 && <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-amber-600 text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm flex items-center"><Star size={10} className="mr-1 fill-current"/> Top Rated</div>}
+                                        {isClosed && (
+                                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                                                <div className="bg-red-600 text-white px-4 py-2 rounded-full font-bold shadow-lg flex items-center gap-2">
+                                                    <XCircle size={20} />
+                                                    Currently Closed
+                                                </div>
+                                            </div>
+                                        )}
+                                        {!isClosed && item.rating >= 4.5 && <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-amber-600 text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm flex items-center"><Star size={10} className="mr-1 fill-current"/> Top Rated</div>}
                                     </div>
                                     <div className="p-5 flex flex-col flex-grow">
                                         <div className="flex justify-between items-start mb-1">
@@ -1327,11 +1349,13 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
                                         <p className="text-gray-500 text-sm font-medium mb-3 line-clamp-1">{item.cuisine}</p>
                                         <div className="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
                                             <span className="text-gray-900 font-bold text-sm">{item.price}</span>
-                                            <span className="text-green-600 text-xs font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1" size={14}/></span>
+                                            {!isClosed && <span className="text-green-600 text-xs font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1" size={14}/></span>}
+                                            {isClosed && <span className="text-red-600 text-xs font-bold inline-flex items-center">Closed</span>}
                                         </div>
                                     </div>
                                 </div>
-                            ))
+                            );
+                            })
                         )}
                     </div>
                     
