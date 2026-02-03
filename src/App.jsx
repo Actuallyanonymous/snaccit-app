@@ -1776,6 +1776,15 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                     </div>
                 </div>
 
+                {/* Disclaimer for unavailable items */}
+                {filteredItems.some(item => item.isAvailable === false) && (
+                    <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <p className="text-xs text-amber-800">
+                            <span className="font-semibold">Note:</span> Item availability is managed by the restaurant. Unavailable items have been temporarily disabled by the vendor.
+                        </p>
+                    </div>
+                )}
+
                 {/* Menu Grid */}
                 {isLoading ? (
                     <div className="flex justify-center"><Loader2 className="animate-spin text-green-600" size={32} /></div>
