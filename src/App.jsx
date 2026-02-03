@@ -1651,6 +1651,20 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
             );
         }
 
+        // Sort: Available items first, unavailable items at the end
+        result = result.sort((a, b) => {
+            const aAvailable = a.isAvailable !== false;
+            const bAvailable = b.isAvailable !== false;
+            
+            // If availability differs, sort available items first
+            if (aAvailable !== bAvailable) {
+                return bAvailable - aAvailable; // true (1) - false (0) = 1, false (0) - true (1) = -1
+            }
+            
+            // If both have same availability, maintain original order
+            return 0;
+        });
+
         return result;
     }, [menuItems, menuSearch, activeCategory]);
 
