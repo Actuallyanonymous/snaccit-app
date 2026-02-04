@@ -3145,42 +3145,37 @@ useEffect(() => {
         else if (path === '/terms-of-service') setView('terms');
         else setView('home'); // Default to home if no match
 
-        // Fetch initial restaurant data
-        const fetchRestaurantsAndMenus = async () => {
-             setIsLoading(true); // Start loading
-             try {
-                 console.log("Fetching restaurants...");
-                 const restaurantsCollection = db.collection("restaurants");
-                 const restaurantSnapshot = await restaurantsCollection.get();
-                 console.log(`Fetched ${restaurantSnapshot.docs.length} restaurants.`);
-                 const restaurantListPromises = restaurantSnapshot.docs.map(async (doc) => {
-                     const restaurantData = { id: doc.id, ...doc.data() };
-                     try { // Fetch menu for each restaurant individually
-                         const menuCollectionRef = db.collection("restaurants").doc(doc.id).collection("menu");
-                         const menuSnapshot = await menuCollectionRef.get();
-                         restaurantData.menu = menuSnapshot.docs.map(menuDoc => ({ id: menuDoc.id, ...menuDoc.data() }));
-                     } catch (menuError) {
-                          console.error(`Error fetching menu for restaurant ${doc.id}:`, menuError);
-                          restaurantData.menu = []; // Assign empty menu on error
-                     }
-                     return restaurantData;
-                 });
+        // Real-time restaurant listener for live visibility updates
+        setIsLoading(true);
+        console.log("Setting up real-time restaurant listener...");
+        const restaurantsCollection = db.collection("restaurants");
+        const unsubRestaurants = restaurantsCollection.onSnapshot(async (snapshot) => {
+            try {
+                console.log(`Received restaurant update: ${snapshot.docs.length} restaurants.`);
+                const restaurantListPromises = snapshot.docs.map(async (doc) => {
+                    const restaurantData = { id: doc.id, ...doc.data() };
+                    try {
+                        const menuCollectionRef = db.collection("restaurants").doc(doc.id).collection("menu");
+                        const menuSnapshot = await menuCollectionRef.get();
+                        restaurantData.menu = menuSnapshot.docs.map(menuDoc => ({ id: menuDoc.id, ...menuDoc.data() }));
+                    } catch (menuError) {
+                        console.error(`Error fetching menu for restaurant ${doc.id}:`, menuError);
+                        restaurantData.menu = [];
+                    }
+                    return restaurantData;
+                });
 
-const allFetchedRestaurants = await Promise.all(restaurantListPromises);
-const visibleRestaurants = allFetchedRestaurants.filter(r => r.isVisible !== false);
-setRestaurants(visibleRestaurants);
-
-// 3. Set the state with only the visible ones
-setRestaurants(visibleRestaurants);
-                 console.log("Finished fetching restaurants and menus.");
-             } catch (error) {
-                 console.error("Error fetching restaurants: ", error);
-                 showNotification("Could not load restaurants.", "error"); // Show error to user
-             } finally {
-                 setIsLoading(false); // Stop loading
-             }
-         };
-        fetchRestaurantsAndMenus();
+                const allFetchedRestaurants = await Promise.all(restaurantListPromises);
+                const visibleRestaurants = allFetchedRestaurants.filter(r => r.isVisible !== false);
+                setRestaurants(visibleRestaurants);
+                console.log("Finished processing restaurant updates.");
+            } catch (error) {
+                console.error("Error processing restaurants: ", error);
+                showNotification("Could not load restaurants.", "error");
+            } finally {
+                setIsLoading(false);
+            }
+        });
 
         // Firebase Auth state listener
         console.log("Setting up auth state listener...");
@@ -3239,9 +3234,10 @@ setRestaurants(visibleRestaurants);
                  console.error("Error setting up foreground message handler:", error);
             }
         }
-        // Cleanup function for auth and messaging listeners
+        // Cleanup function for auth, messaging, and restaurant listeners
         return () => {
              console.log("Cleaning up App listeners.");
+             unsubRestaurants();
              unsubAuth();
              if (unsubscribeMessaging) {
                  console.log("Cleaning up messaging listener.");
