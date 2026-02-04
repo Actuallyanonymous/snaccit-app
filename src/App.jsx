@@ -2381,7 +2381,7 @@ const applyCoupon = (coupon, code) => {
                                     </div>
                                 </label>
                             ) : (
-                                <div className="flex items-center p-4 border-2 border-gray-100 rounded-xl bg-gray-50 opacity-60">
+                                <div className="flex items-center p-2 sm:p-4 border-2 border-gray-100 rounded-xl bg-gray-50 opacity-60">
                                     <input 
                                         type="radio" 
                                         disabled 
@@ -2389,10 +2389,10 @@ const applyCoupon = (coupon, code) => {
                                     />
                                     <div className="ml-3 flex-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-bold text-gray-400">Cash on Delivery</span>
-                                            <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-semibold">Not Available</span>
+                                            <span className="font-bold text-sm sm:text-base text-gray-400">Cash on Delivery</span>
+                                            <span className="text-[10px] sm:text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-semibold">Not Available</span>
                                         </div>
-                                        <p className="text-xs text-gray-400 mt-0.5">This restaurant only accepts online payments</p>
+                                        <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">This restaurant only accepts online payments</p>
                                     </div>
                                 </div>
                             )}
