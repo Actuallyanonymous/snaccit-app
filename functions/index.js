@@ -45,7 +45,8 @@ exports.createOrderAndPay = onCall({
       userName, 
       userPhone, 
       usePoints,
-      paymentMethod = 'phonepe' // Default to phonepe for backward compatibility
+      paymentMethod = 'phonepe', // Default to phonepe for backward compatibility
+      orderNote = null // Customer special request note
     } = request.data;
 
     // --- A. PRICE CALCULATION (SERVER SIDE) ---
@@ -190,6 +191,7 @@ const grandTotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDisco
         total: grandTotal,
         status: "awaiting_payment",
         arrivalTime,
+        orderNote: orderNote || null, // Customer special request note
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         hasReview: false,
     };

@@ -2208,6 +2208,9 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
     const [paymentMethod, setPaymentMethod] = useState('phonepe');
     const isCodAvailable = restaurant?.codEnabled === true;
 
+    // Order Note State (Special Requests)
+    const [orderNote, setOrderNote] = useState('');
+
     // Calculate Subtotal
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
 
@@ -2235,6 +2238,7 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
             setUsePoints(false);
             setIsPlacingOrder(false);
             setPaymentMethod('phonepe'); // Reset to default payment method
+            setOrderNote(''); // Reset order note
 
             // Fetch User Points
             if (auth.currentUser) {
@@ -2320,8 +2324,8 @@ const applyCoupon = (coupon, code) => {
     const handleConfirm = async () => {
         if (!arrivalTime) { alert("Please select an arrival time."); return; }
         setIsPlacingOrder(true);
-        // Pass payment method along with other order details
-        await onPlaceOrder(arrivalTime, subtotal, discount, appliedCoupon?.code, usePoints, paymentMethod);
+        // Pass payment method and order note along with other order details
+        await onPlaceOrder(arrivalTime, subtotal, discount, appliedCoupon?.code, usePoints, paymentMethod, orderNote);
         setIsPlacingOrder(false); 
     };
 
@@ -2400,6 +2404,20 @@ const applyCoupon = (coupon, code) => {
                     </div>
 
                     <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} restaurant={restaurant} />
+
+                    {/* Special Request Note */}
+                    <div className="mt-4 border-t pt-4">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">📝 Special Request (Optional)</label>
+                        <textarea
+                            value={orderNote}
+                            onChange={(e) => setOrderNote(e.target.value)}
+                            placeholder="E.g. Less spicy, no onions, extra sauce..."
+                            maxLength={200}
+                            rows={2}
+                            className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:ring-green-500 focus:border-green-500 resize-none"
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1 text-right">{orderNote.length}/200</p>
+                    </div>
                 </div>
 
 
@@ -3298,7 +3316,7 @@ useEffect(() => {
         }
     };
 
-const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, usePoints, paymentMethod = 'phonepe') => {
+const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, usePoints, paymentMethod = 'phonepe', orderNote = '') => {
     if (!currentUser) { showNotification("Please log in to place an order.", "error"); return; }
     if (!userProfile) { showNotification("Please wait for profile to load.", "error"); return; }
     
@@ -3313,7 +3331,8 @@ const handlePlaceOrder = async (arrivalTime, subtotal, discount, couponCode, use
             arrivalTime: arrivalTime,
             couponCode: couponCode || null,
             usePoints: usePoints,
-            paymentMethod: paymentMethod, // Pass payment method to backend
+            paymentMethod: paymentMethod,
+            orderNote: orderNote.trim() || null, // Include order note
             userName: userProfile?.username || 'Customer',
             userPhone: userProfile?.mobile || currentUser.phoneNumber,
             items: cart.map(item => ({
