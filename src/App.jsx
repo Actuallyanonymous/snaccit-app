@@ -2148,40 +2148,33 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
 
     return (
         <div>
-            <label className="block text-gray-700 text-sm font-bold mb-3 flex items-center"><Clock className="inline mr-2" size={16} />Estimated Arrival Time</label>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
-                {timeSlots.map((slot, index) => {
-                    // Special styling for the ASAP button (the first one)
-                    const isASAP = index === 0 && slot.display === 'ASAP';
-                    const isSelected = selectedTime === slot.value;
-
-                    let buttonClasses = `p-2 sm:p-3 text-sm sm:text-base rounded-lg font-semibold text-center transition-all duration-200 border-2 focus:outline-none focus:ring-1 focus:ring-green-500 `;
-
-                    if (isSelected) {
-                        buttonClasses += `bg-green-600 text-white border-green-600 shadow-md ring-2 ring-green-300 ring-offset-1 `;
-                    } else if (isASAP) {
-                        // Distinct style for unselected ASAP button
-                        buttonClasses += `bg-green-50 text-green-800 border-green-300 hover:border-green-500 hover:bg-green-100 `;
-                    } else {
-                        buttonClasses += `bg-white text-gray-700 border-gray-200 hover:border-green-400 hover:text-green-700 `;
-                    }
-
-                    return (
-                        <button
-                            type="button"
-                            key={slot.value} // Use the time value as the key
-                            onClick={() => onTimeSelect(slot.value)}
-                            className={buttonClasses}
-                        >
-                            {slot.display}
-                        </button>
-                    );
-                })}
+            <label className="block text-gray-700 text-sm font-bold mb-2 flex items-center"><Clock className="inline mr-2" size={16} />Estimated Arrival Time</label>
+            <div className="relative">
+                <select
+                    value={selectedTime}
+                    onChange={(e) => onTimeSelect(e.target.value)}
+                    className={`w-full p-3 pr-10 text-sm sm:text-base rounded-xl font-semibold appearance-none cursor-pointer transition-all duration-200 border-2 focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                        selectedTime 
+                            ? 'bg-green-50 text-green-800 border-green-400' 
+                            : 'bg-white text-gray-700 border-gray-200'
+                    }`}
+                >
+                    <option value="" disabled>Select arrival time...</option>
+                    {timeSlots.map((slot) => (
+                        <option key={slot.value} value={slot.value}>
+                            {slot.display === 'ASAP' ? '⚡ ASAP (As Soon As Possible)' : slot.display}
+                        </option>
+                    ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
             </div>
-            {/* Helper text to show the actual time for ASAP */}
-            {selectedTime && timeSlots[0]?.display === 'ASAP' && selectedTime === timeSlots[0].value && (
-                 <p className="text-xs text-green-600 mt-2 ml-1">
-                    Goal arrival time: <strong>{selectedTime}</strong>
+            {selectedTime && (
+                <p className="text-xs text-green-600 mt-2 ml-1">
+                    Selected: <strong>{selectedTime}</strong>
                 </p>
             )}
         </div>
