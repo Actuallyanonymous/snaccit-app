@@ -2075,16 +2075,28 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
 
 // --- Time Slot Picker Component ---
 const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const generateTimeSlots = (openingTimeStr, closingTimeStr) => {
         if (!openingTimeStr || !closingTimeStr) return [];
 
         const slots = [];
         const now = new Date();
         const intervalMinutes = 5;
-        // Minimum time to prepare first specific slot (e.g., 15 mins from now)
         const minimumLeadTimeMinutes = 15;
 
-        // Parse opening and closing times into today's date objects
         const [openHours, openMinutes] = openingTimeStr.split(':').map(Number);
         const openingTime = new Date();
         openingTime.setHours(openHours, openMinutes, 0, 0);
@@ -2093,43 +2105,28 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
         const closingTime = new Date();
         closingTime.setHours(closeHours, closeMinutes, 0, 0);
 
-        // If it's already past closing time today, show nothing.
         if (now >= closingTime) {
              return [];
         }
 
-        // --- 1. ALWAYS Add the distinct "ASAP" option first ---
-        // This sends the literal string 'ASAP' as the arrival time value.
         slots.push({ display: 'ASAP', value: 'ASAP' });
 
-
-        // --- 2. Generate specific future time slots ---
-        // Calculate start time for numerical slots: Now + lead time...
         let startTime = new Date(now.getTime() + minimumLeadTimeMinutes * 60000);
-
-        // ...rounded up to the next 15-minute interval mark.
         const minutes = startTime.getMinutes();
         const remainder = minutes % intervalMinutes;
         if (remainder !== 0) {
-            // Add minutes to reach the next interval mark, reset seconds
             startTime.setMinutes(minutes + (intervalMinutes - remainder), 0, 0);
         } else {
-            // Already on an interval mark, just clean up seconds
             startTime.setSeconds(0, 0);
         }
 
-        // Ensure the first numerical slot doesn't start *before* opening time.
-        // If calculated start time is too early, bump it to opening time.
         if (startTime < openingTime) {
             startTime = openingTime;
         }
 
-        // Loop to generate numerical slots until closing time
         while (startTime < closingTime) {
             const displayFormat = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            // Add the numerical slot
             slots.push({ display: displayFormat, value: displayFormat });
-            // Move to next interval
             startTime.setMinutes(startTime.getMinutes() + intervalMinutes);
         }
 
@@ -2146,36 +2143,64 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
         return <div className="text-center p-4 bg-red-50 text-red-700 rounded-lg border border-red-200"><p className="font-semibold">Sorry, restaurant is closed for pre-orders now.</p><p className="text-sm">Hours: {restaurant.openingTime} - {restaurant.closingTime}</p></div>;
     }
 
+    const handleSelectTime = (value) => {
+        onTimeSelect(value);
+        setIsOpen(false);
+    };
+
     return (
-        <div>
+        <div ref={dropdownRef}>
             <label className="block text-gray-700 text-sm font-bold mb-2 flex items-center"><Clock className="inline mr-2" size={16} />Estimated Arrival Time</label>
-            <div className="relative">
-                <select
-                    value={selectedTime}
-                    onChange={(e) => onTimeSelect(e.target.value)}
-                    className={`w-full p-3 pr-10 text-sm sm:text-base rounded-xl font-semibold appearance-none cursor-pointer transition-all duration-200 border-2 focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                        selectedTime 
-                            ? 'bg-green-50 text-green-800 border-green-400' 
-                            : 'bg-white text-gray-700 border-gray-200'
-                    }`}
-                >
-                    <option value="" disabled>Select arrival time...</option>
-                    {timeSlots.map((slot) => (
-                        <option key={slot.value} value={slot.value}>
-                            {slot.display === 'ASAP' ? '⚡ ASAP (As Soon As Possible)' : slot.display}
-                        </option>
-                    ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            
+            {/* Dropdown Trigger Button */}
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className={`w-full p-3 pr-10 text-sm sm:text-base rounded-xl font-semibold text-left cursor-pointer transition-all duration-200 border-2 focus:outline-none focus:ring-2 focus:ring-green-500 relative ${
+                    selectedTime 
+                        ? 'bg-green-50 text-green-800 border-green-400' 
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                }`}
+            >
+                {selectedTime ? (selectedTime === 'ASAP' ? '⚡ ASAP' : selectedTime) : 'Select arrival time...'}
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                 </div>
-            </div>
-            {selectedTime && (
-                <p className="text-xs text-green-600 mt-2 ml-1">
-                    Selected: <strong>{selectedTime}</strong>
-                </p>
+            </button>
+
+            {/* Dropdown Panel with Grid of Time Slots */}
+            {isOpen && (
+                <div className="mt-2 p-3 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {timeSlots.map((slot, index) => {
+                            const isASAP = index === 0 && slot.display === 'ASAP';
+                            const isSelected = selectedTime === slot.value;
+
+                            let buttonClasses = `p-2 text-xs sm:text-sm rounded-lg font-semibold text-center transition-all duration-200 border-2 focus:outline-none `;
+
+                            if (isSelected) {
+                                buttonClasses += `bg-green-600 text-white border-green-600 shadow-md `;
+                            } else if (isASAP) {
+                                buttonClasses += `bg-green-50 text-green-800 border-green-300 hover:border-green-500 hover:bg-green-100 `;
+                            } else {
+                                buttonClasses += `bg-white text-gray-700 border-gray-200 hover:border-green-400 hover:text-green-700 `;
+                            }
+
+                            return (
+                                <button
+                                    type="button"
+                                    key={slot.value}
+                                    onClick={() => handleSelectTime(slot.value)}
+                                    className={buttonClasses}
+                                >
+                                    {isASAP ? '⚡ ASAP' : slot.display}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
             )}
         </div>
     );
