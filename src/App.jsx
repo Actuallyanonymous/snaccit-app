@@ -2471,6 +2471,17 @@ const applyCoupon = (coupon, code) => {
                     <div className="space-y-1 mb-4 text-sm">
                         <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
                         
+                        {/* Platform Fee - Currently Free */}
+                        <div className="flex justify-between items-center text-green-600">
+                            <span className="flex items-center gap-1">
+                                Platform Fee
+                                <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">FREE</span>
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <span className="line-through text-gray-400 text-xs">₹10.00</span>
+                                <span className="font-bold text-green-600">₹0.00</span>
+                            </span>
+                        </div>
                         {discount > 0 && (
                             <div className="flex justify-between text-green-600 font-semibold">
                                 <span>Coupon Discount</span>
