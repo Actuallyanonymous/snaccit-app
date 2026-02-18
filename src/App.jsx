@@ -2058,9 +2058,20 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
 
                     {cart.length > 0 && (
                         <div className="p-4 sm:p-6 border-t bg-gray-50">
-                            <div className="flex justify-between items-center mb-4">
+                            <div className="flex justify-between items-center mb-1">
                                 <span className="text-md font-semibold text-gray-800">Subtotal</span>
                                 <span className="text-lg font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
+                            </div>
+                            {/* Platform Fee - Currently Free */}
+                            <div className="flex justify-between items-center mb-4 text-sm">
+                                <span className="flex items-center gap-1 text-green-600">
+                                    Platform Fee
+                                    <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">FREE</span>
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                    <span className="line-through text-gray-400 text-xs">₹10.00</span>
+                                    <span className="font-bold text-green-600">₹0.00</span>
+                                </span>
                             </div>
                             <button onClick={onCheckout} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-4 rounded-2xl hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 text-md">
                                 Choose Arrival Time
