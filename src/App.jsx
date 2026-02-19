@@ -2885,11 +2885,6 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder, on
                         </div>
                     )}
 
-                    <button onClick={() => onNavigate('cashDeposit')}
-                className="w-full mt-6 bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
-            >
-                <DollarSign size={20}/> Deposit Cash at Canteen
-            </button>
                  </div>
 
                  
