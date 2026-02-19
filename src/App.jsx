@@ -2213,7 +2213,7 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
 
     return (
         <div ref={dropdownRef}>
-            <label className="block text-gray-700 text-sm font-bold mb-2 flex items-center"><Clock className="inline mr-2" size={16} />Estimated Arrival Time</label>
+            <label className="block text-gray-700 text-sm font-bold mb-2 flex items-center"><Clock className="inline mr-2" size={16} />Pick Your Pickup Time</label>
             
             {/* Dropdown Trigger Button */}
             <button
@@ -2225,7 +2225,7 @@ const TimeSlotPicker = ({ selectedTime, onTimeSelect, restaurant }) => {
                         : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
                 }`}
             >
-                {selectedTime ? (selectedTime === 'ASAP' ? '⚡ ASAP' : selectedTime) : 'Select arrival time...'}
+                {selectedTime ? (selectedTime === 'ASAP' ? '⚡ ASAP' : selectedTime) : 'Select time slot...'}
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                     <svg className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -2417,8 +2417,8 @@ const applyCoupon = (coupon, code) => {
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg m-4 relative flex flex-col max-h-[90vh]">
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 z-10"><X size={24} /></button>
                 <div className="p-6 sm:p-8 border-b">
-                    <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Confirm Your Pre-order</h2>
-                    <p className="text-center text-gray-500 text-sm">Ordering from <span className="font-semibold">{restaurant?.name || 'Restaurant'}</span>.</p>
+                    <h2 className="text-2xl font-bold text-center text-gray-800 mb-1">Almost Done! Confirm Your Order</h2>
+                    <p className="text-center text-gray-500 text-sm">From: <span className="font-semibold text-gray-700">{restaurant?.name || 'Restaurant'}</span></p>
                 </div>
                 
                 
@@ -2485,6 +2485,15 @@ const applyCoupon = (coupon, code) => {
                     </div>
 
                     <TimeSlotPicker selectedTime={arrivalTime} onTimeSelect={setArrivalTime} restaurant={restaurant} />
+                    {arrivalTime && (
+                        <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                            <CheckCircle size={12} />
+                            {arrivalTime === 'ASAP' ? 'Your food will be prepared right away — skip the queue!' : `Your food will be ready at ${arrivalTime}. Skip waiting in queues!`}
+                        </p>
+                    )}
+                    {!arrivalTime && (
+                        <p className="text-xs text-gray-400 mt-2 italic">Choose when you want your meal ready</p>
+                    )}
 
                     {/* Special Request Note */}
                     <div className="mt-4 border-t pt-4">
@@ -2505,7 +2514,7 @@ const applyCoupon = (coupon, code) => {
                 <div className="mt-auto border-t p-4 sm:p-6 bg-gray-50 rounded-b-3xl">
                     {/* Coupon Input */}
                     <div className="flex gap-2 mb-4">
-                        <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Enter Coupon Code" className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-green-500 focus:border-green-500" disabled={!!appliedCoupon} />
+                        <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Have a coupon? Enter code here" className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-green-500 focus:border-green-500" disabled={!!appliedCoupon} />
                         <button type="button" onClick={handleApplyCoupon} disabled={isValidating || !!appliedCoupon || !couponCode.trim()} className="bg-gray-200 text-gray-700 font-semibold px-4 rounded-lg hover:bg-gray-300 disabled:opacity-50 text-sm flex-shrink-0">
                             {isValidating ? <Loader2 className="animate-spin h-5 w-5" /> : appliedCoupon ? 'Applied' : 'Apply'}
                         </button>
@@ -2519,8 +2528,8 @@ const applyCoupon = (coupon, code) => {
                             <div className="flex items-center gap-3">
                                 <div className="bg-amber-100 p-2 rounded-full text-amber-600"><Award size={20}/></div>
                                 <div>
-                                    <p className="font-bold text-amber-900 text-sm">Redeem Points</p>
-                                    <p className="text-xs text-amber-700 font-medium">Available: {userPoints} (Save ₹{Math.floor(userPoints/10)})</p>
+                                    <p className="font-bold text-amber-900 text-sm">Use Snaccit Points ({userPoints} available)</p>
+                                    <p className="text-xs text-amber-700 font-medium">Save ₹{Math.floor(userPoints/10)} on this order</p>
                                 </div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
@@ -2565,11 +2574,11 @@ const applyCoupon = (coupon, code) => {
                         </div>
                     </div>
 
-                    <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className={`w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 rounded-full hover:shadow-lg transition-all disabled:opacity-50 flex justify-center items-center px-6 ${!arrivalTime ? 'cursor-not-allowed' : ''}`}>
+                    <button onClick={handleConfirm} disabled={isPlacingOrder || !arrivalTime} className={`w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3.5 rounded-full hover:shadow-lg hover:shadow-green-500/30 active:scale-[0.98] transition-all disabled:opacity-50 flex justify-center items-center px-6 text-base ${!arrivalTime ? 'cursor-not-allowed' : ''}`}>
                          {isPlacingOrder ? <Loader2 className="animate-spin" size={24} /> : (
                              <span className="flex justify-between w-full items-center">
-                                 <span>{grandTotal === 0 ? 'Confirm (Paid by Points)' : paymentMethod === 'cod' ? 'Place COD Order' : 'Proceed to Payment'}</span>
-                                 <span>₹{grandTotal.toFixed(2)}</span>
+                                 <span>{grandTotal === 0 ? 'Confirm Order (₹0)' : paymentMethod === 'cod' ? `Confirm & Pay ₹${grandTotal.toFixed(0)} (COD)` : `Confirm & Pay ₹${grandTotal.toFixed(0)}`}</span>
+                                 {grandTotal > 0 && <span className="text-green-200 text-sm">→</span>}
                              </span>
                          )}
                     </button>
