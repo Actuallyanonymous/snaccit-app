@@ -1985,70 +1985,111 @@ const ItemCustomizationModal = ({ isOpen, onClose, item, onConfirmAddToCart }) =
 // --- Cart Sidebar Component ---
 const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, selectedRestaurant, onGoToMenu, onClear }) => {
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
+    const itemCount = useMemo(() => cart.reduce((count, item) => count + item.quantity, 0), [cart]);
 
     return (
         <>
             <div className={`fixed inset-0 bg-black/60 z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={onClose}></div>
-            <div className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className={`fixed top-0 right-0 h-full w-full max-w-md bg-gray-50 shadow-2xl z-50 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="flex flex-col h-full">
-                    {/* --- UPDATED HEADER WITH CLEAR OPTION --- */}
-                    <div className="p-6 border-b">
-                        <div className="flex justify-between items-center mb-2">
-                            <h2 className="text-xl font-bold text-gray-800">Your Order</h2>
-                            <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
+                    {/* Header */}
+                    <div className="bg-gradient-to-br from-green-600 to-green-700 p-5 text-white relative overflow-hidden">
+                        <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                        <div className="absolute -left-4 -bottom-4 w-16 h-16 bg-white/10 rounded-full blur-lg"></div>
+                        <div className="relative flex justify-between items-center mb-1">
+                            <div className="flex items-center gap-2">
+                                <ShoppingCart size={22} className="text-green-200" />
+                                <h2 className="text-xl font-bold">Your Order</h2>
+                            </div>
+                            <button onClick={onClose} className="text-white/70 hover:text-white bg-white/10 rounded-full p-1.5 transition-colors">
+                                <X size={18} />
+                            </button>
                         </div>
-                        
-                        <div className="flex justify-between items-center">
-                            {/* "Back to Menu" Link */}
-                            {selectedRestaurant && cart.length > 0 ? (
-                                <button 
-                                    onClick={() => { onGoToMenu(selectedRestaurant); onClose(); }}
-                                    className="flex items-center text-green-600 hover:text-green-700 text-sm font-bold transition-colors group"
-                                >
-                                    <ArrowLeft size={16} className="mr-1 group-hover:-translate-x-1 transition-transform" /> 
-                                    Back to {selectedRestaurant.name}
-                                </button>
-                            ) : <div></div>}
-
-                            {/* New "Clear Cart" Button */}
-                            {cart.length > 0 && (
-                                <button 
-                                    onClick={() => { 
-                                        if(window.confirm("Are you sure you want to clear your entire cart?")) { 
-                                            onClear(); 
-                                            onClose(); 
-                                        } 
-                                    }}
-                                    className="text-[10px] font-black text-red-400 hover:text-red-600 uppercase tracking-widest transition-colors"
-                                >
-                                    Clear Cart
-                                </button>
-                            )}
-                        </div>
+                        {selectedRestaurant && cart.length > 0 && (
+                            <p className="text-green-100 text-sm mt-1">from <span className="font-semibold text-white">{selectedRestaurant.name}</span></p>
+                        )}
+                        {cart.length > 0 && (
+                            <div className="flex items-center justify-between mt-3">
+                                <span className="text-xs bg-white/20 px-3 py-1 rounded-full font-semibold">{itemCount} {itemCount === 1 ? 'item' : 'items'}</span>
+                                <div className="flex gap-3">
+                                    {selectedRestaurant && (
+                                        <button 
+                                            onClick={() => { onGoToMenu(selectedRestaurant); onClose(); }}
+                                            className="text-xs text-green-100 hover:text-white font-semibold flex items-center gap-1 transition-colors"
+                                        >
+                                            <ArrowLeft size={12} /> Add More
+                                        </button>
+                                    )}
+                                    <button 
+                                        onClick={() => { 
+                                            if(window.confirm("Are you sure you want to clear your entire cart?")) { 
+                                                onClear(); 
+                                                onClose(); 
+                                            } 
+                                        }}
+                                        className="text-xs text-red-200 hover:text-red-100 font-semibold transition-colors"
+                                    >
+                                        Clear All
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                    {/* ----------------------------------------- */}
 
-                    <div className="flex-grow p-4 sm:p-6 overflow-y-auto">
+                    {/* Cart Items */}
+                    <div className="flex-grow p-4 overflow-y-auto">
                         {cart.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-center">
-                                <ShoppingCart size={48} className="text-gray-200 mb-4" />
-                                <p className="text-gray-500 italic">Your cart is empty.</p>
+                            <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                                <div className="w-28 h-28 bg-gradient-to-br from-green-50 to-emerald-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                                    <ShoppingCart size={48} className="text-green-300" />
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-700 mb-2">Your cart is empty</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">Browse a restaurant menu and add some delicious items to get started!</p>
                             </div>
                         ) : (
-                            <div className="space-y-4">
-                                {cart.map(item => (
-                                    <div key={item.cartItemId} className="flex items-start border-b pb-3 last:border-b-0">
-                                        <div className="flex-grow pr-2">
-                                            <p className="font-semibold text-sm">{item.name} <span className="text-xs font-normal text-gray-500">({item.selectedSize.name})</span></p>
-                                            {item.selectedAddons && item.selectedAddons.length > 0 && item.selectedAddons.map(addon => (
-                                                <p key={addon.name} className="text-xs text-gray-500 pl-2">+ {addon.name}</p>
-                                            ))}
-                                            <p className="text-sm text-gray-700 font-bold mt-1">₹{item.finalPrice.toFixed(2)}</p>
+                            <div className="space-y-3">
+                                {cart.map((item, index) => (
+                                    <div key={item.cartItemId} 
+                                         className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
+                                         style={{ animationDelay: `${index * 50}ms` }}
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex-grow min-w-0">
+                                                <p className="font-bold text-gray-800 text-sm leading-tight">{item.name}</p>
+                                                <p className="text-xs text-gray-400 mt-0.5">{item.selectedSize.name}</p>
+                                                {item.selectedAddons && item.selectedAddons.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1 mt-1.5">
+                                                        {item.selectedAddons.map(addon => (
+                                                            <span key={addon.name} className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                                                                + {addon.name}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Quantity Controls */}
+                                            <div className="flex items-center bg-gray-50 rounded-full border border-gray-200 flex-shrink-0">
+                                                <button 
+                                                    onClick={() => onUpdateQuantity(item.cartItemId, item.quantity - 1)} 
+                                                    className="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                                                >
+                                                    <MinusCircle size={16}/>
+                                                </button>
+                                                <span className="w-7 text-center font-bold text-sm text-gray-800">{item.quantity}</span>
+                                                <button 
+                                                    onClick={() => onUpdateQuantity(item.cartItemId, item.quantity + 1)} 
+                                                    className="w-8 h-8 flex items-center justify-center text-green-500 hover:text-green-700 hover:bg-green-50 rounded-full transition-colors"
+                                                >
+                                                    <PlusCircle size={16}/>
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center flex-shrink-0">
-                                            <button onClick={() => onUpdateQuantity(item.cartItemId, item.quantity - 1)} className="text-gray-400 hover:text-red-500 p-1 transition-colors"><MinusCircle size={20}/></button>
-                                            <span className="w-8 text-center font-bold text-sm mx-1 text-gray-700">{item.quantity}</span>
-                                            <button onClick={() => onUpdateQuantity(item.cartItemId, item.quantity + 1)} className="text-gray-400 hover:text-green-600 p-1 transition-colors"><PlusCircle size={20}/></button>
+                                        
+                                        {/* Price Row */}
+                                        <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-gray-50">
+                                            <span className="text-xs text-gray-400">{item.quantity > 1 ? `₹${item.finalPrice.toFixed(2)} × ${item.quantity}` : ''}</span>
+                                            <span className="font-bold text-green-700 text-sm">₹{(item.finalPrice * item.quantity).toFixed(2)}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -2056,26 +2097,37 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
                         )}
                     </div>
 
+                    {/* Footer */}
                     {cart.length > 0 && (
-                        <div className="p-4 sm:p-6 border-t bg-gray-50">
-                            <div className="flex justify-between items-center mb-1">
-                                <span className="text-md font-semibold text-gray-800">Subtotal</span>
-                                <span className="text-lg font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
+                        <div className="border-t bg-white p-5 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+                            {/* Platform Fee Banner */}
+                            <div className="flex items-center justify-between bg-green-50 px-3 py-2.5 rounded-xl mb-3 border border-green-100">
+                                <div className="flex items-center gap-2">
+                                    <CheckCircle size={14} className="text-green-600" />
+                                    <span className="text-xs font-semibold text-green-800">Platform Fee</span>
+                                    <span className="text-[9px] bg-green-600 text-white px-1.5 py-0.5 rounded font-bold uppercase">FREE</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="line-through text-gray-400 text-xs">₹10</span>
+                                    <span className="font-bold text-green-600 text-sm">₹0</span>
+                                </div>
                             </div>
-                            {/* Platform Fee - Currently Free */}
-                            <div className="flex justify-between items-center mb-4 text-sm">
-                                <span className="flex items-center gap-1 text-green-600">
-                                    Platform Fee
-                                    <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">FREE</span>
-                                </span>
-                                <span className="flex items-center gap-1.5">
-                                    <span className="line-through text-gray-400 text-xs">₹10.00</span>
-                                    <span className="font-bold text-green-600">₹0.00</span>
-                                </span>
+
+                            {/* Subtotal */}
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-gray-600 font-semibold">Subtotal</span>
+                                <span className="text-2xl font-black text-gray-900">₹{subtotal.toFixed(2)}</span>
                             </div>
-                            <button onClick={onCheckout} className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-4 rounded-2xl hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 text-md">
+
+                            {/* Checkout Button */}
+                            <button 
+                                onClick={onCheckout} 
+                                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-4 rounded-2xl hover:shadow-lg hover:shadow-green-500/30 active:scale-[0.98] transition-all duration-200 text-base flex items-center justify-center gap-2"
+                            >
+                                <Clock size={18} />
                                 Choose Arrival Time
                             </button>
+                            <p className="text-center text-[10px] text-gray-400 mt-2">Coupons & points can be applied at checkout</p>
                         </div>
                     )}
                 </div>
