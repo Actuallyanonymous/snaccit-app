@@ -2417,8 +2417,8 @@ const applyCoupon = (coupon, code) => {
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg m-4 relative flex flex-col max-h-[90vh]">
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 z-10"><X size={24} /></button>
                 <div className="p-6 sm:p-8 border-b">
-                    <h2 className="text-2xl font-bold text-center text-gray-800 mb-1">Almost Done! Confirm Your Order</h2>
-                    <p className="text-center text-gray-500 text-sm">From: <span className="font-semibold text-gray-700">{restaurant?.name || 'Restaurant'}</span></p>
+                    <h2 className="text-xl sm:text-2xl font-bold text-center text-gray-800 mb-1">Almost Done! Confirm Your Order</h2>
+                    <p className="text-center text-gray-500 text-xs sm:text-sm">From: <span className="font-semibold text-gray-700">{restaurant?.name || 'Restaurant'}</span></p>
                 </div>
                 
                 
@@ -2528,8 +2528,8 @@ const applyCoupon = (coupon, code) => {
                             <div className="flex items-center gap-3">
                                 <div className="bg-amber-100 p-2 rounded-full text-amber-600"><Award size={20}/></div>
                                 <div>
-                                    <p className="font-bold text-amber-900 text-sm">Use Snaccit Points ({userPoints} available)</p>
-                                    <p className="text-xs text-amber-700 font-medium">Save ₹{Math.floor(userPoints/10)} on this order</p>
+                                    <p className="font-bold text-amber-900 text-xs sm:text-sm">Use Snaccit Points ({userPoints} available)</p>
+                                    <p className="text-[10px] sm:text-xs text-amber-700 font-medium">Save ₹{Math.floor(userPoints/10)} on this order</p>
                                 </div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
