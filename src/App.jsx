@@ -1615,6 +1615,7 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
     const [reviews, setReviews] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [menuSearch, setMenuSearch] = useState('');
+    const [vegFilter, setVegFilter] = useState('all'); // 'all', 'veg', 'nonveg'
     
     // State for the "All Reviews" modal
     const [isAllReviewsOpen, setIsAllReviewsOpen] = useState(false);
@@ -1670,6 +1671,13 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
             result = result.filter(item => item.category === activeCategory);
         }
 
+        // Filter by Veg/Non-Veg
+        if (vegFilter === 'veg') {
+            result = result.filter(item => item.isVeg === true);
+        } else if (vegFilter === 'nonveg') {
+            result = result.filter(item => item.isVeg !== true);
+        }
+
         // Filter by Search Term
         if (menuSearch) {
             const lowerTerm = menuSearch.toLowerCase();
@@ -1684,17 +1692,15 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
             const aAvailable = a.isAvailable !== false;
             const bAvailable = b.isAvailable !== false;
             
-            // If availability differs, sort available items first
             if (aAvailable !== bAvailable) {
-                return bAvailable - aAvailable; // true (1) - false (0) = 1, false (0) - true (1) = -1
+                return bAvailable - aAvailable;
             }
             
-            // If both have same availability, maintain original order
             return 0;
         });
 
         return result;
-    }, [menuItems, menuSearch, activeCategory]);
+    }, [menuItems, menuSearch, activeCategory, vegFilter]);
 
     if (!restaurant) {
          return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
@@ -1815,6 +1821,30 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                     </div>
                 </div>
 
+                {/* Veg / Non-Veg Filter */}
+                <div className="flex gap-2 mb-6">
+                    <button
+                        onClick={() => setVegFilter('all')}
+                        className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${vegFilter === 'all' ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                    >
+                        All
+                    </button>
+                    <button
+                        onClick={() => setVegFilter('veg')}
+                        className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${vegFilter === 'veg' ? 'bg-green-600 text-white shadow-md shadow-green-200' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'}`}
+                    >
+                        <span className="w-3 h-3 border-2 border-current rounded-sm flex items-center justify-center"><span className="w-1.5 h-1.5 rounded-full bg-current"></span></span>
+                        Veg
+                    </button>
+                    <button
+                        onClick={() => setVegFilter('nonveg')}
+                        className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${vegFilter === 'nonveg' ? 'bg-red-600 text-white shadow-md shadow-red-200' : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'}`}
+                    >
+                        <span className="w-3 h-3 border-2 border-current rounded-sm flex items-center justify-center"><span className="w-1.5 h-1.5 rounded-full bg-current"></span></span>
+                        Non-Veg
+                    </button>
+                </div>
+
                 {/* Disclaimer for unavailable items */}
                 {filteredItems.some(item => item.isAvailable === false) && (
                     <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
@@ -1881,10 +1911,16 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                     </div>
                 ) : (
                     <div className="text-center py-10">
-                        {menuSearch ? (
+                        {menuSearch || vegFilter !== 'all' ? (
                             <>
                                 <Frown size={48} className="mx-auto text-gray-300 mb-2"/>
-                                <p className="text-gray-500 font-medium">No dishes match "{menuSearch}"</p>
+                                <p className="text-gray-500 font-medium">
+                                    {menuSearch ? `No dishes match "${menuSearch}"` : `No ${vegFilter === 'veg' ? 'vegetarian' : 'non-vegetarian'} dishes found`}
+                                    {vegFilter !== 'all' && menuSearch && ` in ${vegFilter === 'veg' ? 'Veg' : 'Non-Veg'}`}
+                                </p>
+                                {vegFilter !== 'all' && (
+                                    <button onClick={() => setVegFilter('all')} className="mt-3 text-sm text-green-600 font-bold hover:underline">Show all items</button>
+                                )}
                             </>
                         ) : (
                             <p className="text-gray-500 italic">Menu not available for this restaurant.</p>
@@ -2055,11 +2091,21 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
                     <div className="flex-grow p-4 overflow-y-auto">
                         {cart.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                                <div className="w-28 h-28 bg-gradient-to-br from-green-50 to-emerald-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                                    <ShoppingCart size={48} className="text-green-300" />
+                                <div className="relative w-28 h-28 mb-6">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full animate-pulse"></div>
+                                    <div className="absolute inset-0 flex items-center justify-center animate-bounce" style={{animationDuration: '2s'}}>
+                                        <ShoppingCart size={48} className="text-green-400" />
+                                    </div>
                                 </div>
                                 <h3 className="text-lg font-bold text-gray-700 mb-2">Your cart is empty</h3>
                                 <p className="text-gray-400 text-sm leading-relaxed">Browse a restaurant menu and add some delicious items to get started!</p>
+                                <div className="mt-6 flex gap-2">
+                                    <span className="text-2xl animate-bounce" style={{animationDelay: '0s', animationDuration: '1.5s'}}>🍕</span>
+                                    <span className="text-2xl animate-bounce" style={{animationDelay: '0.2s', animationDuration: '1.5s'}}>🍔</span>
+                                    <span className="text-2xl animate-bounce" style={{animationDelay: '0.4s', animationDuration: '1.5s'}}>🌮</span>
+                                    <span className="text-2xl animate-bounce" style={{animationDelay: '0.6s', animationDuration: '1.5s'}}>🍩</span>
+                                    <span className="text-2xl animate-bounce" style={{animationDelay: '0.8s', animationDuration: '1.5s'}}>🍰</span>
+                                </div>
                             </div>
                         ) : (
                             <div className="space-y-3">
@@ -2626,6 +2672,8 @@ const OrderConfirmation = ({ onGoHome }) => (
 // --- [FINAL FAIL-SAFE] Payment Status Page Component ---
 const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
     const [orderStatus, setOrderStatus] = useState('awaiting_payment');
+    const [orderData, setOrderData] = useState(null);
+    const [orderId, setOrderId] = useState(null);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [statusMessage, setStatusMessage] = useState('Verifying Payment...');
     
@@ -2656,10 +2704,12 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
         }
 
         const startListeningToOrder = (id) => {
+            setOrderId(id);
             return db.collection('orders').doc(id).onSnapshot((docSnapshot) => {
                 if (docSnapshot.exists) {
                     const data = docSnapshot.data();
                     setOrderStatus(data.status);
+                    setOrderData(data);
                     if(data.status === 'awaiting_payment') setStatusMessage('Waiting for confirmation...');
                     if(data.status === 'pending') setStatusMessage('Payment Received!');
                 } else {
@@ -2718,7 +2768,7 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
             const timer = setTimeout(() => {
                 console.log("Timer up. Redirecting to profile...");
                 if (onGoToProfile) onGoToProfile();
-            }, 4000);
+            }, 8000);
 
             return () => clearTimeout(timer);
         }
@@ -2731,9 +2781,66 @@ const PaymentStatusPage = ({ onGoHome, onOrderSuccess, onGoToProfile }) => {
         if (successStatuses.includes(orderStatus)) {
             return (
                 <>
-                    <PartyPopper size={64} className="text-green-500 mb-6 animate-bounce" />
-                    <h1 className="text-4xl font-bold text-gray-800">Order Placed!</h1>
-                    <p className="text-lg text-gray-600 mt-4">Redirecting to your order history in a few seconds...</p>
+                    <PartyPopper size={48} className="text-green-500 mb-4 animate-bounce" />
+                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">Order Placed!</h1>
+                    
+                    {/* Rich Order Receipt */}
+                    {orderData && (
+                        <div className="w-full max-w-sm mt-6 bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+                            {/* Receipt Header */}
+                            <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-4 text-white">
+                                <p className="text-sm font-bold opacity-80">Order Confirmed</p>
+                                <p className="text-lg font-extrabold">{orderData.restaurantName || 'Restaurant'}</p>
+                                {orderId && <p className="text-[10px] font-mono opacity-60 mt-1">#{orderId.slice(-8).toUpperCase()}</p>}
+                            </div>
+                            
+                            {/* Items List */}
+                            <div className="px-5 py-4 border-b border-gray-100">
+                                <div className="space-y-2">
+                                    {orderData.items?.map((item, i) => (
+                                        <div key={i} className="flex justify-between text-sm">
+                                            <span className="text-gray-700">
+                                                <span className="font-bold text-gray-800">{item.quantity}x</span> {item.name}
+                                                {item.size && <span className="text-gray-400 text-xs ml-1">({item.size})</span>}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* Order Details */}
+                            <div className="px-5 py-3 space-y-2 text-sm border-b border-gray-100">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Pickup Time</span>
+                                    <span className="font-bold text-blue-600">{orderData.arrivalTime || 'ASAP'}</span>
+                                </div>
+                                {orderData.couponCode && (
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Coupon</span>
+                                        <span className="font-bold text-green-600">{orderData.couponCode}</span>
+                                    </div>
+                                )}
+                                {orderData.pointsRedeemed > 0 && (
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Points Used</span>
+                                        <span className="font-bold text-amber-600">{orderData.pointsRedeemed} pts (-₹{orderData.pointsValue})</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Payment</span>
+                                    <span className="font-semibold text-gray-700">{orderData.paymentDetails?.method === 'cod' ? '💵 Cash on Delivery' : '💳 Online'}</span>
+                                </div>
+                            </div>
+                            
+                            {/* Total */}
+                            <div className="px-5 py-3 flex justify-between items-center bg-gray-50">
+                                <span className="font-bold text-gray-600">Total</span>
+                                <span className="text-2xl font-black text-gray-900">₹{orderData.total?.toFixed(0)}</span>
+                            </div>
+                        </div>
+                    )}
+                    
+                    <p className="text-sm text-gray-400 mt-4">Redirecting to order history...</p>
                 </>
             );
         }
