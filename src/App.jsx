@@ -1347,10 +1347,9 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
                                             {item.rating && <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded flex items-center"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
                                         </div>
                                         <p className="text-gray-500 text-sm font-medium mb-1 line-clamp-1">{item.cuisine}</p>
-                                        <div className="bg-red-50 border border-red-200 rounded-lg px-2 py-1 mb-3">
-                                            <span className="text-[11px] text-red-700 font-bold flex items-center gap-1">
-                                                ⚠️ Campus Students Only
-                                            </span>
+                                        <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-full px-2.5 py-1 mb-3">
+                                            <span className="text-[11px]">🎓</span>
+                                            <span className="text-[11px] text-emerald-700 font-bold tracking-tight">Campus Exclusive</span>
                                         </div>
                                         <div className="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
                                             <span className="text-gray-900 font-bold text-sm">{item.price}</span>
