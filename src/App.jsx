@@ -1347,9 +1347,9 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
                                             {item.rating && <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded flex items-center"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
                                         </div>
                                         <p className="text-gray-500 text-sm font-medium mb-1 line-clamp-1">{item.cuisine}</p>
-                                        <div className="flex items-center gap-1 mb-3">
-                                            <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
-                                                📍 Campus Pickup Only
+                                        <div className="bg-red-50 border border-red-200 rounded-lg px-2 py-1 mb-3">
+                                            <span className="text-[11px] text-red-700 font-bold flex items-center gap-1">
+                                                ⚠️ Campus Students Only
                                             </span>
                                         </div>
                                         <div className="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
@@ -1730,13 +1730,13 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
             </div>
 
             {/* Campus-Only Warning Banner */}
-            <div className="max-w-4xl mx-auto mb-8 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
-                <div className="bg-amber-100 p-2 rounded-xl flex-shrink-0 mt-0.5">
-                    <Info size={18} className="text-amber-600" />
+            <div className="max-w-4xl mx-auto mb-8 bg-red-50 border-2 border-red-300 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+                <div className="bg-red-100 p-2.5 rounded-xl flex-shrink-0">
+                    <Info size={20} className="text-red-600" />
                 </div>
                 <div>
-                    <p className="font-bold text-amber-800 text-sm">📍 Campus Pickup Only</p>
-                    <p className="text-xs text-amber-700 mt-1 leading-relaxed">This canteen is located at <span className="font-semibold">{restaurant.cuisine}</span>. Orders can only be picked up on campus. Please order only if you are a student or present at this campus.</p>
+                    <p className="font-extrabold text-red-800 text-sm">⚠️ Campus Pickup Only — For Students of This College</p>
+                    <p className="text-xs text-red-700 mt-1.5 leading-relaxed">This canteen is inside <span className="font-bold underline">{restaurant.cuisine}</span>. You must be physically present on campus to collect your order. <span className="font-bold">Do not order if you cannot pick up in person.</span></p>
                 </div>
             </div>
 
@@ -2144,7 +2144,11 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
                                 Choose Arrival Time
                             </button>
                             <p className="text-center text-[10px] text-gray-400 mt-2">Coupons & points can be applied at checkout</p>
-                            <p className="text-center text-[10px] text-amber-600 font-semibold mt-1">📍 Campus pickup only — order only if you're on campus</p>
+
+                            <div className="mt-3 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                                <span className="text-base flex-shrink-0">⚠️</span>
+                                <p className="text-[11px] text-red-700 font-bold leading-snug">Campus students only — order only if you can pick up on campus</p>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -2436,9 +2440,9 @@ const applyCoupon = (coupon, code) => {
                 <div className="p-5 sm:p-8 border-b">
                     <h2 className="text-xl sm:text-2xl font-bold text-center text-gray-800 mb-1">Almost Done! Confirm Your Order</h2>
                     <p className="text-center text-gray-500 text-xs sm:text-sm">From: <span className="font-semibold text-gray-700">{restaurant?.name || 'Restaurant'}</span></p>
-                    <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 flex items-center gap-2">
-                        <span className="text-amber-600 flex-shrink-0">📍</span>
-                        <p className="text-[11px] text-amber-800"><span className="font-bold">Campus Pickup Only</span> — This canteen is at <span className="font-semibold">{restaurant?.cuisine}</span>. Confirm only if you can pick up on campus.</p>
+                    <div className="mt-3 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                        <span className="text-base flex-shrink-0">⚠️</span>
+                        <p className="text-[11px] sm:text-xs text-red-800 font-bold leading-snug">Campus Pickup Only — This canteen is at <span className="underline">{restaurant?.cuisine}</span>. Confirm only if you're on campus.</p>
                     </div>
                 </div>
                 
