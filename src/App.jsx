@@ -1346,7 +1346,12 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
                                             <h4 className="text-lg font-bold text-gray-900 line-clamp-1">{item.name}</h4>
                                             {item.rating && <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded flex items-center"><Star size={12} className="mr-1 fill-current"/>{item.rating.toFixed(1)}</div>}
                                         </div>
-                                        <p className="text-gray-500 text-sm font-medium mb-3 line-clamp-1">{item.cuisine}</p>
+                                        <p className="text-gray-500 text-sm font-medium mb-1 line-clamp-1">{item.cuisine}</p>
+                                        <div className="flex items-center gap-1 mb-3">
+                                            <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                                                📍 Campus Pickup Only
+                                            </span>
+                                        </div>
                                         <div className="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
                                             <span className="text-gray-900 font-bold text-sm">{item.price}</span>
                                             {!isClosed && <span className="text-green-600 text-xs font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">View Menu <ArrowLeft className="rotate-180 ml-1" size={14}/></span>}
@@ -1721,6 +1726,17 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                         <span className="text-gray-400 hidden sm:inline">|</span>
                         <span className="text-gray-800 font-semibold text-lg">{restaurant.price}</span>
                     </div>
+                </div>
+            </div>
+
+            {/* Campus-Only Warning Banner */}
+            <div className="max-w-4xl mx-auto mb-8 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+                <div className="bg-amber-100 p-2 rounded-xl flex-shrink-0 mt-0.5">
+                    <Info size={18} className="text-amber-600" />
+                </div>
+                <div>
+                    <p className="font-bold text-amber-800 text-sm">📍 Campus Pickup Only</p>
+                    <p className="text-xs text-amber-700 mt-1 leading-relaxed">This canteen is located at <span className="font-semibold">{restaurant.cuisine}</span>. Orders can only be picked up on campus. Please order only if you are a student or present at this campus.</p>
                 </div>
             </div>
 
@@ -2128,6 +2144,7 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
                                 Choose Arrival Time
                             </button>
                             <p className="text-center text-[10px] text-gray-400 mt-2">Coupons & points can be applied at checkout</p>
+                            <p className="text-center text-[10px] text-amber-600 font-semibold mt-1">📍 Campus pickup only — order only if you're on campus</p>
                         </div>
                     )}
                 </div>
@@ -2416,9 +2433,13 @@ const applyCoupon = (coupon, code) => {
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg m-4 relative flex flex-col max-h-[90vh]">
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 z-10"><X size={24} /></button>
-                <div className="p-6 sm:p-8 border-b">
+                <div className="p-5 sm:p-8 border-b">
                     <h2 className="text-xl sm:text-2xl font-bold text-center text-gray-800 mb-1">Almost Done! Confirm Your Order</h2>
                     <p className="text-center text-gray-500 text-xs sm:text-sm">From: <span className="font-semibold text-gray-700">{restaurant?.name || 'Restaurant'}</span></p>
+                    <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 flex items-center gap-2">
+                        <span className="text-amber-600 flex-shrink-0">📍</span>
+                        <p className="text-[11px] text-amber-800"><span className="font-bold">Campus Pickup Only</span> — This canteen is at <span className="font-semibold">{restaurant?.cuisine}</span>. Confirm only if you can pick up on campus.</p>
+                    </div>
                 </div>
                 
                 
