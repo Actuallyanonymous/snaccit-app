@@ -1,6 +1,10 @@
 {
     "rewrites": [
       {
+        "source": "/pay-redirect.html",
+        "destination": "/pay-redirect.html"
+      },
+      {
         "source": "/(.*)",
         "destination": "/index.html"
       }
