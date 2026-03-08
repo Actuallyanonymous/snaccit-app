@@ -67,20 +67,34 @@
         <a id="fallbackBtn" class="btn" style="display:none;" href="#">Open Snaccit App</a>
     </div>
     <script>
-        const params = new URLSearchParams(window.location.search);
-        const orderId = params.get('orderId') || '';
-        const deepLink = 'snaccit://payment-status?orderId=' + encodeURIComponent(orderId);
+    var params = new URLSearchParams(window.location.search);
+    var orderId = params.get('orderId') || '';
 
-        // Try to open the app immediately
-        window.location.href = deepLink;
+    // Use Android intent:// URI format — Chrome handles this WITHOUT showing a confirmation dialog
+    // Falls back to the custom scheme for iOS/other platforms
+    var isAndroid = /android/i.test(navigator.userAgent);
 
-        // After 2 seconds, if we're still here, show the fallback button
-        setTimeout(function () {
-            document.getElementById('fallback').style.display = 'block';
-            var btn = document.getElementById('fallbackBtn');
-            btn.style.display = 'inline-block';
-            btn.href = deepLink;
-        }, 2000);
+    if (isAndroid) {
+      // intent:// format bypasses Chrome's "Open app?" confirmation dialog
+      window.location.href = 'intent://payment-status?orderId=' + encodeURIComponent(orderId) 
+        + '#Intent;scheme=snaccit;package=com.snaccit.snaccit_flutter;end';
+    } else {
+      // iOS and others use standard custom scheme
+      window.location.href = 'snaccit://payment-status?orderId=' + encodeURIComponent(orderId);
+    }
+
+    // After 2 seconds, if we're still here, show the fallback button
+    setTimeout(function() {
+      document.getElementById('fallback').style.display = 'block';
+      var btn = document.getElementById('fallbackBtn');
+      btn.style.display = 'inline-block';
+      if (isAndroid) {
+        btn.href = 'intent://payment-status?orderId=' + encodeURIComponent(orderId) 
+          + '#Intent;scheme=snaccit;package=com.snaccit.snaccit_flutter;end';
+      } else {
+        btn.href = 'snaccit://payment-status?orderId=' + encodeURIComponent(orderId);
+      }
+    }, 2000);
     </script>
 </body>
 
