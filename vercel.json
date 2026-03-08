@@ -5,6 +5,10 @@
         "destination": "/pay-redirect.html"
       },
       {
+        "source": "/app-return.html",
+        "destination": "/app-return.html"
+      },
+      {
         "source": "/(.*)",
         "destination": "/index.html"
       }

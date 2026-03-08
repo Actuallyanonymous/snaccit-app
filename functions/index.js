@@ -3,7 +3,7 @@
  * FINAL STABLE VERSION - POINTS SYSTEM + SECURE PAYMENTS
  */
 
-const { onCall, onRequest } = require("firebase-functions/v2/https");
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onDocumentWritten, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
@@ -32,7 +32,7 @@ exports.createOrderAndPay = onCall({
 }, async (request) => {
   // 1. Auth Check
   if (!request.auth) {
-    throw new admin.functions.https.HttpsError('unauthenticated', 'Login required.');
+    throw new HttpsError('unauthenticated', 'Login required.');
   }
 
   try {
@@ -54,12 +54,12 @@ exports.createOrderAndPay = onCall({
     const restaurantDoc = await restaurantRef.get();
     
     if (!restaurantDoc.exists) {
-        throw new admin.functions.https.HttpsError('not-found', 'Restaurant not found');
+        throw new HttpsError('not-found', 'Restaurant not found');
     }
 
     // --- COD VALIDATION ---
     if (paymentMethod === 'cod' && !restaurantDoc.data().codEnabled) {
-        throw new admin.functions.https.HttpsError('failed-precondition', 'Cash on Delivery is not available for this restaurant');
+        throw new HttpsError('failed-precondition', 'Cash on Delivery is not available for this restaurant');
     }
 
     const menuSnapshot = await restaurantRef.collection('menu').get();
@@ -75,12 +75,12 @@ exports.createOrderAndPay = onCall({
     for (const itemRequest of items) {
         const realItem = menuMap[itemRequest.id];
         if (!realItem) {
-            throw new admin.functions.https.HttpsError('invalid-argument', `Item ${itemRequest.id} not found`);
+            throw new HttpsError('invalid-argument', `Item ${itemRequest.id} not found`);
         }
 
         const realSize = realItem.sizes.find(s => s.name === itemRequest.size);
         if (!realSize) {
-             throw new admin.functions.https.HttpsError('invalid-argument', `Invalid size for ${realItem.name}`);
+             throw new HttpsError('invalid-argument', `Invalid size for ${realItem.name}`);
         }
 
         let addonsPrice = 0;
@@ -144,7 +144,7 @@ if (couponCode) {
         } else {
             // OPTIONAL: Throw error if coupon was sent but failed validation
             // This prevents the user from being charged the full price unexpectedly
-            throw new admin.functions.https.HttpsError('failed-precondition', 'Coupon is no longer valid. Please remove it and try again.');
+            throw new HttpsError('failed-precondition', 'Coupon is no longer valid. Please remove it and try again.');
         }
     }
 }
@@ -206,7 +206,7 @@ const grandTotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDisco
             status: 'pending', 
             paymentDetails: { method: 'points_full' } 
         });
-        return { redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderRef.id}` };
+        return { redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderRef.id}`, orderId: orderRef.id };
     }
 
     // Case 2: Cash on Delivery (COD) - No PhonePe payment needed
@@ -215,23 +215,44 @@ const grandTotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDisco
             status: 'pending', 
             paymentDetails: { method: 'cod' } 
         });
-        return { redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderRef.id}` };
+        return { redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderRef.id}`, orderId: orderRef.id };
     }
 
     // Case 3: PhonePe Payment Required
     const merchantTransactionId = `SNCT_${orderRef.id}`;
     
+    // For mobile app: redirect to app-return.html which deep-links back to the Flutter app
+    // For web: redirect to the regular payment-status page
+    const isMobile = request.data.platform === 'mobile';
+    const redirectUrl = isMobile 
+      ? `${APP_BASE_URL.value()}/app-return.html?orderId=${orderRef.id}`
+      : `${APP_BASE_URL.value()}/payment-status?orderId=${orderRef.id}`;
+
     const payload = {
       merchantId: PHONEPE_MERCHANT_ID.value(),
       merchantTransactionId: merchantTransactionId,
       merchantUserId: userId,
       amount: Math.round(grandTotal * 100), // PhonePe expects paisa
-      redirectUrl: `${APP_BASE_URL.value()}/payment-status?orderId=${orderRef.id}`,
+      redirectUrl: redirectUrl,
       redirectMode: "REDIRECT",
       callbackUrl: `https://asia-south2-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/phonePeCallback`,
       mobileNumber: userPhone || "9999999999",
       paymentInstrument: { type: "PAY_PAGE" },
     };
+
+    // ===== DEBUG LOGGING =====
+    logger.info("PHONEPE_DEBUG_PAYLOAD", {
+      orderId: orderRef.id,
+      merchantTransactionId,
+      amount: payload.amount,
+      grandTotal,
+      callbackUrl: payload.callbackUrl,
+      mobileNumber: payload.mobileNumber,
+      merchantId: payload.merchantId,
+      userId,
+      platform: request.data.platform || 'web',
+      source: request.rawRequest?.headers?.['user-agent'] || 'unknown',
+    });
 
     const base64Payload = Buffer.from(JSON.stringify(payload)).toString("base64");
     const stringToHash = base64Payload + "/pg/v1/pay" + PHONEPE_SALT_KEY.value();
@@ -239,6 +260,10 @@ const grandTotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDisco
     const xVerify = sha256Hash + "###" + PHONEPE_SALT_INDEX.value();
 
     try {
+        // Log the transaction in Firestore before payment initiation
+        await orderRef.update({ merchantTransactionId });
+
+        // ALWAYS execute the API call on the server to get the redirectUrl
         const response = await axios.post(PHONEPE_PAY_API_URL, { request: base64Payload }, {
             headers: { 
                 "Content-Type": "application/json", 
@@ -246,9 +271,15 @@ const grandTotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDisco
             }
         });
         
+        logger.info("PHONEPE_DEBUG_RESPONSE", {
+            orderId: orderRef.id,
+            success: response.data.success,
+            code: response.data.code,
+            fullResponse: JSON.stringify(response.data).substring(0, 1000),
+        });
+
         if (response.data.success) {
-            await orderRef.update({ merchantTransactionId });
-            return { redirectUrl: response.data.data.instrumentResponse.redirectInfo.url };
+            return { redirectUrl: response.data.data.instrumentResponse.redirectInfo.url, orderId: orderRef.id };
         } else {
             throw new Error(response.data.message || "Payment initiation failed");
         }
@@ -263,14 +294,14 @@ const grandTotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDisco
         await orderRef.update({ status: 'payment_init_failed' });
         
         logger.error("Payment Init Error", paymentError);
-        throw new admin.functions.https.HttpsError('internal', 'Payment Gateway Error');
+        throw new HttpsError('internal', 'Payment Gateway Error');
     }
 
   } catch (error) {
     logger.error("Create Order Error", error);
     // Rethrow valid HttpsErrors, wrap others
     if (error.code && error.details) throw error;
-    throw new admin.functions.https.HttpsError('internal', error.message || "Internal Server Error");
+    throw new HttpsError('internal', error.message || "Internal Server Error");
   }
 });
 
