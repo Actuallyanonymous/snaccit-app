@@ -168,15 +168,14 @@ if (usePoints) {
     
     if (availablePoints > 0) {
         const potentialPointsDiscount = Math.floor(availablePoints / 10);
-        // Ensure points don't exceed the REMAINING balance after coupon
-        const remainingAfterCoupon = Math.max(0, calculatedSubtotal - couponDiscount);
+        // Points can cover the full bill including express fee
+        const remainingAfterCoupon = Math.max(0, calculatedSubtotal + expressFee - couponDiscount);
         pointsDiscount = Math.min(potentialPointsDiscount, remainingAfterCoupon);
         pointsRedeemed = pointsDiscount * 10;
     }
 }
 
-const discountedSubtotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDiscount);
-const grandTotal = discountedSubtotal + expressFee;
+const grandTotal = Math.max(0, calculatedSubtotal + expressFee - couponDiscount - pointsDiscount);
 
     // --- D. DEDUCT POINTS & CREATE ORDER ---
     if (pointsRedeemed > 0) {

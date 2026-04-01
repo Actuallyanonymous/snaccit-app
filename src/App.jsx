@@ -2474,18 +2474,16 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
     const expressFee = useMemo(() => cart.reduce((total, item) => total + (item.isExpress ? item.quantity * 1 : 0), 0), [cart]);
 
     // Calculate Points Value (10 Points = 1 Rupee)
-    // Logic: If toggle ON, discount is points/10, but cannot exceed the remaining subtotal (express fee is not discountable)
+    // Points can cover the full bill including express fee
     const pointsDiscountValue = useMemo(() => {
         if (!usePoints || userPoints <= 0) return 0;
         const potentialDiscount = Math.floor(userPoints / 10);
-        // Ensure we don't discount more than the subtotal (after coupon) — express fee excluded
-        const remainingToPay = Math.max(0, subtotal - discount);
-        return Math.min(potentialDiscount, remainingToPay);
-    }, [usePoints, userPoints, subtotal, discount]);
+        const totalToPay = Math.max(0, subtotal + expressFee - discount);
+        return Math.min(potentialDiscount, totalToPay);
+    }, [usePoints, userPoints, subtotal, expressFee, discount]);
 
-    // Final Total Calculation — express fee added after discount clamp (not discountable)
-    const discountedSubtotal = Math.max(0, subtotal - discount - pointsDiscountValue);
-    const grandTotal = discountedSubtotal + expressFee;
+    // Final Total — points can bring the entire bill (including express fee) to zero
+    const grandTotal = Math.max(0, subtotal + expressFee - discount - pointsDiscountValue);
 
     // Reset state when modal opens
     useEffect(() => {
@@ -3915,9 +3913,9 @@ const renderView = () => {
              <ReviewModal isOpen={!!orderToReview} onClose={() => setOrderToReview(null)} order={orderToReview} onSubmitReview={handleSubmitReview} />
              <PaymentRedirectOverlay isOpen={isRedirecting} />
 
-            <FloatingCartButton 
-            itemCount={cartItemCount} 
-            totalAmount={cart.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0)}
+            <FloatingCartButton
+            itemCount={cartItemCount}
+            totalAmount={cart.reduce((sum, item) => sum + (item.finalPrice * item.quantity) + (item.isExpress ? item.quantity * 1 : 0), 0)}
             onClick={() => setIsCartOpen(true)}
         />
 
