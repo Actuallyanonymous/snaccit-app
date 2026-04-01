@@ -100,13 +100,22 @@ exports.createOrderAndPay = onCall({
         calculatedSubtotal += finalItemPrice * itemRequest.quantity;
 
         secureItems.push({
-            id: realItem.id, 
-            name: realItem.name, 
+            id: realItem.id,
+            name: realItem.name,
             quantity: itemRequest.quantity,
-            price: finalItemPrice, 
-            size: itemRequest.size, 
-            addons: validatedAddons
+            price: finalItemPrice,
+            size: itemRequest.size,
+            addons: validatedAddons,
+            isExpress: realItem.isExpress === true  // server-verified from Firestore
         });
+    }
+
+    // Express Fee: ₹1 per express item per quantity (platform revenue, not vendor revenue)
+    let expressFee = 0;
+    for (const secureItem of secureItems) {
+        if (secureItem.isExpress === true) {
+            expressFee += secureItem.quantity * 1;
+        }
     }
 
     // 1. IMPROVED COUPON LOGIC
@@ -166,7 +175,8 @@ if (usePoints) {
     }
 }
 
-const grandTotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDiscount);
+const discountedSubtotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDiscount);
+const grandTotal = discountedSubtotal + expressFee;
 
     // --- D. DEDUCT POINTS & CREATE ORDER ---
     if (pointsRedeemed > 0) {
@@ -184,6 +194,7 @@ const grandTotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDisco
         restaurantName: restaurantDoc.data().name,
         items: secureItems,
         subtotal: calculatedSubtotal,
+        expressFee: expressFee,
         discount: couponDiscount + pointsDiscount,
         couponCode: couponCode || null,
         pointsRedeemed: pointsRedeemed, 
@@ -440,4 +451,68 @@ exports.manageRewardsOnOrderUpdate = onDocumentUpdated({
           await db.collection("coupons").doc(after.couponCode).update({ isUsed: false });
       }
   }
+});
+
+// ======================================================================
+// === 5. PHONE + PASSWORD AUTHENTICATION (MOBILE ORPHAN ACCOUNTS) ===
+// ======================================================================
+
+exports.preparePhoneSignup = onCall({ region: "asia-south2" }, async (request) => {
+    const { phoneNumber, password, name } = request.data;
+    if (!phoneNumber || !password || !name) {
+        throw new HttpsError('invalid-argument', 'Missing required fields.');
+    }
+    
+    // Format to E.164 if missing '+'
+    const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
+
+    try {
+        const user = await admin.auth().getUserByPhoneNumber(formattedPhone);
+        return { exists: true, message: "An account already exists for this phone number. Please log in." };
+    } catch (e) {
+        if (e.code === 'auth/user-not-found') {
+            const dummyEmail = `${formattedPhone.replace('+', '')}@snaccit-user.com`;
+            try {
+                const newUser = await admin.auth().createUser({
+                    phoneNumber: formattedPhone,
+                    email: dummyEmail,
+                    password: password,
+                    displayName: name
+                });
+                
+                await db.collection('users').doc(newUser.uid).set({
+                    phone: formattedPhone,
+                    name: name,
+                    points: 0,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                }, { merge: true });
+
+                return { exists: false, email: dummyEmail };
+            } catch (err) {
+                if (err.code === 'auth/phone-number-already-exists' || err.code === 'auth/email-already-exists') {
+                    return { exists: true, message: "An account already exists for this phone number." };
+                }
+                throw new HttpsError('internal', err.message);
+            }
+        }
+        throw new HttpsError('internal', e.message);
+    }
+});
+
+exports.getPhoneAuthEmail = onCall({ region: "asia-south2" }, async (request) => {
+    const { phoneNumber } = request.data;
+    if (!phoneNumber) {
+        throw new HttpsError('invalid-argument', 'Phone number is required.');
+    }
+    
+    const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
+
+    try {
+        const user = await admin.auth().getUserByPhoneNumber(formattedPhone);
+        const dummyEmail = `${formattedPhone.replace('+', '')}@snaccit-user.com`;
+        // Return their actual email if they signed up on Web, otherwise the dummy email
+        return { email: user.email || dummyEmail };
+    } catch (e) {
+        throw new HttpsError('not-found', 'No account found for this phone number.');
+    }
 });
