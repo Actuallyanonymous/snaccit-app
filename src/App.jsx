@@ -1652,7 +1652,7 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [menuSearch, setMenuSearch] = useState('');
     const [vegFilter, setVegFilter] = useState('all'); // 'all', 'veg', 'nonveg'
-    const [expressFilter, setExpressFilter] = useState(false);
+    const [menuTab, setMenuTab] = useState('normal'); // 'normal' | 'express'
 
     // State for the "All Reviews" modal
     const [isAllReviewsOpen, setIsAllReviewsOpen] = useState(false);
@@ -1715,9 +1715,14 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
             result = result.filter(item => item.isVeg !== true);
         }
 
-        // Filter by Express
-        if (expressFilter) {
-            result = result.filter(item => item.isExpress === true);
+        // Filter by menu tab — only applies when restaurant has express items
+        const hasExpress = menuItems.some(i => i.isExpress === true);
+        if (hasExpress) {
+            if (menuTab === 'express') {
+                result = result.filter(item => item.isExpress === true);
+            } else {
+                result = result.filter(item => item.isExpress !== true);
+            }
         }
 
         // Filter by Search Term
@@ -1742,7 +1747,7 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
         });
 
         return result;
-    }, [menuItems, menuSearch, activeCategory, vegFilter]);
+    }, [menuItems, menuSearch, activeCategory, vegFilter, menuTab]);
 
     if (!restaurant) {
          return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
@@ -1818,6 +1823,30 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                     ) : (<p className="text-gray-500 italic">No reviews yet.</p>)}
                 </div>
 
+                {/* Normal Menu / Express Menu Tabs */}
+                {menuItems.some(i => i.isExpress === true) && (
+                    <div className="flex gap-3 mt-8 mb-2">
+                        <button
+                            onClick={() => { setMenuTab('normal'); setActiveCategory('All'); }}
+                            className={`flex-1 py-3 px-5 rounded-2xl font-black text-sm transition-all ${menuTab === 'normal' ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                        >
+                            Normal Menu
+                        </button>
+                        <button
+                            onClick={() => { setMenuTab('express'); setActiveCategory('All'); }}
+                            className="flex-1 py-3 px-5 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2"
+                            style={menuTab === 'express'
+                                ? { background: '#1A1A2E', color: '#FFD700', border: '1.5px solid #FFD700' }
+                                : { background: 'rgba(255,215,0,0.08)', color: '#1A1A2E', border: '1px solid rgba(255,215,0,0.4)' }
+                            }
+                        >
+                            <Zap size={14} fill={menuTab === 'express' ? '#FFD700' : 'none'} style={{ color: menuTab === 'express' ? '#FFD700' : '#1A1A2E' }} />
+                            Express Menu
+                            {menuTab === 'express' && <span className="text-[10px] font-semibold ml-1 opacity-75">· Under 5 min · +₹1/item</span>}
+                        </button>
+                    </div>
+                )}
+
                <div className="sticky top-0 z-30 -mx-6 px-6 py-4 bg-white/60 backdrop-blur-xl border-b border-gray-100/50 mb-8 overflow-x-auto no-scrollbar">
     <div className="flex gap-4">
         {categories.map((cat) => {
@@ -1885,19 +1914,6 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                         <span className="w-3 h-3 border-2 border-current rounded-sm flex items-center justify-center"><span className="w-1.5 h-1.5 rounded-full bg-current"></span></span>
                         Non-Veg
                     </button>
-                    {menuItems.some(i => i.isExpress === true) && (
-                        <button
-                            onClick={() => setExpressFilter(f => !f)}
-                            className="px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5"
-                            style={expressFilter
-                                ? { background: '#1A1A2E', color: '#FFD700', border: '1.5px solid #FFD700' }
-                                : { background: 'rgba(255,215,0,0.08)', color: '#1A1A2E', border: '1px solid rgba(255,215,0,0.4)' }
-                            }
-                        >
-                            <Zap size={12} fill={expressFilter ? '#FFD700' : 'none'} style={{ color: expressFilter ? '#FFD700' : '#1A1A2E' }} />
-                            Express
-                        </button>
-                    )}
                 </div>
 
                 {/* Disclaimer for unavailable items */}
@@ -1985,6 +2001,13 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                                 {vegFilter !== 'all' && (
                                     <button onClick={() => setVegFilter('all')} className="mt-3 text-sm text-green-600 font-bold hover:underline">Show all items</button>
                                 )}
+                            </>
+                        ) : menuTab === 'express' ? (
+                            <>
+                                <Zap size={40} className="mx-auto mb-3" style={{ color: '#FFD700' }} />
+                                <p className="text-gray-700 font-bold text-base">No Express items available</p>
+                                <p className="text-gray-400 text-sm mt-1">This restaurant hasn't added any Express Menu items yet.</p>
+                                <button onClick={() => setMenuTab('normal')} className="mt-3 text-sm font-bold hover:underline" style={{ color: '#1A1A2E' }}>View Normal Menu</button>
                             </>
                         ) : (
                             <p className="text-gray-500 italic">Menu not available for this restaurant.</p>
