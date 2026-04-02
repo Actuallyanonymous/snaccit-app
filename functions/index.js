@@ -106,16 +106,7 @@ exports.createOrderAndPay = onCall({
             price: finalItemPrice,
             size: itemRequest.size,
             addons: validatedAddons,
-            isExpress: realItem.isExpress === true  // server-verified from Firestore
-        });
-    }
-
-    // Express Fee: ₹1 per express item per quantity (platform revenue, not vendor revenue)
-    let expressFee = 0;
-    for (const secureItem of secureItems) {
-        if (secureItem.isExpress === true) {
-            expressFee += secureItem.quantity * 1;
-        }
+            });
     }
 
     // 1. IMPROVED COUPON LOGIC
@@ -168,14 +159,13 @@ if (usePoints) {
     
     if (availablePoints > 0) {
         const potentialPointsDiscount = Math.floor(availablePoints / 10);
-        // Points can cover the full bill including express fee
-        const remainingAfterCoupon = Math.max(0, calculatedSubtotal + expressFee - couponDiscount);
+        const remainingAfterCoupon = Math.max(0, calculatedSubtotal - couponDiscount);
         pointsDiscount = Math.min(potentialPointsDiscount, remainingAfterCoupon);
         pointsRedeemed = pointsDiscount * 10;
     }
 }
 
-const grandTotal = Math.max(0, calculatedSubtotal + expressFee - couponDiscount - pointsDiscount);
+const grandTotal = Math.max(0, calculatedSubtotal - couponDiscount - pointsDiscount);
 
     // --- D. DEDUCT POINTS & CREATE ORDER ---
     if (pointsRedeemed > 0) {
@@ -193,7 +183,6 @@ const grandTotal = Math.max(0, calculatedSubtotal + expressFee - couponDiscount 
         restaurantName: restaurantDoc.data().name,
         items: secureItems,
         subtotal: calculatedSubtotal,
-        expressFee: expressFee,
         discount: couponDiscount + pointsDiscount,
         couponCode: couponCode || null,
         pointsRedeemed: pointsRedeemed, 

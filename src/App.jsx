@@ -47,11 +47,6 @@ const GlobalStyles = () => (
         /* Hide scrollbar for cleaner UI */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes express-pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.3); }
-            50% { box-shadow: 0 0 0 6px rgba(255, 215, 0, 0); }
-        }
-        .express-pulse { animation: express-pulse 2s infinite; }
     `}</style>
 );
 
@@ -1288,37 +1283,6 @@ const HomePage = ({ allRestaurants, isLoading, onRestaurantClick, onGoToProfile,
 
             <LiveOrderTracker orders={activeOrders} onViewProfile={onGoToProfile} />
 
-            {/* Express Menu Promotional Banner */}
-            <div style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16213E 100%)' }}>
-                <div className="container mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center express-pulse"
-                             style={{ background: 'rgba(255,215,0,0.12)', border: '1px solid rgba(255,215,0,0.3)' }}>
-                            <Zap size={24} fill="#FFD700" style={{ color: '#FFD700' }} />
-                        </div>
-                        <div>
-                            <p className="font-black text-white text-lg tracking-tight leading-tight">Express Menu</p>
-                            <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                                Prepared and delivered under 5 minutes
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <span className="text-xs font-black px-3 py-1.5 rounded-full tracking-widest"
-                              style={{ background: 'rgba(255,215,0,0.15)', color: '#FFD700', border: '1px solid rgba(255,215,0,0.3)' }}>
-                            +₹1 EXPRESS FEE
-                        </span>
-                        <button
-                            onClick={() => document.getElementById('restaurants')?.scrollIntoView({ behavior: 'smooth' })}
-                            className="text-sm font-bold px-4 py-2 rounded-full transition-all hover:opacity-85"
-                            style={{ background: '#FFD700', color: '#1A1A2E' }}
-                        >
-                            Order Now
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             {/* 2. RESTAURANTS SECTION */}
             <section id="restaurants" className="relative py-16 bg-gray-50/50">
                 <div className="container relative mx-auto px-6 z-10">
@@ -1652,7 +1616,6 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [menuSearch, setMenuSearch] = useState('');
     const [vegFilter, setVegFilter] = useState('all'); // 'all', 'veg', 'nonveg'
-    const [menuTab, setMenuTab] = useState('normal'); // 'normal' | 'express'
 
     // State for the "All Reviews" modal
     const [isAllReviewsOpen, setIsAllReviewsOpen] = useState(false);
@@ -1715,16 +1678,6 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
             result = result.filter(item => item.isVeg !== true);
         }
 
-        // Filter by menu tab — only applies when restaurant has express items
-        const hasExpress = menuItems.some(i => i.isExpress === true);
-        if (hasExpress) {
-            if (menuTab === 'express') {
-                result = result.filter(item => item.isExpress === true);
-            } else {
-                result = result.filter(item => item.isExpress !== true);
-            }
-        }
-
         // Filter by Search Term
         if (menuSearch) {
             const lowerTerm = menuSearch.toLowerCase();
@@ -1747,7 +1700,7 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
         });
 
         return result;
-    }, [menuItems, menuSearch, activeCategory, vegFilter, menuTab]);
+    }, [menuItems, menuSearch, activeCategory, vegFilter]);
 
     if (!restaurant) {
          return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-green-600" size={48} /></div>;
@@ -1823,27 +1776,36 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                     ) : (<p className="text-gray-500 italic">No reviews yet.</p>)}
                 </div>
 
-                {/* Normal Menu / Express Menu Tabs */}
+                {/* Quick Bites Suggestions */}
                 {menuItems.some(i => i.isExpress === true) && (
-                    <div className="flex gap-3 mt-8 mb-2">
-                        <button
-                            onClick={() => { setMenuTab('normal'); setActiveCategory('All'); }}
-                            className={`flex-1 py-3 px-5 rounded-2xl font-black text-sm transition-all ${menuTab === 'normal' ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                        >
-                            Normal Menu
-                        </button>
-                        <button
-                            onClick={() => { setMenuTab('express'); setActiveCategory('All'); }}
-                            className="flex-1 py-3 px-5 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2"
-                            style={menuTab === 'express'
-                                ? { background: '#1A1A2E', color: '#FFD700', border: '1.5px solid #FFD700' }
-                                : { background: 'rgba(255,215,0,0.08)', color: '#1A1A2E', border: '1px solid rgba(255,215,0,0.4)' }
-                            }
-                        >
-                            <Zap size={14} fill={menuTab === 'express' ? '#FFD700' : 'none'} style={{ color: menuTab === 'express' ? '#FFD700' : '#1A1A2E' }} />
-                            Express Menu
-                            {menuTab === 'express' && <span className="text-[10px] font-semibold ml-1 opacity-75">· Under 5 min · +₹1/item</span>}
-                        </button>
+                    <div className="mt-8 mb-2">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Zap size={16} className="text-emerald-600" />
+                            <h3 className="font-bold text-gray-800 text-base">Quick Bites</h3>
+                            <span className="text-xs text-gray-400 font-medium">· Ready in ~5 min</span>
+                        </div>
+                        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+                            {menuItems.filter(i => i.isExpress === true).map(item => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => item.isAvailable !== false && onSelectItem(item)}
+                                    disabled={item.isAvailable === false}
+                                    className={`flex-shrink-0 flex items-center gap-3 bg-white rounded-2xl p-3 shadow-sm border border-gray-100 text-left transition-all min-w-[180px] max-w-[200px] ${item.isAvailable === false ? 'opacity-50 cursor-not-allowed' : 'hover:border-emerald-200 hover:shadow-md'}`}
+                                >
+                                    <img
+                                        src={item.imageUrl || 'https://placehold.co/200'}
+                                        alt={item.name}
+                                        className="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100"
+                                    />
+                                    <div className="min-w-0">
+                                        <p className="font-bold text-gray-800 text-sm leading-tight truncate">{item.name}</p>
+                                        <p className="text-emerald-600 font-black text-sm mt-0.5">
+                                            ₹{item.sizes && item.sizes.length > 0 ? item.sizes[0].price : item.price || 0}
+                                        </p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 )}
 
@@ -1954,13 +1916,6 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
             <div>
                 <div className="flex items-start gap-2 mb-1 flex-wrap">
                     <h3 className={`font-bold text-lg leading-tight ${isUnavailable ? 'text-gray-500' : 'text-gray-800'}`}>{item.name}</h3>
-                    {item.isExpress && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest flex-shrink-0 mt-1"
-                              style={{ background: '#1A1A2E', color: '#FFD700', border: '1px solid rgba(255,215,0,0.5)' }}>
-                            <Zap size={8} fill="#FFD700" style={{ color: '#FFD700' }} />
-                            EXPRESS
-                        </span>
-                    )}
                 </div>
                 <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{item.description}</p>
             </div>
@@ -2001,13 +1956,6 @@ const MenuPage = ({ restaurant, onBackClick, onSelectItem }) => {
                                 {vegFilter !== 'all' && (
                                     <button onClick={() => setVegFilter('all')} className="mt-3 text-sm text-green-600 font-bold hover:underline">Show all items</button>
                                 )}
-                            </>
-                        ) : menuTab === 'express' ? (
-                            <>
-                                <Zap size={40} className="mx-auto mb-3" style={{ color: '#FFD700' }} />
-                                <p className="text-gray-700 font-bold text-base">No Express items available</p>
-                                <p className="text-gray-400 text-sm mt-1">This restaurant hasn't added any Express Menu items yet.</p>
-                                <button onClick={() => setMenuTab('normal')} className="mt-3 text-sm font-bold hover:underline" style={{ color: '#1A1A2E' }}>View Normal Menu</button>
                             </>
                         ) : (
                             <p className="text-gray-500 italic">Menu not available for this restaurant.</p>
@@ -2124,7 +2072,6 @@ const ItemCustomizationModal = ({ isOpen, onClose, item, onConfirmAddToCart }) =
 const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, selectedRestaurant, onGoToMenu, onClear }) => {
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
     const itemCount = useMemo(() => cart.reduce((count, item) => count + item.quantity, 0), [cart]);
-    const expressFee = useMemo(() => cart.reduce((total, item) => total + (item.isExpress ? item.quantity * 1 : 0), 0), [cart]);
 
     return (
         <>
@@ -2205,13 +2152,6 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="flex-grow min-w-0">
                                                 <p className="font-bold text-gray-800 text-sm leading-tight">{item.name}</p>
-                                                {item.isExpress && (
-                                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest mt-1 mb-0.5"
-                                                          style={{ background: '#1A1A2E', color: '#FFD700', border: '1px solid rgba(255,215,0,0.4)' }}>
-                                                        <Zap size={7} fill="#FFD700" style={{ color: '#FFD700' }} />
-                                                        EXPRESS
-                                                    </span>
-                                                )}
                                                 <p className="text-xs text-gray-400 mt-0.5">{item.selectedSize.name}</p>
                                                 {item.selectedAddons && item.selectedAddons.length > 0 && (
                                                     <div className="flex flex-wrap gap-1 mt-1.5">
@@ -2269,24 +2209,10 @@ const CartSidebar = ({ isOpen, onClose, cart, onUpdateQuantity, onCheckout, sele
                                 </div>
                             </div>
 
-                            {/* Express Fee Row */}
-                            {expressFee > 0 && (
-                                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl mb-3 border"
-                                     style={{ background: 'rgba(26,26,46,0.05)', borderColor: 'rgba(255,215,0,0.35)' }}>
-                                    <div className="flex items-center gap-2">
-                                        <Zap size={14} fill="#FFD700" style={{ color: '#FFD700' }} />
-                                        <span className="text-xs font-semibold" style={{ color: '#1A1A2E' }}>Express Fee</span>
-                                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded tracking-widest"
-                                              style={{ background: '#1A1A2E', color: '#FFD700' }}>EXPRESS</span>
-                                    </div>
-                                    <span className="font-bold text-sm" style={{ color: '#1A1A2E' }}>+₹{expressFee}</span>
-                                </div>
-                            )}
-
                             {/* Subtotal */}
                             <div className="flex justify-between items-center mb-4">
                                 <span className="text-gray-600 font-semibold">Total</span>
-                                <span className="text-2xl font-black text-gray-900">₹{(subtotal + expressFee).toFixed(2)}</span>
+                                <span className="text-2xl font-black text-gray-900">₹{subtotal.toFixed(2)}</span>
                             </div>
 
                             {/* Checkout Button */}
@@ -2470,20 +2396,15 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cart, restaurant }) => {
     // Calculate Subtotal
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.finalPrice * item.quantity, 0), [cart]);
 
-    // Calculate Express Fee: ₹1 per express item per quantity (platform revenue)
-    const expressFee = useMemo(() => cart.reduce((total, item) => total + (item.isExpress ? item.quantity * 1 : 0), 0), [cart]);
-
     // Calculate Points Value (10 Points = 1 Rupee)
-    // Points can cover the full bill including express fee
     const pointsDiscountValue = useMemo(() => {
         if (!usePoints || userPoints <= 0) return 0;
         const potentialDiscount = Math.floor(userPoints / 10);
-        const totalToPay = Math.max(0, subtotal + expressFee - discount);
-        return Math.min(potentialDiscount, totalToPay);
-    }, [usePoints, userPoints, subtotal, expressFee, discount]);
+        const remainingToPay = Math.max(0, subtotal - discount);
+        return Math.min(potentialDiscount, remainingToPay);
+    }, [usePoints, userPoints, subtotal, discount]);
 
-    // Final Total — points can bring the entire bill (including express fee) to zero
-    const grandTotal = Math.max(0, subtotal + expressFee - discount - pointsDiscountValue);
+    const grandTotal = Math.max(0, subtotal - discount - pointsDiscountValue);
 
     // Reset state when modal opens
     useEffect(() => {
@@ -2736,18 +2657,6 @@ const applyCoupon = (coupon, code) => {
                             </span>
                         </div>
 
-                        {/* Express Fee */}
-                        {expressFee > 0 && (
-                            <div className="flex justify-between items-center font-semibold">
-                                <span className="flex items-center gap-1.5" style={{ color: '#1A1A2E' }}>
-                                    <Zap size={13} fill="#FFD700" style={{ color: '#FFD700' }} />
-                                    Express Fee
-                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded tracking-widest"
-                                          style={{ background: '#1A1A2E', color: '#FFD700' }}>EXPRESS</span>
-                                </span>
-                                <span style={{ color: '#1A1A2E' }}>+₹{expressFee.toFixed(2)}</span>
-                            </div>
-                        )}
                         {discount > 0 && (
                             <div className="flex justify-between text-green-600 font-semibold">
                                 <span>Coupon Discount</span>
@@ -3915,7 +3824,7 @@ const renderView = () => {
 
             <FloatingCartButton
             itemCount={cartItemCount}
-            totalAmount={cart.reduce((sum, item) => sum + (item.finalPrice * item.quantity) + (item.isExpress ? item.quantity * 1 : 0), 0)}
+            totalAmount={cart.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0)}
             onClick={() => setIsCartOpen(true)}
         />
 
