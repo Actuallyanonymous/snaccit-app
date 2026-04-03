@@ -527,30 +527,71 @@ exports.resetPasswordWithPhone = onCall({ region: "asia-south2" }, async (reques
     }
 
     try {
-        // Find user in Firestore by phone number (handles old-style users with different UID)
-        const snapshot = await db.collection('users')
-            .where('phoneNumber', '==', callerPhone)
-            .limit(1)
-            .get();
+        // The caller is signed in via phone OTP. We need to find the auth user
+        // that has the email/password credential linked to this phone number.
+        // 
+        // Scenario A: The caller IS the original user (phone+email linked to same UID)
+        //   → updateUser on callerUid works directly
+        // Scenario B: The phone OTP created a NEW temporary user, and the original 
+        //   email/password user exists separately
+        //   → We need to find the original user via dummy email pattern
 
+        const dummyEmail = `${callerPhone.replace('+', '')}@snaccit-user.com`;
         let targetUid = callerUid;
-        let isLegacyUser = false;
+        let isTemporaryUser = false;
 
-        if (!snapshot.empty && snapshot.docs[0].id !== callerUid) {
-            targetUid = snapshot.docs[0].id;
-            isLegacyUser = true;
+        // Check if the caller has an email/password provider linked
+        const callerUser = await admin.auth().getUser(callerUid);
+        const hasEmailProvider = callerUser.providerData.some(p => p.providerId === 'password');
+
+        if (hasEmailProvider) {
+            // Scenario A: Caller already has email/password — update directly
+            targetUid = callerUid;
+            logger.info('resetPasswordWithPhone: Updating password for caller (has email provider)', { uid: callerUid });
+        } else {
+            // Scenario B: Caller is a temp phone-only account
+            // Find the original user by the dummy email
+            try {
+                const originalUser = await admin.auth().getUserByEmail(dummyEmail);
+                targetUid = originalUser.uid;
+                isTemporaryUser = true;
+                logger.info('resetPasswordWithPhone: Found original user by email', { targetUid, callerUid });
+            } catch (emailLookupErr) {
+                // No user with that email exists — this phone number may not have a password set
+                // Try to find via Firestore as fallback
+                const snapshot = await db.collection('users')
+                    .where('phoneNumber', '==', callerPhone)
+                    .limit(1)
+                    .get();
+                
+                if (!snapshot.empty && snapshot.docs[0].id !== callerUid) {
+                    // Found a Firestore doc under a different UID — check if that auth user exists
+                    try {
+                        await admin.auth().getUser(snapshot.docs[0].id);
+                        targetUid = snapshot.docs[0].id;
+                        isTemporaryUser = true;
+                        logger.info('resetPasswordWithPhone: Found user via Firestore fallback', { targetUid });
+                    } catch (e) {
+                        // That UID doesn't exist in Auth either — just update the caller
+                        logger.warn('resetPasswordWithPhone: Firestore UID not found in Auth, using caller', { firestoreUid: snapshot.docs[0].id });
+                    }
+                }
+            }
         }
 
-        // Update the password for the target user
+        // Update the password
         await admin.auth().updateUser(targetUid, { password: newPassword });
 
         // Get the email for sign-in after reset
-        const authUser = await admin.auth().getUser(targetUid);
-        const email = authUser.email || `${callerPhone.replace('+', '')}@snaccit-user.com`;
+        const updatedUser = await admin.auth().getUser(targetUid);
+        const email = updatedUser.email || dummyEmail;
 
-        // Clean up temporary phone-only auth account if it was a legacy user reset
-        if (isLegacyUser) {
-            try { await admin.auth().deleteUser(callerUid); } catch (e) {
+        // Clean up temporary phone-only auth account if it was different from the target
+        if (isTemporaryUser && callerUid !== targetUid) {
+            try { 
+                await admin.auth().deleteUser(callerUid); 
+                logger.info('resetPasswordWithPhone: Cleaned up temp phone user', { callerUid });
+            } catch (e) {
                 logger.warn('Could not delete temp phone user during reset:', callerUid);
             }
         }
