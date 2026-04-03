@@ -504,3 +504,61 @@ exports.getPhoneAuthEmail = onCall({ region: "asia-south2" }, async (request) =>
         throw new HttpsError('not-found', 'No account found for this phone number.');
     }
 });
+
+// ======================================================================
+// === 6. RESET PASSWORD VIA PHONE OTP ===
+// ======================================================================
+
+exports.resetPasswordWithPhone = onCall({ region: "asia-south2" }, async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Authentication required.');
+    }
+
+    const { newPassword } = request.data;
+    if (!newPassword || newPassword.length < 6) {
+        throw new HttpsError('invalid-argument', 'Password must be at least 6 characters.');
+    }
+
+    const callerUid = request.auth.uid;
+    const callerPhone = request.auth.token.phone_number;
+
+    if (!callerPhone) {
+        throw new HttpsError('failed-precondition', 'No phone number on authenticated session.');
+    }
+
+    try {
+        // Find user in Firestore by phone number (handles old-style users with different UID)
+        const snapshot = await db.collection('users')
+            .where('phoneNumber', '==', callerPhone)
+            .limit(1)
+            .get();
+
+        let targetUid = callerUid;
+        let isLegacyUser = false;
+
+        if (!snapshot.empty && snapshot.docs[0].id !== callerUid) {
+            targetUid = snapshot.docs[0].id;
+            isLegacyUser = true;
+        }
+
+        // Update the password for the target user
+        await admin.auth().updateUser(targetUid, { password: newPassword });
+
+        // Get the email for sign-in after reset
+        const authUser = await admin.auth().getUser(targetUid);
+        const email = authUser.email || `${callerPhone.replace('+', '')}@snaccit-user.com`;
+
+        // Clean up temporary phone-only auth account if it was a legacy user reset
+        if (isLegacyUser) {
+            try { await admin.auth().deleteUser(callerUid); } catch (e) {
+                logger.warn('Could not delete temp phone user during reset:', callerUid);
+            }
+        }
+
+        return { success: true, email };
+    } catch (err) {
+        if (err instanceof HttpsError) throw err;
+        logger.error('resetPasswordWithPhone error:', err);
+        throw new HttpsError('internal', 'Failed to reset password. Please try again.');
+    }
+});

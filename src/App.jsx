@@ -269,8 +269,8 @@ const CashDepositView = ({ currentUser, userProfile, restaurants, showNotificati
     );
 };
 
-// --- Authentication Modal Component (Detects New User) ---
-const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
+// --- Authentication Modal Component (Sign Up - Detects New User) ---
+const AuthModal = ({ isOpen, onClose, onNewUserVerified, onExistingUserLogin }) => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [otp, setOtp] = useState('');
     const [error, setError] = useState('');
@@ -466,10 +466,14 @@ const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
 
                 if (isNewUser) {
                     console.log("Calling onNewUserVerified for new user.");
-                    onNewUserVerified(user); // Keep modal open, let parent handle transition
+                    onNewUserVerified(user);
                 } else {
-                    console.log("Existing user logged in. Closing modal.");
-                    onClose(); // Close modal for existing user
+                    // This is the sign-up flow — existing users should use Log In
+                    console.log("Existing user detected in sign-up flow. Signing out and redirecting.");
+                    await auth.signOut().catch(e => console.error("Sign out error:", e));
+                    setStep(3); // Show "already registered" screen
+                    setIsProcessing(false);
+                    return;
                 }
             } catch (err) {
                 console.error("Error verifying OTP:", err);
@@ -506,15 +510,45 @@ const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
    // --- JSX ---
    if (!isOpen) return null;
 
+   // Step 3: Already registered screen
+   if (step === 3) {
+       return (
+           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
+               <div className="bg-white rounded-[2rem] shadow-2xl p-8 w-full max-w-md m-4 relative text-center">
+                   <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-50 rounded-full mb-4">
+                       <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                       </svg>
+                   </div>
+                   <h2 className="text-2xl font-bold text-gray-800 mb-2">Already Registered!</h2>
+                   <p className="text-gray-500 mb-2">This number is already linked to an account.</p>
+                   <p className="text-gray-400 text-sm mb-8">Use <strong>Log In</strong> to access your account with your phone number and password.</p>
+                   <button
+                       onClick={() => { onClose(); onExistingUserLogin(); }}
+                       className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3.5 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all mb-3"
+                   >
+                       Go to Log In
+                   </button>
+                   <button
+                       onClick={() => { clearRecaptcha(); setStep(1); setError(''); setPhoneNumber(''); setOtp(''); setConfirmationResult(null); }}
+                       className="w-full text-gray-500 hover:text-gray-700 text-sm font-medium py-2"
+                   >
+                       Use a Different Number
+                   </button>
+               </div>
+           </div>
+       );
+   }
+
    return (
        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
            <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md m-4 relative">
                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
                <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
-                   {step === 1 ? 'Enter Phone Number' : 'Enter OTP'}
+                   {step === 1 ? 'Create Account' : 'Verify Phone'}
                </h2>
                <p className="text-center text-gray-500 mb-6">
-                   {step === 1 ? 'We\'ll send a verification code.' : `Enter the code sent to ${phoneNumber}.`}
+                   {step === 1 ? "Enter your phone number to get started." : `Enter the 6-digit code sent to ${phoneNumber}.`}
                </p>
                <form onSubmit={handleAuthAction}>
                    {/* Phone Input */}
@@ -534,44 +568,33 @@ const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
                        <div className="mb-6">
                            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="otp">Verification Code</label>
                            <input
-                               type="text" id="otp" value={otp} // Use text for better autofill support
+                               type="text" id="otp" value={otp}
                                onChange={(e) => setOtp(e.target.value)}
-                               className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500"
-                               placeholder="Enter 6-digit code" required maxLength="6"
+                               className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 mb-1 leading-tight text-center text-xl font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-green-500"
+                               placeholder="------" required maxLength="6"
                                inputMode="numeric" pattern="[0-9]*" autoComplete="one-time-code"
                            />
+                           <p className="text-xs text-center text-gray-400 mt-1 mb-3">Enter the 6-digit code</p>
                        </div>
                    )}
 
-                   {/* reCAPTCHA container - must always be in DOM when verifier might exist */}
-                   <div id="recaptcha-container" className="my-4 h-[1px] overflow-hidden"></div> {/* Keep in DOM but visually hidden */}
+                   {/* reCAPTCHA container */}
+                   <div id="recaptcha-container" className="my-4 h-[1px] overflow-hidden"></div>
 
                    {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
 
                    {/* Submit Button */}
-                   <button type="submit" disabled={isProcessing} className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`} >
-                        {isProcessing ? <Loader2 className="animate-spin mx-auto" size={24}/> : (step === 1 ? 'Send OTP' : 'Verify OTP & Log In')}
+                   <button type="submit" disabled={isProcessing} className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        {isProcessing ? <Loader2 className="animate-spin mx-auto" size={24}/> : (step === 1 ? 'Send OTP' : 'Verify & Continue')}
                    </button>
                </form>
 
                {/* Change/Resend Button */}
                {step === 2 && (
                     <p className="text-center text-sm text-gray-500 mt-4">
-                       <button
-                           type="button" // Important: Prevent form submission
-                           onClick={() => {
-                               console.log("Change/Resend button clicked. Clearing reCAPTCHA first.");
-                               clearRecaptcha(); // Explicit cleanup first
-                               // Now update state which will trigger useEffect later
-                               setStep(1);
-                               setError('');
-                               setOtp('');
-                               setConfirmationResult(null);
-                           }}
-                           className="font-bold text-green-600 hover:text-green-700"
-                           disabled={isProcessing} // Disable if already processing something
-                       >
-                          Change Phone Number or Resend OTP
+                       <button type="button" onClick={() => { clearRecaptcha(); setStep(1); setError(''); setOtp(''); setConfirmationResult(null); }}
+                           className="font-bold text-green-600 hover:text-green-700" disabled={isProcessing}>
+                          Change Number or Resend OTP
                        </button>
                    </p>
                )}
@@ -580,42 +603,42 @@ const AuthModal = ({ isOpen, onClose, onNewUserVerified }) => {
    );
 };
 
-// --- [MODIFIED] Login Modal (Email/Password ONLY) ---
-const LoginModal = ({ isOpen, onClose, showNotification }) => {
-// ... (rest of the component is unchanged - long code omitted for brevity)
-    // Note: onSelectOtpLogin prop is no longer needed
-    const [email, setEmail] = useState('');
+// --- Login Modal (Phone + Password) ---
+const LoginModal = ({ isOpen, onClose, showNotification, onForgotPassword }) => {
+    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
-        // Reset state when modal opens
-        if (isOpen) {
-            setEmail('');
-            setPassword('');
-            setError('');
-            setIsProcessing(false);
-        }
+        if (isOpen) { setPhone(''); setPassword(''); setError(''); setIsProcessing(false); setShowPassword(false); }
     }, [isOpen]);
 
-     const handleEmailPasswordLogin = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
         setIsProcessing(true);
         try {
-            await auth.signInWithEmailAndPassword(email, password);
+            const formattedPhone = phone.startsWith('+') ? phone : `+91${phone.replace(/\D/g, '')}`;
+            // Derive dummy email from phone (works for new-style and old-style users)
+            const getEmailFn = functionsAsia.httpsCallable('getPhoneAuthEmail');
+            const result = await getEmailFn({ phoneNumber: formattedPhone });
+            await auth.signInWithEmailAndPassword(result.data.email, password);
             showNotification("Logged in successfully!", "success");
-            onClose(); // Close modal on success
+            onClose();
         } catch (err) {
-            console.error("Error signing in with email/password:", err);
-            switch (err.code) {
-                case 'auth/invalid-email': setError('Please enter a valid email address.'); break;
-                case 'auth/user-not-found':
-                case 'auth/wrong-password':
-                case 'auth/invalid-credential': setError('Invalid email or password.'); break;
-                 case 'auth/user-disabled': setError('This account has been disabled.'); break;
-                default: setError(`Login failed (${err.code}). Please try again.`); break;
+            console.error("Login error:", err);
+            if (err.code === 'not-found' || (err.message && err.message.includes('No account'))) {
+                setError('No account found for this phone number. Please sign up.');
+            } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                setError('Incorrect password. Please try again.');
+            } else if (err.code === 'auth/user-not-found') {
+                setError('No account found for this phone number.');
+            } else if (err.code === 'auth/user-disabled') {
+                setError('This account has been disabled.');
+            } else {
+                setError('Login failed. Please check your details and try again.');
             }
         } finally {
             setIsProcessing(false);
@@ -626,51 +649,78 @@ const LoginModal = ({ isOpen, onClose, showNotification }) => {
 
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
-            <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md m-4 relative">
+            <div className="bg-white rounded-[2rem] shadow-2xl p-8 w-full max-w-md m-4 relative">
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
-                
-                {/* --- Email/Password Form --- */}
-                <>
-                    <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Log In</h2>
-                    <p className="text-center text-gray-500 mb-6">Enter your email and password.</p>
-                    <form onSubmit={handleEmailPasswordLogin}>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="login-email">Email</label>
-                            <input type="email" id="login-email" value={email} onChange={(e) => setEmail(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="you@example.com" required autoComplete="email" />
+                <div className="flex justify-center mb-5">
+                    <div className="bg-green-50 p-3 rounded-2xl">
+                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
+                </div>
+                <h2 className="text-2xl font-bold text-center text-gray-800 mb-1">Welcome Back</h2>
+                <p className="text-center text-gray-500 mb-7 text-sm">Enter your phone number and password.</p>
+                <form onSubmit={handleLogin}>
+                    <div className="mb-4">
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Phone Number</label>
+                        <input
+                            type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
+                            className="shadow-inner appearance-none border rounded-2xl w-full py-3.5 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50"
+                            placeholder="+91 XXXXXXXXXX" required autoComplete="tel"
+                        />
+                    </div>
+                    <div className="mb-5">
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                        <div className="relative">
+                            <input
+                                type={showPassword ? 'text' : 'password'} value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="shadow-inner appearance-none border rounded-2xl w-full py-3.5 px-4 pr-12 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50"
+                                placeholder="••••••••" required autoComplete="current-password"
+                            />
+                            <button type="button" onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+                                {showPassword
+                                    ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                                    : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                }
+                            </button>
                         </div>
-                        <div className="mb-6">
-                            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="login-password">Password</label>
-                            <input type="password" id="login-password" value={password} onChange={(e) => setPassword(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="••••••••••" required autoComplete="current-password" />
-                            {/* Optional: Add Forgot Password link */}
-                        </div>
-                        {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
-                        <button type="submit" disabled={isProcessing} className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                            {isProcessing ? <Loader2 className="animate-spin mx-auto" size={24} /> : 'Log In'}
-                        </button>
-                    </form>
-                    {/* Note: No "Back to login options" button needed now */}
-                </>
+                    </div>
+                    {error && <p className="text-red-500 text-xs italic mb-4 bg-red-50 px-3 py-2 rounded-xl">{error}</p>}
+                    <button type="submit" disabled={isProcessing}
+                        className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3.5 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        {isProcessing ? <Loader2 className="animate-spin mx-auto" size={24} /> : 'Log In'}
+                    </button>
+                    <button type="button" onClick={onForgotPassword}
+                        className="w-full text-center text-sm text-green-600 hover:text-green-700 font-semibold mt-4 py-1">
+                        Forgot Password?
+                    </button>
+                </form>
             </div>
         </div>
     );
 };
 
-// --- [UPDATED] Set Credentials Modal (With Success Screen) ---
+// --- Set Credentials Modal (Name + Password + Referral, NO email) ---
 const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => {
-    const [email, setEmail] = useState('');
+    const [name, setName] = useState('');
     const [password, setPassword] = useState('');
-    const [username, setUsername] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [referralInput, setReferralInput] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
     const [error, setError] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false); // <--- NEW STATE
+    const [showSuccess, setShowSuccess] = useState(false);
 
     const { EmailAuthProvider } = firebase.auth;
 
     useEffect(() => {
         if (isOpen) {
-            setEmail(''); setPassword(''); setUsername(''); setReferralInput('');
-            setError(''); setIsProcessing(false); setShowSuccess(false); // Reset on open
+            setName(''); setPassword(''); setConfirmPassword(''); setReferralInput('');
+            setError(''); setIsProcessing(false); setShowSuccess(false);
+            setShowPassword(false); setShowConfirm(false);
         }
     }, [isOpen]);
 
@@ -679,155 +729,360 @@ const SetCredentialsModal = ({ isOpen, onClose, newUser, showNotification }) => 
         setError('');
         setIsProcessing(true);
 
-        if (!newUser) { setError("User session is invalid. Please try signing up again."); setIsProcessing(false); return; }
-        if (password.length < 6) { setError('Password should be at least 6 characters long.'); setIsProcessing(false); return; }
-        if (!username.trim()) { setError('Please enter a username.'); setIsProcessing(false); return; }
+        if (!newUser) { setError("Session expired. Please sign up again."); setIsProcessing(false); return; }
+        if (!name.trim()) { setError('Please enter your name.'); setIsProcessing(false); return; }
+        if (password.length < 6) { setError('Password must be at least 6 characters.'); setIsProcessing(false); return; }
+        if (password !== confirmPassword) { setError('Passwords do not match.'); setIsProcessing(false); return; }
 
         try {
             // --- 1. REFERRAL CHECK ---
             let referredByUid = null;
             if (referralInput.trim()) {
                 const codeToCheck = referralInput.trim().toUpperCase();
-                const usersRef = db.collection("users");
-                const snapshot = await usersRef.where("myReferralCode", "==", codeToCheck).limit(1).get();
-                
-                if (snapshot.empty) {
-                    setError("Invalid referral code.");
-                    setIsProcessing(false);
-                    return;
-                }
-                if (snapshot.docs[0].id === newUser.uid) {
-                     setError("You cannot use your own code.");
-                     setIsProcessing(false);
-                     return;
-                }
+                const snapshot = await db.collection("users").where("myReferralCode", "==", codeToCheck).limit(1).get();
+                if (snapshot.empty) { setError("Invalid referral code."); setIsProcessing(false); return; }
+                if (snapshot.docs[0].id === newUser.uid) { setError("You cannot use your own referral code."); setIsProcessing(false); return; }
                 referredByUid = snapshot.docs[0].id;
             }
 
-            // --- 2. GENERATE NEW CODE FOR THIS USER ---
-            const cleanName = username.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase();
-            const uidSuffix = newUser.uid.slice(-5).toUpperCase(); 
+            // --- 2. GENERATE REFERRAL CODE ---
+            const cleanName = name.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase();
+            const uidSuffix = newUser.uid.slice(-5).toUpperCase();
             const myNewCode = `${cleanName}${uidSuffix}`;
 
-            // --- 3. LINK AUTH ---
-            const credential = EmailAuthProvider.credential(email, password);
+            // --- 3. LINK EMAIL/PASSWORD (using phone-derived dummy email) ---
             const currentUser = auth.currentUser;
             if (!currentUser || currentUser.uid !== newUser.uid) {
-                 throw { code: 'auth/user-mismatch', message: "User state mismatch. Please log in again." };
+                throw { code: 'auth/user-mismatch', message: "Session mismatch. Please try again." };
             }
+            const phoneNumber = currentUser.phoneNumber;
+            const dummyEmail = `${phoneNumber.replace('+', '')}@snaccit-user.com`;
+            const credential = EmailAuthProvider.credential(dummyEmail, password);
             await currentUser.linkWithCredential(credential);
 
             // --- 4. SAVE TO FIRESTORE ---
-            const userDocRef = db.collection("users").doc(currentUser.uid);
-            await userDocRef.set({
-                username: username.trim(),
-                email: email.toLowerCase(),
-                phoneNumber: currentUser.phoneNumber,
-                mobile: currentUser.phoneNumber,
+            await db.collection("users").doc(currentUser.uid).set({
+                name: name.trim(),
+                username: name.trim(),
+                phoneNumber: phoneNumber,
+                mobile: phoneNumber,
+                phone: phoneNumber,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 myReferralCode: myNewCode,
                 referredBy: referredByUid,
-                rewardsIssued: false
+                rewardsIssued: false,
+                points: 0,
             }, { merge: true });
 
-            // --- SUCCESS STATE TRIGGER ---
-            setShowSuccess(true); // Show the success screen instead of closing immediately
-
+            setShowSuccess(true);
         } catch (err) {
             console.error("Error setting credentials:", err);
-            switch (err.code) {
-                case 'auth/email-already-in-use': setError('This email is already associated with another account.'); break;
-                case 'auth/credential-already-in-use': setError('This email/credential is already linked to a user.'); break;
-                case 'auth/weak-password': setError('Password should be at least 6 characters long.'); break;
-                case 'auth/requires-recent-login': setError('Security check required. Please try signing up again.'); break;
-                case 'auth/user-mismatch': setError(err.message); break;
-                default: setError(`An unexpected error occurred (${err.code}). Please try again.`); break;
+            if (err.code === 'auth/credential-already-in-use') {
+                setError('This phone number already has a password set. Please log in.');
+            } else if (err.code === 'auth/weak-password') {
+                setError('Password must be at least 6 characters.');
+            } else if (err.code === 'auth/requires-recent-login') {
+                setError('Session expired. Please try signing up again.');
+            } else {
+                setError(err.message || `An error occurred. Please try again.`);
             }
-            setIsProcessing(false); // Only stop processing on error
-        } 
+            setIsProcessing(false);
+        }
     };
 
-    const handleFinalClose = () => {
-        // We reload to ensure the main App fetches the new profile data cleanly
-        window.location.reload();
-        onClose();
-    };
+    const handleFinalClose = () => { window.location.reload(); onClose(); };
 
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-            <div className="bg-white rounded-[2rem] shadow-2xl p-8 w-full max-w-md relative overflow-hidden">
-                
+            <div className="bg-white rounded-[2rem] shadow-2xl p-8 w-full max-w-md relative overflow-hidden max-h-[90vh] overflow-y-auto">
                 {showSuccess ? (
-                    /* --- SUCCESS SCREEN --- */
+                    /* SUCCESS SCREEN */
                     <div className="text-center py-4">
                         <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6 animate-bounce">
                             <PartyPopper size={40} className="text-green-600" />
                         </div>
                         <h2 className="text-3xl font-extrabold text-gray-800 mb-2">Welcome to Snaccit!</h2>
                         <p className="text-gray-500 mb-8">Your account has been created successfully.</p>
-                        
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100 mb-8 text-left space-y-4">
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100 mb-8 text-left space-y-4">
                             <div className="flex items-start">
                                 <div className="bg-white p-1.5 rounded-full shadow-sm mr-3 mt-0.5"><TicketPercent size={18} className="text-amber-500"/></div>
                                 <div>
                                     <h4 className="font-bold text-gray-900 text-sm">Discount Coupon</h4>
-                                    <p className="text-xs text-gray-600 mt-0.5">Check the <strong>"My Rewards"</strong> section in your Profile to find your coupon!</p>
+                                    <p className="text-xs text-gray-600 mt-0.5">Check <strong>"My Rewards"</strong> in your Profile!</p>
                                 </div>
                             </div>
                             <div className="flex items-start">
                                 <div className="bg-white p-1.5 rounded-full shadow-sm mr-3 mt-0.5"><Copy size={18} className="text-blue-500"/></div>
                                 <div>
                                     <h4 className="font-bold text-gray-900 text-sm">Your Referral Code</h4>
-                                    <p className="text-xs text-gray-600 mt-0.5">Find your unique code in your Profile. Share it to earn more rewards!</p>
+                                    <p className="text-xs text-gray-600 mt-0.5">Share it from your Profile to earn rewards!</p>
                                 </div>
                             </div>
                         </div>
-
-                        <button onClick={handleFinalClose} className="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition-all shadow-lg hover:shadow-green-500/30">
-                            Let's Eat!
+                        <button onClick={handleFinalClose} className="w-full bg-green-600 text-white font-bold py-4 rounded-2xl hover:bg-green-700 transition-all shadow-lg hover:shadow-green-500/30">
+                            Let's Eat! 🎉
                         </button>
                     </div>
                 ) : (
-                    /* --- FORM SCREEN --- */
+                    /* FORM SCREEN */
                     <>
                         <button onClick={onClose} className="absolute top-5 right-5 text-gray-400 hover:text-gray-700"><X size={24} /></button>
-                        <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Complete Your Account</h2>
-                        <p className="text-center text-gray-500 mb-6">Set your details to finish setup.</p>
+                        <div className="flex justify-center mb-5">
+                            <div className="bg-green-50 p-3 rounded-2xl">
+                                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <h2 className="text-2xl font-bold text-center text-gray-800 mb-1">Almost There!</h2>
+                        <p className="text-center text-gray-500 text-sm mb-7">Set your name and password to finish.</p>
                         <form onSubmit={handleSetCredentials}>
+                            {/* Name */}
                             <div className="mb-4">
-                                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-email">Email</label>
-                                <input type="email" id="setup-email" value={email} onChange={(e) => setEmail(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="you@example.com" required autoComplete="email" />
+                                <label className="block text-gray-700 text-sm font-bold mb-2">Your Name</label>
+                                <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+                                    className="shadow-inner appearance-none border rounded-2xl w-full py-3.5 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50"
+                                    placeholder="Enter your full name" required autoComplete="name" />
                             </div>
+                            {/* Password */}
                             <div className="mb-4">
-                                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-password">Password</label>
-                                <input type="password" id="setup-password" value={password} onChange={(e) => setPassword(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="•••••••••• (min. 6 characters)" required autoComplete="new-password" />
+                                <label className="block text-gray-700 text-sm font-bold mb-2">Set Password</label>
+                                <div className="relative">
+                                    <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
+                                        className="shadow-inner appearance-none border rounded-2xl w-full py-3.5 px-4 pr-12 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50"
+                                        placeholder="min. 6 characters" required autoComplete="new-password" />
+                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+                                        {showPassword ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg> : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>}
+                                    </button>
+                                </div>
                             </div>
-                            <div className="mb-6">
-                                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="setup-username">Username</label>
-                                <input type="text" id="setup-username" value={username} onChange={(e) => setUsername(e.target.value)} className="shadow-inner appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Choose a username" required autoComplete="username" />
+                            {/* Confirm Password */}
+                            <div className="mb-5">
+                                <label className="block text-gray-700 text-sm font-bold mb-2">Confirm Password</label>
+                                <div className="relative">
+                                    <input type={showConfirm ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                                        className="shadow-inner appearance-none border rounded-2xl w-full py-3.5 px-4 pr-12 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50"
+                                        placeholder="Re-enter password" required autoComplete="new-password" />
+                                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+                                        {showConfirm ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg> : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>}
+                                    </button>
+                                </div>
                             </div>
-
-                            {/* --- REFERRAL INPUT --- */}
-                            <div className="mb-6 pt-2 border-t border-gray-100">
-                                <label className="block text-green-700 text-sm font-bold mb-2 mt-2">Have a Referral Code?</label>
-                                <input 
-                                    type="text" 
-                                    value={referralInput} 
-                                    onChange={(e) => setReferralInput(e.target.value.toUpperCase())} 
-                                    className="shadow-inner appearance-none border-2 border-green-100 bg-green-50/50 rounded-xl w-full py-3 px-4 text-green-800 font-bold tracking-widest leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:font-normal placeholder:text-gray-400" 
-                                    placeholder="Enter code (Optional)" 
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Get ₹50 off your first order if you use a friend's code!</p>
+                            {/* Referral */}
+                            <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-100">
+                                <label className="block text-green-700 text-sm font-bold mb-2 flex items-center gap-1.5">
+                                    <Gift size={14} /> Have a Referral Code? <span className="text-green-500 font-normal">(Optional)</span>
+                                </label>
+                                <input type="text" value={referralInput} onChange={(e) => setReferralInput(e.target.value.toUpperCase())}
+                                    className="appearance-none border-2 border-green-200 bg-white rounded-xl w-full py-3 px-4 text-green-800 font-bold tracking-widest leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:font-normal placeholder:text-gray-400"
+                                    placeholder="e.g. ABC12345" />
+                                <p className="text-xs text-green-600 mt-1.5 font-medium">🎁 Use a friend's code to get ₹50 off your first order!</p>
                             </div>
-
-                            {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
-                            <button type="submit" disabled={isProcessing} className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                {isProcessing ? <Loader2 className="animate-spin mx-auto" size={24} /> : 'Save & Continue'}
+                            {error && <p className="text-red-500 text-xs italic mb-4 bg-red-50 px-3 py-2 rounded-xl">{error}</p>}
+                            <button type="submit" disabled={isProcessing}
+                                className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3.5 px-6 rounded-full hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                {isProcessing ? <Loader2 className="animate-spin mx-auto" size={24} /> : 'Create My Account'}
                             </button>
                         </form>
                     </>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// --- Forgot Password Modal ---
+const ForgotPasswordModal = ({ isOpen, onClose, showNotification }) => {
+    const [step, setStep] = useState(1); // 1=phone, 2=otp+newPassword
+    const [phone, setPhone] = useState('');
+    const [otp, setOtp] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showNewPass, setShowNewPass] = useState(false);
+    const [showConfirmPass, setShowConfirmPass] = useState(false);
+    const [error, setError] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [confirmationResult, setConfirmationResult] = useState(null);
+
+    const clearResetRecaptcha = () => {
+        if (window.resetRecaptchaVerifier) {
+            try {
+                window.resetRecaptchaVerifier.clear();
+                const c = document.getElementById('reset-recaptcha-container');
+                if (c) c.innerHTML = '';
+            } catch (e) {}
+            finally { window.resetRecaptchaVerifier = null; window.resetRecaptchaWidgetId = undefined; }
+        }
+    };
+
+    const setupResetRecaptcha = (retryCount = 0) => {
+        if (typeof window.grecaptcha === 'undefined' || typeof firebase.auth.RecaptchaVerifier === 'undefined') {
+            if (retryCount < 5) { setTimeout(() => setupResetRecaptcha(retryCount + 1), 100); return; }
+            setError("reCAPTCHA failed to load. Please refresh."); return;
+        }
+        const container = document.getElementById('reset-recaptcha-container');
+        if (!container) {
+            if (retryCount < 3) { setTimeout(() => setupResetRecaptcha(retryCount + 1), 150); return; }
+            setError("UI Error. Please refresh."); return;
+        }
+        container.innerHTML = '';
+        try {
+            window.resetRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('reset-recaptcha-container', {
+                'size': 'invisible',
+                'callback': () => {},
+                'expired-callback': () => { clearResetRecaptcha(); setupResetRecaptcha(); }
+            });
+            window.resetRecaptchaVerifier.render().then(id => { window.resetRecaptchaWidgetId = id; });
+        } catch (e) { clearResetRecaptcha(); }
+    };
+
+    useEffect(() => {
+        if (isOpen && step === 1 && !window.resetRecaptchaVerifier) {
+            setTimeout(() => setupResetRecaptcha(), 150);
+        }
+    }, [isOpen, step]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setPhone(''); setOtp(''); setNewPassword(''); setConfirmPassword('');
+            setError(''); setStep(1); setIsProcessing(false); setConfirmationResult(null);
+            setShowNewPass(false); setShowConfirmPass(false);
+            clearResetRecaptcha();
+        }
+    }, [isOpen]);
+
+    const handleSendOtp = async (e) => {
+        e.preventDefault();
+        setError(''); setIsProcessing(true);
+        const verifier = window.resetRecaptchaVerifier;
+        if (!verifier) { setError("reCAPTCHA not ready."); setupResetRecaptcha(); setIsProcessing(false); return; }
+        try {
+            const formatted = phone.startsWith('+') ? phone : `+91${phone.replace(/\D/g, '')}`;
+            if (!/^\+[1-9]\d{1,14}$/.test(formatted)) throw { code: 'auth/invalid-phone-number' };
+            const result = await auth.signInWithPhoneNumber(formatted, verifier);
+            setConfirmationResult(result);
+            setStep(2); setError('');
+        } catch (err) {
+            if (err.code === 'auth/invalid-phone-number') setError('Invalid phone number.');
+            else if (err.code === 'auth/too-many-requests') setError('Too many requests. Please try later.');
+            else setError('Failed to send OTP. Please try again.');
+            try { const w = window.resetRecaptchaWidgetId; if (window.grecaptcha && w !== undefined) window.grecaptcha.reset(w); } catch (e) {}
+        }
+        setIsProcessing(false);
+    };
+
+    const handleResetPassword = async (e) => {
+        e.preventDefault();
+        setError('');
+        if (!otp || otp.length !== 6) { setError('Enter the 6-digit OTP.'); return; }
+        if (newPassword.length < 6) { setError('Password must be at least 6 characters.'); return; }
+        if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return; }
+        if (!confirmationResult) { setError('Session expired. Request OTP again.'); setStep(1); return; }
+        setIsProcessing(true);
+        try {
+            await confirmationResult.confirm(otp);
+            const resetFn = functionsAsia.httpsCallable('resetPasswordWithPhone');
+            const result = await resetFn({ newPassword });
+            await auth.signOut();
+            await auth.signInWithEmailAndPassword(result.data.email, newPassword);
+            showNotification("Password reset! You're now logged in.", "success");
+            onClose();
+        } catch (err) {
+            console.error("Reset error:", err);
+            if (err.code === 'auth/invalid-verification-code') setError('Invalid OTP. Please try again.');
+            else if (err.code === 'auth/code-expired') { setError('OTP expired. Request a new one.'); setStep(1); setConfirmationResult(null); clearResetRecaptcha(); }
+            else setError(err.message || 'Reset failed. Please try again.');
+        }
+        setIsProcessing(false);
+    };
+
+    const EyeIcon = ({ show }) => show
+        ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+        : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>;
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-[2rem] shadow-2xl p-8 w-full max-w-md relative">
+                <button onClick={onClose} className="absolute top-5 right-5 text-gray-400 hover:text-gray-700"><X size={24} /></button>
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="bg-amber-50 p-2.5 rounded-2xl">
+                        <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">Reset Password</h2>
+                        <p className="text-sm text-gray-500">{step === 1 ? 'Enter your registered phone number' : `Verify OTP sent to ${phone}`}</p>
+                    </div>
+                </div>
+
+                {/* Progress */}
+                <div className="flex gap-2 mb-7">
+                    {[1, 2].map(s => (
+                        <div key={s} className={`flex-1 h-1.5 rounded-full transition-all duration-300 ${step >= s ? 'bg-green-500' : 'bg-gray-100'}`} />
+                    ))}
+                </div>
+
+                {step === 1 ? (
+                    <form onSubmit={handleSendOtp}>
+                        <div className="mb-5">
+                            <label className="block text-gray-700 text-sm font-bold mb-2">Phone Number</label>
+                            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
+                                className="shadow-inner appearance-none border rounded-2xl w-full py-3.5 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50"
+                                placeholder="+91 XXXXXXXXXX" required />
+                        </div>
+                        <div id="reset-recaptcha-container" className="my-1 h-[1px] overflow-hidden"></div>
+                        {error && <p className="text-red-500 text-xs italic mb-4 bg-red-50 px-3 py-2 rounded-xl">{error}</p>}
+                        <button type="submit" disabled={isProcessing}
+                            className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3.5 px-6 rounded-full w-full transition-all ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg hover:shadow-green-500/40'}`}>
+                            {isProcessing ? <Loader2 className="animate-spin mx-auto" size={24}/> : 'Send OTP'}
+                        </button>
+                    </form>
+                ) : (
+                    <form onSubmit={handleResetPassword}>
+                        <div className="mb-4">
+                            <label className="block text-gray-700 text-sm font-bold mb-2">OTP Code</label>
+                            <input type="text" value={otp} onChange={e => setOtp(e.target.value)}
+                                className="shadow-inner appearance-none border rounded-2xl w-full py-3.5 px-4 text-gray-700 text-center text-xl font-bold tracking-widest leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50"
+                                placeholder="- - - - - -" maxLength="6" inputMode="numeric" pattern="[0-9]*" />
+                            <p className="text-xs text-gray-400 mt-1 text-center">6-digit code sent to {phone}</p>
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-gray-700 text-sm font-bold mb-2">New Password</label>
+                            <div className="relative">
+                                <input type={showNewPass ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                                    className="shadow-inner appearance-none border rounded-2xl w-full py-3.5 px-4 pr-12 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50"
+                                    placeholder="min. 6 characters" required minLength="6" autoComplete="new-password" />
+                                <button type="button" onClick={() => setShowNewPass(!showNewPass)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+                                    <EyeIcon show={showNewPass} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="mb-6">
+                            <label className="block text-gray-700 text-sm font-bold mb-2">Confirm Password</label>
+                            <div className="relative">
+                                <input type={showConfirmPass ? 'text' : 'password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                                    className="shadow-inner appearance-none border rounded-2xl w-full py-3.5 px-4 pr-12 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50"
+                                    placeholder="Re-enter password" required autoComplete="new-password" />
+                                <button type="button" onClick={() => setShowConfirmPass(!showConfirmPass)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+                                    <EyeIcon show={showConfirmPass} />
+                                </button>
+                            </div>
+                        </div>
+                        {error && <p className="text-red-500 text-xs italic mb-4 bg-red-50 px-3 py-2 rounded-xl">{error}</p>}
+                        <button type="submit" disabled={isProcessing}
+                            className={`bg-gradient-to-br from-green-500 to-green-600 text-white font-bold py-3.5 px-6 rounded-full w-full transition-all ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg hover:shadow-green-500/40'}`}>
+                            {isProcessing ? <Loader2 className="animate-spin mx-auto" size={24}/> : 'Reset Password'}
+                        </button>
+                        <button type="button" onClick={() => { setStep(1); setOtp(''); setConfirmationResult(null); clearResetRecaptcha(); setError(''); }}
+                            className="w-full text-center text-sm text-gray-500 hover:text-gray-700 mt-3 font-medium">
+                            ← Use a Different Number
+                        </button>
+                    </form>
                 )}
             </div>
         </div>
@@ -2992,10 +3247,6 @@ const ProfilePage = ({ currentUser, showNotification, onReorder, onRateOrder, on
                         </div>
                         
                         <div className="space-y-5">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Email</label>
-                                <p className="text-gray-700 font-medium bg-gray-50 p-3 rounded-xl border border-gray-100">{currentUser?.email || 'Not set'}</p>
-                            </div>
                              <div>
                                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Phone</label>
                                  <p className="text-gray-700 font-medium bg-gray-50 p-3 rounded-xl border border-gray-100">{currentUser?.phoneNumber || profile.mobile || 'Not set'}</p>
@@ -3263,6 +3514,7 @@ const App = () => {
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSetCredentialsModalOpen, setIsSetCredentialsModalOpen] = useState(false);
+  const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
   const [newUserObject, setNewUserObject] = useState(null);
 
   const showNotification = (message, type) => setNotification({ message, type });
@@ -3543,12 +3795,10 @@ useEffect(() => {
 
     // Effect for managing body scroll based on modal visibility
     useEffect(() => {
-        const anyModalOpen = isCartOpen || isCheckoutOpen || !!itemToCustomize || isAuthModalOpen || isLoginModalOpen || isSetCredentialsModalOpen;
-        // console.log("Modal state changed, anyModalOpen:", anyModalOpen); // Can be noisy
+        const anyModalOpen = isCartOpen || isCheckoutOpen || !!itemToCustomize || isAuthModalOpen || isLoginModalOpen || isSetCredentialsModalOpen || isForgotPasswordModalOpen;
         document.body.style.overflow = anyModalOpen ? 'hidden' : 'auto';
-        // Cleanup function resets on unmount
         return () => { document.body.style.overflow = 'auto'; };
-    }, [isCartOpen, isCheckoutOpen, itemToCustomize, isAuthModalOpen, isLoginModalOpen, isSetCredentialsModalOpen]);
+    }, [isCartOpen, isCheckoutOpen, itemToCustomize, isAuthModalOpen, isLoginModalOpen, isSetCredentialsModalOpen, isForgotPasswordModalOpen]);
 
     // --- Core App Handlers ---
     const handleSelectItemForCustomization = (item) => setItemToCustomize(item);
@@ -3779,15 +4029,15 @@ const renderView = () => {
     return (
         <>
             <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: ''})} />
-             <AuthModal isOpen={isAuthModalOpen} onClose={() => setAuthModalOpen(false)} onNewUserVerified={handleNewUserVerified} />
-             {/* MODIFIED: LoginModal props updated */}
+             <AuthModal isOpen={isAuthModalOpen} onClose={() => setAuthModalOpen(false)} onNewUserVerified={handleNewUserVerified} onExistingUserLogin={() => setIsLoginModalOpen(true)} />
              <LoginModal
                 isOpen={isLoginModalOpen}
                 onClose={() => setIsLoginModalOpen(false)}
-                // onSelectOtpLogin prop removed
                 showNotification={showNotification}
+                onForgotPassword={() => { setIsLoginModalOpen(false); setIsForgotPasswordModalOpen(true); }}
             />
              <SetCredentialsModal isOpen={isSetCredentialsModalOpen} onClose={() => setIsSetCredentialsModalOpen(false)} newUser={newUserObject} showNotification={showNotification} />
+             <ForgotPasswordModal isOpen={isForgotPasswordModalOpen} onClose={() => setIsForgotPasswordModalOpen(false)} showNotification={showNotification} />
              <ItemCustomizationModal isOpen={!!itemToCustomize} onClose={() => setItemToCustomize(null)} item={itemToCustomize} onConfirmAddToCart={handleConfirmAddToCart} />
              <CartSidebar 
     isOpen={isCartOpen} 
