@@ -984,10 +984,10 @@ const ForgotPasswordModal = ({ isOpen, onClose, showNotification }) => {
         try {
             await confirmationResult.confirm(otp);
             const resetFn = functionsAsia.httpsCallable('resetPasswordWithPhone');
-            const result = await resetFn({ newPassword });
-            await auth.signOut();
-            await auth.signInWithEmailAndPassword(result.data.email, newPassword);
-            showNotification("Password reset! You're now logged in.", "success");
+            await resetFn({ newPassword });
+            // Sign out the temp phone-auth session — user will log in with new password
+            try { await auth.signOut(); } catch (e) { /* ignore signout errors */ }
+            showNotification("Password reset successfully! Please log in with your new password.", "success");
             onClose();
         } catch (err) {
             console.error("Reset error:", err);
