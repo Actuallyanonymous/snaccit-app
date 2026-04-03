@@ -505,10 +505,6 @@ exports.getPhoneAuthEmail = onCall({ region: "asia-south2" }, async (request) =>
     }
 });
 
-// ======================================================================
-// === 6. RESET PASSWORD VIA PHONE OTP ===
-// ======================================================================
-
 exports.resetPasswordWithPhone = onCall({ region: "asia-south2" }, async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Authentication required.');
@@ -526,77 +522,103 @@ exports.resetPasswordWithPhone = onCall({ region: "asia-south2" }, async (reques
         throw new HttpsError('failed-precondition', 'No phone number on authenticated session.');
     }
 
+    const dummyEmail = `${callerPhone.replace('+', '')}@snaccit-user.com`;
+
     try {
-        // The caller is signed in via phone OTP. We need to find the auth user
-        // that has the email/password credential linked to this phone number.
-        // 
-        // Scenario A: The caller IS the original user (phone+email linked to same UID)
-        //   → updateUser on callerUid works directly
-        // Scenario B: The phone OTP created a NEW temporary user, and the original 
-        //   email/password user exists separately
-        //   → We need to find the original user via dummy email pattern
-
-        const dummyEmail = `${callerPhone.replace('+', '')}@snaccit-user.com`;
-        let targetUid = callerUid;
-        let isTemporaryUser = false;
-
-        // Check if the caller has an email/password provider linked
+        // Check if the caller already has email/password linked
         const callerUser = await admin.auth().getUser(callerUid);
         const hasEmailProvider = callerUser.providerData.some(p => p.providerId === 'password');
 
         if (hasEmailProvider) {
-            // Scenario A: Caller already has email/password — update directly
-            targetUid = callerUid;
-            logger.info('resetPasswordWithPhone: Updating password for caller (has email provider)', { uid: callerUid });
+            // ═══ SCENARIO A: Caller IS the original user (has phone + email/password) ═══
+            // signInWithPhoneNumber signed into the existing account — just update password
+            await admin.auth().updateUser(callerUid, { password: newPassword });
+            const email = callerUser.email || dummyEmail;
+            logger.info('resetPasswordWithPhone: Scenario A - updated password on existing user', { uid: callerUid });
+            return { success: true, email };
+        }
+
+        // Caller only has phone provider — it's a temp user created by signInWithPhoneNumber
+        // Try to find the ORIGINAL user who has the email/password credential
+
+        let originalUser = null;
+        try {
+            originalUser = await admin.auth().getUserByEmail(dummyEmail);
+            logger.info('resetPasswordWithPhone: Found original user by email', { originalUid: originalUser.uid, callerUid });
+        } catch (e) {
+            // No auth user with dummy email — check if it's a legacy user scenario
+            logger.info('resetPasswordWithPhone: No auth user with dummy email, checking legacy', { dummyEmail });
+        }
+
+        if (originalUser) {
+            // ═══ SCENARIO B: Original user exists in Auth with dummy email ═══
+            // 1. Delete temp caller to free the phone number
+            // 2. Update original user with new password + re-link phone
+            await admin.auth().deleteUser(callerUid);
+            logger.info('resetPasswordWithPhone: Deleted temp user', { callerUid });
+
+            await admin.auth().updateUser(originalUser.uid, { 
+                password: newPassword,
+                phoneNumber: callerPhone  // Re-link phone back to original user
+            });
+            logger.info('resetPasswordWithPhone: Scenario B - updated password + re-linked phone', { uid: originalUser.uid });
+            return { success: true, email: dummyEmail };
+        }
+
+        // ═══ SCENARIO C: Legacy user — only exists in Firestore, not in Auth ═══
+        // The temp caller becomes the permanent user.
+        // We need to: add email/password to caller, update Firestore doc.
+        
+        // Look up old Firestore doc by phone
+        const snapshot = await db.collection('users')
+            .where('phoneNumber', '==', callerPhone)
+            .limit(1)
+            .get();
+
+        // Also check 'phone' and 'mobile' fields as fallback
+        let firestoreDoc = snapshot.empty ? null : snapshot.docs[0];
+        if (!firestoreDoc) {
+            const snap2 = await db.collection('users').where('phone', '==', callerPhone).limit(1).get();
+            firestoreDoc = snap2.empty ? null : snap2.docs[0];
+        }
+        if (!firestoreDoc) {
+            const snap3 = await db.collection('users').where('mobile', '==', callerPhone).limit(1).get();
+            firestoreDoc = snap3.empty ? null : snap3.docs[0];
+        }
+
+        // Update the caller: add email/password credential + set password
+        await admin.auth().updateUser(callerUid, { 
+            email: dummyEmail,
+            password: newPassword 
+        });
+        logger.info('resetPasswordWithPhone: Scenario C - linked email+password to caller', { callerUid, dummyEmail });
+
+        if (firestoreDoc && firestoreDoc.id !== callerUid) {
+            // Migrate user data from old Firestore doc to new UID
+            const oldData = firestoreDoc.data();
+            await db.collection('users').doc(callerUid).set({
+                ...oldData,
+                phoneNumber: callerPhone,
+                phone: callerPhone,
+                mobile: callerPhone,
+            }, { merge: true });
+
+            // Delete old Firestore doc
+            await db.collection('users').doc(firestoreDoc.id).delete();
+            logger.info('resetPasswordWithPhone: Migrated Firestore data from legacy user', { 
+                oldUid: firestoreDoc.id, newUid: callerUid 
+            });
         } else {
-            // Scenario B: Caller is a temp phone-only account
-            // Find the original user by the dummy email
-            try {
-                const originalUser = await admin.auth().getUserByEmail(dummyEmail);
-                targetUid = originalUser.uid;
-                isTemporaryUser = true;
-                logger.info('resetPasswordWithPhone: Found original user by email', { targetUid, callerUid });
-            } catch (emailLookupErr) {
-                // No user with that email exists — this phone number may not have a password set
-                // Try to find via Firestore as fallback
-                const snapshot = await db.collection('users')
-                    .where('phoneNumber', '==', callerPhone)
-                    .limit(1)
-                    .get();
-                
-                if (!snapshot.empty && snapshot.docs[0].id !== callerUid) {
-                    // Found a Firestore doc under a different UID — check if that auth user exists
-                    try {
-                        await admin.auth().getUser(snapshot.docs[0].id);
-                        targetUid = snapshot.docs[0].id;
-                        isTemporaryUser = true;
-                        logger.info('resetPasswordWithPhone: Found user via Firestore fallback', { targetUid });
-                    } catch (e) {
-                        // That UID doesn't exist in Auth either — just update the caller
-                        logger.warn('resetPasswordWithPhone: Firestore UID not found in Auth, using caller', { firestoreUid: snapshot.docs[0].id });
-                    }
-                }
-            }
+            // No Firestore doc found — create a basic one
+            await db.collection('users').doc(callerUid).set({
+                phoneNumber: callerPhone,
+                phone: callerPhone,
+                mobile: callerPhone,
+            }, { merge: true });
+            logger.info('resetPasswordWithPhone: Created basic Firestore doc for caller', { callerUid });
         }
 
-        // Update the password
-        await admin.auth().updateUser(targetUid, { password: newPassword });
-
-        // Get the email for sign-in after reset
-        const updatedUser = await admin.auth().getUser(targetUid);
-        const email = updatedUser.email || dummyEmail;
-
-        // Clean up temporary phone-only auth account if it was different from the target
-        if (isTemporaryUser && callerUid !== targetUid) {
-            try { 
-                await admin.auth().deleteUser(callerUid); 
-                logger.info('resetPasswordWithPhone: Cleaned up temp phone user', { callerUid });
-            } catch (e) {
-                logger.warn('Could not delete temp phone user during reset:', callerUid);
-            }
-        }
-
-        return { success: true, email };
+        return { success: true, email: dummyEmail };
     } catch (err) {
         if (err instanceof HttpsError) throw err;
         logger.error('resetPasswordWithPhone error:', err);
